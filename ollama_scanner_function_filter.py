@@ -159,7 +159,7 @@ class Filter:
         """Check if the given IP has a valid Ollama instance with /api/tags endpoint."""
         url = f"http://{ip}:{port}/api/tags"
         try:
-            response = requests.get(url, timeout=timeout)
+            response = requests.get(url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
             if response.status_code == 200:
                 try:
                     data = response.json()
@@ -263,7 +263,71 @@ class Filter:
             # Import Shodan here to avoid making it a hard dependency
             import shodan
             
-            api = shodan.Shodan(api_key)
+            api 
+
+# Dynamic timeout calculation function
+def calculate_dynamic_timeout(model_name="", prompt="", max_tokens=1000, timeout_flag=None):
+    """
+    Calculate a dynamic timeout based on model size, prompt length, and max tokens.
+    
+    Args:
+        model_name (str): Name of the model, used to estimate size (e.g., "deepseek-r1:70b")
+        prompt (str): The prompt text, longer prompts need more time
+        max_tokens (int): Maximum tokens to generate, more tokens need more time
+        timeout_flag (int, optional): If provided, overrides the calculated timeout.
+                                     Use 0 for no timeout (None or inf).
+    
+    Returns:
+        float or None: Timeout in seconds, or None for no timeout
+    """
+    # If timeout_flag is explicitly set to 0, return None for no timeout
+    if timeout_flag == 0:
+        return None
+    
+    # If timeout_flag is provided and not 0, use that value
+    if timeout_flag is not None:
+        return float(timeout_flag)
+    
+    # Base timeout value
+    base_timeout = 180  # 3 minutes
+    
+    # Factor in model size
+    param_factor = 1.0
+    model_name_lower = model_name.lower()
+    
+    # Extract parameter size from model name (e.g., "13b" from "deepseek-r1:13b")
+    size_match = re.search(r'(\d+)b', model_name_lower)
+    if size_match:
+        try:
+            size_num = float(size_match.group(1))
+            # Special handling for very large models (50B+)
+            if size_num >= 50:
+                param_factor = 2.5 + (size_num / 20)  # Much more time for 70B models
+            else:
+                param_factor = 1.0 + (size_num / 10)  # Standard scaling for smaller models
+        except ValueError:
+            # If we can't parse it, use default factor
+            pass
+    elif "70b" in model_name_lower:
+        param_factor = 6.0  # Special case for 70B models
+    elif "14b" in model_name_lower or "13b" in model_name_lower:
+        param_factor = 2.4  # Special case for 13-14B models
+    elif "7b" in model_name_lower or "8b" in model_name_lower:
+        param_factor = 1.7  # Special case for 7-8B models
+    
+    # Factor in prompt length
+    prompt_length = len(prompt) if prompt else 0
+    prompt_factor = 1.0 + (prompt_length / 1000)  # Add factor for each 1000 chars
+    
+    # Factor in max_tokens
+    max_tokens = max(1, max_tokens)  # Ensure positive value
+    token_factor = max(1.0, max_tokens / 1000)  # Add factor for each 1000 tokens
+    
+    # Calculate final timeout with minimum and maximum bounds
+    final_timeout = max(60, min(1800, base_timeout * param_factor * prompt_factor * token_factor))
+    
+    return final_timeout
+= shodan.Shodan(api_key)
             
             page = 1
             total_results = []

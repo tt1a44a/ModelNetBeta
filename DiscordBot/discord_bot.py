@@ -3720,7 +3720,11 @@ async def chat(
             try:
                 if "B" in param_size:
                     size_num = float(param_size.replace("B", "").strip())
-                    param_factor = 1.0 + (size_num / 10)  # Larger models get more time
+                    # Special handling for very large models (50B+)
+                    if size_num >= 50:
+                        param_factor = 2.5 + (size_num / 20)  # Much more time for 70B models
+                    else:
+                        param_factor = 1.0 + (size_num / 10)  # Standard scaling for smaller models  # Larger models get more time
             except ValueError:
                 # If we can't parse it, use default factor
                 param_factor = 1.5
@@ -3729,7 +3733,7 @@ async def chat(
         token_factor = max(1.0, safe_max_tokens / 1000)
         
         # Calculate final timeout (minimum 180s, maximum 900s)
-        dynamic_timeout = min(900, max(180, base_timeout * prompt_factor * param_factor * token_factor))
+        dynamic_timeout = min(1500, max(180, base_timeout * prompt_factor * param_factor * token_factor))
         
         # Format timeout for display
         timeout_message = f"Timeout set to {int(dynamic_timeout)} seconds based on prompt length and model size."

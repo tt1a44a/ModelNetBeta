@@ -48,7 +48,71 @@ if SHODAN_API_KEY:
 # Try to import Censys if available
 try:
     from censys.search import CensysHosts
-    censys_available = True
+    censys_available 
+
+# Dynamic timeout calculation function
+def calculate_dynamic_timeout(model_name="", prompt="", max_tokens=1000, timeout_flag=None):
+    """
+    Calculate a dynamic timeout based on model size, prompt length, and max tokens.
+    
+    Args:
+        model_name (str): Name of the model, used to estimate size (e.g., "deepseek-r1:70b")
+        prompt (str): The prompt text, longer prompts need more time
+        max_tokens (int): Maximum tokens to generate, more tokens need more time
+        timeout_flag (int, optional): If provided, overrides the calculated timeout.
+                                     Use 0 for no timeout (None or inf).
+    
+    Returns:
+        float or None: Timeout in seconds, or None for no timeout
+    """
+    # If timeout_flag is explicitly set to 0, return None for no timeout
+    if timeout_flag == 0:
+        return None
+    
+    # If timeout_flag is provided and not 0, use that value
+    if timeout_flag is not None:
+        return float(timeout_flag)
+    
+    # Base timeout value
+    base_timeout = 180  # 3 minutes
+    
+    # Factor in model size
+    param_factor = 1.0
+    model_name_lower = model_name.lower()
+    
+    # Extract parameter size from model name (e.g., "13b" from "deepseek-r1:13b")
+    size_match = re.search(r'(\d+)b', model_name_lower)
+    if size_match:
+        try:
+            size_num = float(size_match.group(1))
+            # Special handling for very large models (50B+)
+            if size_num >= 50:
+                param_factor = 2.5 + (size_num / 20)  # Much more time for 70B models
+            else:
+                param_factor = 1.0 + (size_num / 10)  # Standard scaling for smaller models
+        except ValueError:
+            # If we can't parse it, use default factor
+            pass
+    elif "70b" in model_name_lower:
+        param_factor = 6.0  # Special case for 70B models
+    elif "14b" in model_name_lower or "13b" in model_name_lower:
+        param_factor = 2.4  # Special case for 13-14B models
+    elif "7b" in model_name_lower or "8b" in model_name_lower:
+        param_factor = 1.7  # Special case for 7-8B models
+    
+    # Factor in prompt length
+    prompt_length = len(prompt) if prompt else 0
+    prompt_factor = 1.0 + (prompt_length / 1000)  # Add factor for each 1000 chars
+    
+    # Factor in max_tokens
+    max_tokens = max(1, max_tokens)  # Ensure positive value
+    token_factor = max(1.0, max_tokens / 1000)  # Add factor for each 1000 tokens
+    
+    # Calculate final timeout with minimum and maximum bounds
+    final_timeout = max(60, min(1800, base_timeout * param_factor * prompt_factor * token_factor))
+    
+    return final_timeout
+= True
 except ImportError:
     censys_available = False
     print("Warning: Censys module not installed. Run 'pip install censys' to enable Censys searching.")
@@ -78,7 +142,7 @@ def isOllamaServer(ip, p=11434):
     # First try the API endpoint which should be most reliable
     url = "http://" + ip + ":" + str(p) + "/api/tags"
     try:
-        r = requests.get(url, timeout=timeout)
+        r = requests.get(url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
         if r.status_code == 200:
             try:
                 d = r.json()
@@ -91,7 +155,7 @@ def isOllamaServer(ip, p=11434):
         # This is shown on Ollama's default landing page
         root_url = "http://" + ip + ":" + str(p) + "/"
         try:
-            root_response = requests.get(root_url, timeout=timeout)
+            root_response = requests.get(root_url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
             if "ollama is running" in root_response.text.lower():
                 # Found the Ollama landing page, but we don't have model info
                 return True, {"models": []}
@@ -615,7 +679,7 @@ def verify_instance(ip, db_path, timeout=5, result_queue=None, verbose=None):
             print(f"[VERBOSE] Trying endpoint: {tags_url}")
         
         verification_start = datetime.now()
-        tags_response = requests.get(tags_url, timeout=timeout)
+        tags_response = requests.get(tags_url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
         verification_time = (datetime.now() - verification_start).total_seconds()
         
         if tags_response.status_code == 200:
@@ -635,7 +699,7 @@ def verify_instance(ip, db_path, timeout=5, result_queue=None, verbose=None):
                     ps_data = None
                     
                     try:
-                        ps_response = requests.get(ps_url, timeout=timeout)
+                        ps_response = requests.get(ps_url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
                         if ps_response.status_code == 200:
                             ps_data = ps_response.json()
                             if verbose and ps_data:
@@ -1222,7 +1286,11 @@ if __name__ == "__main__":
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Enable verbose output')
     
-    args = parser.parse_args()
+    args = 
+    # Add timeout flag - 0 means no timeout
+    parser.add_argument('--timeout', '-t', type=int, default=None,
+                      help='Timeout in seconds for API requests. Use 0 for no timeout.')
+parser.parse_args()
     
     # Use verbose directly from args
     verbose = args.verbose
