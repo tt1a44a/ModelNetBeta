@@ -1,0 +1,63 @@
+{
+  "id": "ollama_scanner_filter",
+  "name": "Ollama Scanner",
+  "description": "Discover, analyze, and connect to Ollama instances across the internet using Shodan API",
+  "version": "1.0.0",
+  "author": "Ollama Scanner Team",
+  "license": "MIT",
+  "type": "filter",
+  "icon": "search",
+  "tags": ["ollama", "shodan", "scanner", "discovery"],
+  "homepage": "https://github.com/yourusername/ollama-scanner",
+  "code": "#!/usr/bin/env python3\n\"\"\"\nOllama Scanner Filter Function for OpenWebUI\n-------------------------------------------\nThis function integrates the Ollama Scanner into OpenWebUI\nusing the Filter Function architecture.\n\"\"\"\n\nimport os\nimport json\nimport time\nimport sqlite3\nimport requests\nimport logging\nfrom datetime import datetime\nfrom typing import Dict, List, Any, Tuple, Optional, Union, Callable, Awaitable\nfrom pydantic import BaseModel, Field\n\n# Configure logging\nlogging.basicConfig(\n    level=logging.INFO,\n    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'\n)\nlogger = logging.getLogger(\"ollama_scanner_filter\")\n\n# Constants\nDEFAULT_TIMEOUT = 5  # seconds\nDEFAULT_MAX_RESULTS = 100  # max number of Shodan results to process\nDATA_DIR = \"/app/backend/data\"  # OpenWebUI's persistent data directory\nDB_FILE = os.path.join(DATA_DIR, \"ollama_scanner_results.db\")\n\nclass Filter:\n    \"\"\"\n    Ollama Scanner Filter Function for OpenWebUI.\n    \n    This filter provides capabilities to:\n    1. Discover Ollama instances using Shodan\n    2. Search and filter discovered instances\n    3. Add discovered instances as endpoints in OpenWebUI\n    \"\"\"\n    \n    class Valves(BaseModel):\n        \"\"\"\n        System configurable values (admin settings)\n        \"\"\"\n        SHODAN_API_KEY: str = Field(\n            default=\"\",\n            description=\"Shodan API key for scanning Ollama instances\"\n        )\n        MAX_RESULTS: int = Field(\n            default=100,\n            description=\"Maximum number of results to return from a scan\"\n        )\n        SEARCH_QUERY: str = Field(\n            default=\"product:Ollama\",\n            description=\"Default Shodan search query\"\n        )\n        REQUEST_TIMEOUT: int = Field(\n            default=5,\n            description=\"Timeout in seconds for requests to Ollama instances\"\n        )\n    \n    class UserValves(BaseModel):\n        \"\"\"\n        User configurable values (per-user settings)\n        \"\"\"\n        enable_scanner: bool = Field(\n            default=True,\n            description=\"Enable Ollama Scanner features\"\n        )\n        default_country_filter: str = Field(\n            default=\"\",\n            description=\"Default country code filter for searching instances\"\n        )\n        auto_add_endpoints: bool = Field(\n            default=False,\n            description=\"Automatically add discovered endpoints\"\n        )\n    \n    def __init__(self):\n        \"\"\"Initialize the filter\"\"\"\n        self.valves = self.Valves()\n        # Setup database\n        self.setup_database()\n    \n    def setup_database(self) -> None:\n        \"\"\"Create or connect to the SQLite database for storing scan results.\"\"\"\n        try:\n            # Create the data directory if it doesn't exist\n            os.makedirs(DATA_DIR, exist_ok=True)\n            \n            conn = sqlite3.connect(DB_FILE)\n            cursor = conn.cursor()\n            \n            # Create servers table\n            cursor.execute('''\n            CREATE TABLE IF NOT EXISTS servers (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                ip TEXT,\n                port INTEGER,\n                scan_date TEXT,\n                country_code TEXT,\n                country_name TEXT,\n                city TEXT,\n                organization TEXT,\n                asn TEXT,\n                UNIQUE(ip, port)\n            )\n            ''')\n            \n            # Create models table\n            cursor.execute('''\n            CREATE TABLE IF NOT EXISTS models (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                server_id INTEGER,\n                name TEXT,\n                parameter_size TEXT,\n                quantization_level TEXT,\n                size_mb REAL,\n                FOREIGN KEY (server_id) REFERENCES servers (id),\n                UNIQUE(server_id, name)\n            )\n            ''')\n            \n            conn.commit()\n            conn.close()\n            logger.info(f\"Database setup complete: {DB_FILE}\")\n        except sqlite3.Error as e:\n            logger.error(f\"Database setup error: {str(e)}\")\n        except Exception as e:\n            logger.error(f\"Unexpected error during database setup: {str(e)}\")\n    \n    async def inlet(\n        self,\n        query: str,\n        __event_emitter__: Callable[[dict], Awaitable[None]],\n        __user__: Optional[dict] = None\n    ) -> str:\n        \"\"\"\n        Process the input message before it goes to the LLM.\n        This is where we can add context about Ollama Scanner features.\n        \n        Args:\n            query: The user's input message\n            __event_emitter__: An event emitter function for streaming responses\n            __user__: User information including valves\n            \n        Returns:\n            str: The processed input message\n        \"\"\"\n        # Check if Ollama Scanner related query\n        scanner_keywords = [\n            \"ollama scanner\", \"find ollama\", \"discover ollama\", \n            \"search for ollama\", \"scan for ollama\"\n        ]\n        \n        # Get the user valves if available\n        user_valves = None\n        if __user__ and \"valves\" in __user__:\n            user_valves = __user__[\"valves\"]\n        \n        # Only modify the query if the scanner is enabled for this user\n        is_enabled = user_valves.enable_scanner if user_valves else True\n        \n        if is_enabled and any(keyword in query.lower() for keyword in scanner_keywords):\n            # Add context about Ollama Scanner to the user's query\n            return (\n                f\"{query}\\n\\n\"\n                \"Note: You can use the Ollama Scanner feature to discover and connect to Ollama instances. \"\n                \"Go to Admin Panel > Ollama Scanner to use this feature. \"\n                \"The scanner requires a Shodan API key to search for instances.\"\n            )\n        \n        return query\n    \n    async def stream(\n        self,\n        chunk: str,\n        __event_emitter__: Callable[[dict], Awaitable[None]],\n        __user__: Optional[dict] = None\n    ) -> str:\n        \"\"\"\n        Process each chunk of the LLM's response as it's generated.\n        We simply pass through the chunks unchanged.\n        \n        Args:\n            chunk: A chunk of the model's response\n            __event_emitter__: An event emitter function\n            __user__: User information\n            \n        Returns:\n            str: The processed chunk\n        \"\"\"\n        return chunk\n    \n    async def outlet(\n        self,\n        response: str,\n        __event_emitter__: Callable[[dict], Awaitable[None]],\n        __user__: Optional[dict] = None\n    ) -> str:\n        \"\"\"\n        Process the complete LLM response after it's been generated.\n        \n        Args:\n            response: The complete response from the LLM\n            __event_emitter__: An event emitter function\n            __user__: User information\n            \n        Returns:\n            str: The processed response\n        \"\"\"\n        # Check if we need to process the response\n        scanner_related = any(term in response.lower() for term in [\n            \"ollama scanner\", \"scan ollama\", \"discover ollama\", \"ollama instances\"\n        ])\n        \n        # Get the user valves if available\n        user_valves = None\n        if __user__ and \"valves\" in __user__:\n            user_valves = __user__[\"valves\"]\n        \n        # Only modify the response if the scanner is enabled for this user\n        is_enabled = user_valves.enable_scanner if user_valves else True\n        \n        if is_enabled and scanner_related:\n            # Add a note about accessing the scanner UI\n            footer = (\n                \"\\n\\n---\\n\"\n                \"**Ollama Scanner Note**: To use the Ollama Scanner, visit the Admin Panel and navigate to \"\n                \"the Ollama Scanner section. You'll need a Shodan API key to scan for instances.\"\n            )\n            return response + footer\n        \n        return response",
+  "valves": {
+    "SHODAN_API_KEY": {
+      "description": "Shodan API key for scanning Ollama instances",
+      "type": "string",
+      "required": false,
+      "default": ""
+    },
+    "MAX_RESULTS": {
+      "description": "Maximum number of results to return from a scan",
+      "type": "number",
+      "required": false,
+      "default": 100
+    },
+    "SEARCH_QUERY": {
+      "description": "Default Shodan search query",
+      "type": "string",
+      "required": false,
+      "default": "product:Ollama"
+    },
+    "REQUEST_TIMEOUT": {
+      "description": "Timeout in seconds for requests to Ollama instances",
+      "type": "number",
+      "required": false,
+      "default": 5
+    }
+  },
+  "userValves": {
+    "enable_scanner": {
+      "description": "Enable Ollama Scanner features",
+      "type": "boolean",
+      "required": false,
+      "default": true
+    },
+    "default_country_filter": {
+      "description": "Default country code filter for searching instances",
+      "type": "string",
+      "required": false,
+      "default": ""
+    },
+    "auto_add_endpoints": {
+      "description": "Automatically add discovered endpoints",
+      "type": "boolean",
+      "required": false,
+      "default": false
+    }
+  },
+  "dependencies": [
+    "shodan",
+    "requests"
+  ]
+} 

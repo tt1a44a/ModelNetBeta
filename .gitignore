@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Environment files
+.env
+*.env
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Backup files
+*.bak
+*.backup
+*.dump
+*.old
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+
+# Local configuration
+*.local
+*.local.*
+
+# Test files
+test_*.py
+test_*.json
+
+# Debug files
+debug_*.py
+debug_*.json
+debug_*.log
+
+# Cache
+.cache/ 

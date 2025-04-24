@@ -1,0 +1,34 @@
+{
+  "ip": "107.178.157.209",
+  "port": 11434,
+  "status": "success",
+  "valid": true,
+  "reason": "Valid endpoint",
+  "models_available": [
+    {
+      "name": "llama3:latest",
+      "size": 4661224676,
+      "modified_at": "2025-04-12T12:23:27.400595072Z"
+    },
+    {
+      "name": "smollm2:135m",
+      "size": 270898672,
+      "modified_at": "2025-04-01T23:39:59.302007947Z"
+    },
+    {
+      "name": "hermes3:8b",
+      "size": 4661227243,
+      "modified_at": "2025-03-06T16:01:10.991931114Z"
+    }
+  ],
+  "selected_model": "smollm2:135m",
+  "response_time": 4.340977,
+  "response_text": "I'm ready to help you today! What's on your mind?",
+  "api_tags_status_code": 200,
+  "api_tags_response_time": 0.42151,
+  "api_generate_status_code": 200,
+  "eval_count": 15,
+  "eval_duration": 1256411925,
+  "system_prompt_response": "The capital of France is Paris.",
+  "system_prompt_respected": true
+}

@@ -1,0 +1,35 @@
+{
+  "id": "ollama_scanner_filter",
+  "name": "Ollama Scanner",
+  "description": "Discover, analyze, and connect to Ollama instances across the internet using Shodan API",
+  "version": "1.0.0",
+  "author": "Ollama Scanner Team",
+  "license": "MIT",
+  "type": "filter",
+  "code": "from typing import Dict, List, Optional, Union, Callable, Awaitable\nfrom pydantic import BaseModel, Field\n\nclass Filter:\n    class Valves(BaseModel):\n        SHODAN_API_KEY: str = Field(\n            default=\"\",\n            description=\"Shodan API key for scanning Ollama instances\"\n        )\n        MAX_RESULTS: int = Field(\n            default=100,\n            description=\"Maximum number of results to return from a scan\"\n        )\n    \n    class UserValves(BaseModel):\n        enable_scanner: bool = Field(\n            default=True,\n            description=\"Enable Ollama Scanner features\"\n        )\n    \n    def __init__(self):\n        self.valves = self.Valves()\n    \n    async def inlet(\n        self,\n        query: str,\n        __event_emitter__: Callable[[dict], Awaitable[None]],\n        __user__: Optional[dict] = None\n    ) -> str:\n        # Check if Ollama Scanner related query\n        scanner_keywords = [\"ollama scanner\", \"find ollama\", \"discover ollama\"]\n        \n        # Get the user valves if available\n        user_valves = None\n        if __user__ and \"valves\" in __user__:\n            user_valves = __user__[\"valves\"]\n        \n        # Only modify the query if the scanner is enabled for this user\n        is_enabled = True\n        if user_valves and hasattr(user_valves, \"enable_scanner\"):\n            is_enabled = user_valves.enable_scanner\n        \n        if is_enabled and any(keyword in query.lower() for keyword in scanner_keywords):\n            return (f\"{query}\\n\\nNote: You can use the Ollama Scanner feature to discover and connect to Ollama instances.\")\n        \n        return query\n    \n    async def stream(\n        self,\n        chunk: str,\n        __event_emitter__: Callable[[dict], Awaitable[None]],\n        __user__: Optional[dict] = None\n    ) -> str:\n        return chunk\n    \n    async def outlet(\n        self,\n        response: str,\n        __event_emitter__: Callable[[dict], Awaitable[None]],\n        __user__: Optional[dict] = None\n    ) -> str:\n        scanner_related = any(term in response.lower() for term in [\"ollama scanner\", \"scan ollama\"])\n        \n        user_valves = None\n        if __user__ and \"valves\" in __user__:\n            user_valves = __user__[\"valves\"]\n        \n        is_enabled = True\n        if user_valves and hasattr(user_valves, \"enable_scanner\"):\n            is_enabled = user_valves.enable_scanner\n        \n        if is_enabled and scanner_related:\n            footer = (\"\\n\\n---\\n**Ollama Scanner Note**: To use the Ollama Scanner feature, visit Admin > Ollama Scanner.\")\n            return response + footer\n        \n        return response",
+  "valves": {
+    "SHODAN_API_KEY": {
+      "description": "Shodan API key for scanning Ollama instances",
+      "type": "string",
+      "required": false,
+      "default": ""
+    },
+    "MAX_RESULTS": {
+      "description": "Maximum number of results to return from a scan",
+      "type": "number",
+      "required": false,
+      "default": 100
+    }
+  },
+  "userValves": {
+    "enable_scanner": {
+      "description": "Enable Ollama Scanner features",
+      "type": "boolean",
+      "required": false,
+      "default": true
+    }
+  },
+  "dependencies": [
+    "pydantic"
+  ]
+} 

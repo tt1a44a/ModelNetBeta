@@ -1,0 +1,14 @@
+{
+  "name": "ollama_scanner",
+  "type": "action",
+  "content": "# This is just a placeholder - the actual function already exists on the server at /app/backend/functions/ollama_scanner_function.py",
+  "meta": {
+    "manifest": {
+      "title": "Ollama Scanner",
+      "author": "OpenWebUI Integration",
+      "author_url": "https://github.com/open-webui",
+      "version": "1.0.0",
+      "description": "Discover and manage Ollama instances across the internet or local network"
+    }
+  }
+}

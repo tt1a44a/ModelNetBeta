@@ -1,0 +1,373 @@
+# LocalAI Implementation Plan for Ollama Scanner
+
+## 1. Analysis of Current System
+
+### 1.1 Existing Components
+- run_scanner.sh: Main scanner script for finding Ollama instances
+- prune_bad_endpoints.py: Validates and tests Ollama endpoints
+- freellama.py: LocalAI client implementation
+- Discord bot integration
+- PostgreSQL database for endpoint storage
+
+### 1.2 LocalAI API Analysis
+Based on LocalAI documentation (https://localai.io/docs/):
+- Supports multiple model types (GPT, embeddings, TTS, etc.)
+- REST API endpoints:
+  - /v1/models: List available models
+  - /v1/chat/completions: Chat completions
+  - /v1/completions: Text completions
+  - /v1/embeddings: Generate embeddings
+  - /v1/audio/transcription: Audio transcription
+  - /v1/images/generations: Image generation
+
+### 1.3 API Differences
+- Ollama API:
+  - Base URL: http://{ip}:{port}/api/
+  - Models endpoint: /api/tags
+  - Chat endpoint: /api/chat
+  - Generate endpoint: /api/generate
+
+- LocalAI API:
+  - Base URL: http://{ip}:{port}/v1/
+  - Models endpoint: /v1/models
+  - Chat endpoint: /v1/chat/completions
+  - Generate endpoint: /v1/completions
+
+## 2. Implementation Phases
+
+### Phase 1: PostgreSQL Database Updates
+1. Schema modifications:
+   - Add api_type column to endpoints table
+   - Add api_version column to track API versions
+   - Add auth_required column for authentication status
+   - Add model_type and capabilities columns to models table
+   - Create migration script for existing data
+
+2. Database access layer updates:
+   - Update Database class to handle new columns
+   - Add methods for filtering by api_type
+   - Implement proper PostgreSQL-specific queries
+
+### Phase 2: LocalAI Scanner Integration
+1. Modify run_scanner.sh:
+   - Add LocalAI detection patterns
+   - Update Shodan search queries
+   - Add LocalAI-specific port detection (default: 8080)
+   - Implement parallel scanning for both Ollama and LocalAI
+   - Store api_type in database
+
+2. Create LocalAI endpoint validation:
+   - Test /v1/models endpoint
+   - Verify API response format
+   - Check for supported model types
+   - Validate authentication requirements
+   - Store api_version and auth_required in database
+
+### Phase 3: Endpoint Testing Integration
+1. Update prune_bad_endpoints.py:
+   - Add LocalAI endpoint testing
+   - Implement model listing verification
+   - Add chat completion testing
+   - Handle LocalAI-specific error cases
+   - Update database with test results
+
+2. Create LocalAI-specific validation:
+   - Test model availability
+   - Verify API compatibility
+   - Check response formats
+   - Validate authentication
+   - Store model capabilities in database
+
+### Phase 4: Discord Bot Integration
+1. Integrate freellama.py functionality:
+   - Add LocalAI chat commands
+   - Implement model selection
+   - Add backend switching
+   - Handle authentication
+   - Use correct API endpoints based on api_type
+
+2. Create new Discord commands:
+   - /localai chat: Chat with LocalAI models
+   - /localai models: List available models
+   - /localai switch: Switch between backends
+   - /localai status: Check endpoint status
+
+## 3. Technical Implementation Details
+
+### 3.1 PostgreSQL Schema Updates
+```sql
+-- Add to endpoints table
+ALTER TABLE endpoints ADD COLUMN api_type VARCHAR(10) DEFAULT 'ollama';
+ALTER TABLE endpoints ADD COLUMN api_version VARCHAR(20);
+ALTER TABLE endpoints ADD COLUMN auth_required BOOLEAN DEFAULT FALSE;
+
+-- Add to models table
+ALTER TABLE models ADD COLUMN model_type VARCHAR(20);
+ALTER TABLE models ADD COLUMN capabilities JSONB;
+
+-- Create index for faster filtering
+CREATE INDEX idx_endpoints_api_type ON endpoints(api_type);
+
+-- Update existing endpoints
+UPDATE endpoints SET api_type = 'ollama' WHERE api_type IS NULL;
+```
+
+### 3.2 Scanner Modifications
+```bash
+# Add to run_scanner.sh
+LOCALAI_PORTS="8080"  # Default LocalAI port
+LOCALAI_PATTERNS=(
+    "LocalAI"
+    "localai.io"
+    "/v1/models"
+)
+
+# Update database insertion
+PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" \
+    -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+    -c "INSERT INTO endpoints (ip, port, api_type, scan_date) VALUES ('${IP}', ${PORT}, 'localai', NOW()) ON CONFLICT (ip, port) DO UPDATE SET api_type = 'localai', scan_date = NOW();"
+```
+
+### 3.3 Endpoint Testing
+```python
+# Add to prune_bad_endpoints.py
+async def check_localai_endpoint(endpoint):
+    try:
+        # Test /v1/models endpoint
+        response = await fetch_models(endpoint)
+        if not response:
+            return False, "No models available"
+            
+        # Test chat completion
+        test_result = await test_chat_completion(endpoint)
+        if not test_result:
+            return False, "Chat completion failed"
+            
+        # Update database with LocalAI information
+        Database.execute("""
+            UPDATE endpoints 
+            SET api_type = 'localai', 
+                api_version = %s,
+                auth_required = %s,
+                verified = TRUE,
+                verification_date = NOW()
+            WHERE id = %s
+        """, (response.get('version', 'unknown'), response.get('auth_required', False), endpoint['id']))
+            
+        return True, "LocalAI endpoint verified"
+    except Exception as e:
+        return False, str(e)
+```
+
+### 3.4 Discord Bot Integration
+```python
+# New Discord commands
+@bot.command()
+async def localai_chat(ctx, *, message):
+    """Chat with LocalAI models"""
+    # Get LocalAI endpoints from database
+    endpoints = Database.fetch_all("""
+        SELECT id, ip, port 
+        FROM endpoints 
+        WHERE api_type = 'localai' AND verified = TRUE
+    """)
+    
+    if not endpoints:
+        await ctx.send("No verified LocalAI endpoints found.")
+        return
+        
+    # Use freellama.py functionality with correct API endpoints
+    # Implementation using freellama.py functionality
+
+@bot.command()
+async def localai_models(ctx):
+    """List available LocalAI models"""
+    # Show available models from LocalAI endpoints
+    models = Database.fetch_all("""
+        SELECT m.name, m.model_type, m.capabilities, e.ip, e.port
+        FROM models m
+        JOIN endpoints e ON m.endpoint_id = e.id
+        WHERE e.api_type = 'localai' AND e.verified = TRUE
+    """)
+    
+    # Format and display models
+```
+
+## 4. Database Access Layer Updates
+
+### 4.1 Database Class Extensions
+```python
+# Add to database.py
+class Database:
+    # Existing methods...
+    
+    @staticmethod
+    def get_endpoints_by_type(api_type, verified=True):
+        """Get endpoints by API type"""
+        query = """
+            SELECT id, ip, port, api_type, api_version, auth_required
+            FROM endpoints
+            WHERE api_type = %s AND verified = %s
+        """
+        return Database.fetch_all(query, (api_type, verified))
+    
+    @staticmethod
+    def get_models_by_endpoint_type(api_type):
+        """Get models by endpoint API type"""
+        query = """
+            SELECT m.id, m.name, m.model_type, m.capabilities, e.ip, e.port
+            FROM models m
+            JOIN endpoints e ON m.endpoint_id = e.id
+            WHERE e.api_type = %s AND e.verified = TRUE
+        """
+        return Database.fetch_all(query, (api_type,))
+```
+
+## 5. Implementation Steps
+
+1. Database Updates:
+   - Apply PostgreSQL schema changes
+   - Update existing endpoints with api_type
+   - Add migration scripts
+   - Test database queries
+
+2. Scanner Updates:
+   - Modify run_scanner.sh
+   - Add LocalAI detection
+   - Update Shodan queries
+   - Test scanning functionality
+   - Verify database storage
+
+3. Endpoint Testing:
+   - Update prune_bad_endpoints.py
+   - Add LocalAI validation
+   - Implement new tests
+   - Update status reporting
+   - Verify database updates
+
+4. Discord Bot:
+   - Integrate freellama.py
+   - Add new commands
+   - Update help documentation
+   - Test command functionality
+   - Verify API type handling
+
+5. Testing and Validation:
+   - Test scanner with LocalAI instances
+   - Validate endpoint testing
+   - Test Discord commands
+   - Verify database updates
+   - Test API differentiation
+
+## 6. Timeline
+
+1. Week 1:
+   - PostgreSQL schema updates
+   - Database access layer modifications
+   - Scanner modifications
+   - Initial testing
+
+2. Week 2:
+   - Endpoint testing updates
+   - LocalAI validation
+   - Integration testing
+   - Database query optimization
+
+3. Week 3:
+   - Discord bot integration
+   - Command implementation
+   - User testing
+   - API differentiation testing
+
+4. Week 4:
+   - Bug fixes
+   - Performance optimization
+   - Documentation updates
+   - Final testing
+
+## 7. Testing Plan
+
+1. Database Testing:
+   - Verify schema changes
+   - Test queries with api_type filtering
+   - Validate data integrity
+   - Check migration scripts
+
+2. Scanner Testing:
+   - Test with known LocalAI instances
+   - Verify detection accuracy
+   - Check false positive rate
+   - Validate database storage
+
+3. Endpoint Testing:
+   - Validate LocalAI endpoints
+   - Test error handling
+   - Verify response processing
+   - Check database updates
+
+4. Discord Bot Testing:
+   - Test all new commands
+   - Verify error messages
+   - Check user experience
+   - Test API type handling
+
+## 8. Documentation Updates
+
+1. Update README.md:
+   - Add LocalAI support details
+   - Update command documentation
+   - Add new features
+   - Document database changes
+
+2. Create LocalAI guide:
+   - Setup instructions
+   - Command usage
+   - Troubleshooting
+   - API differences
+
+3. Update API documentation:
+   - Add LocalAI endpoints
+   - Document new features
+   - Update examples
+   - Explain API type handling
+
+## 9. Maintenance Plan
+
+1. Regular Updates:
+   - Monitor LocalAI API changes
+   - Update detection patterns
+   - Maintain compatibility
+   - Update database schema as needed
+
+2. Performance Monitoring:
+   - Track scanning success rate
+   - Monitor response times
+   - Optimize database queries
+   - Track API type distribution
+
+3. User Feedback:
+   - Collect usage data
+   - Address issues
+   - Implement improvements
+   - Track API type preferences
+
+## 10. Success Criteria
+
+1. Technical:
+   - Successful LocalAI detection
+   - Accurate endpoint testing
+   - Reliable Discord commands
+   - Proper database integration
+   - Correct API type handling
+
+2. User Experience:
+   - Intuitive commands
+   - Clear error messages
+   - Smooth integration
+   - Transparent API switching
+
+3. Performance:
+   - Fast scanning
+   - Reliable testing
+   - Quick response times
+   - Efficient database queries 

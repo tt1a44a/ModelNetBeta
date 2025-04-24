@@ -1,0 +1,1187 @@
+#!/usr/bin/env python3
+"""
+Discord Bot Interface for Ollama Scanner
+This version uses EXPLICITLY REGISTERED GUILD COMMANDS to avoid rate limits
+"""
+
+import os
+import sys
+import time
+import asyncio
+import logging
+import importlib
+import json
+import random
+import aiohttp
+import discord
+from discord import app_commands
+from discord.ext import commands
+from dotenv import load_dotenv
+import re
+import requests
+import psycopg2
+
+# Import database abstraction layer
+from database import Database, init_database, get_db_manager
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("discord_bot.log")
+    ]
+)
+logger = logging.getLogger('ollama_bot')
+
+# Define your guild ID - Read from environment or use default
+GUILD_ID = int(os.getenv('DISCORD_GUILD_ID', '936535618278809670'))
+
+# Initialize Discord client with intents
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="/", intents=intents)
+
+# Global aiohttp session for API requests
+session = None
+
+# Create guild object for command registration
+MY_GUILD = discord.Object(id=GUILD_ID)
+
+# Add at the start of the file, after setting up the bot and logging
+async def safe_defer(interaction):
+    """Safely defer an interaction, handling potential timeouts"""
+    try:
+        await interaction.response.defer(thinking=True)
+        return True
+    except discord.errors.NotFound:
+        # Interaction expired/unknown - likely took too long to respond
+        logger.warning(f"Interaction expired before deferring: {interaction.command.name if interaction.command else 'unknown'}")
+        return False
+    except Exception as e:
+        logger.error(f"Error deferring interaction: {str(e)}")
+        return False
+
+async def safe_followup(interaction, content="", ephemeral=True, file=None):
+    try:
+        if interaction.response.is_done():
+            if file:
+                return await interaction.followup.send(content=content, ephemeral=ephemeral, file=file)
+            else:
+                return await interaction.followup.send(content=content, ephemeral=ephemeral)
+        else:
+            if file:
+                return await interaction.response.send_message(content=content, ephemeral=ephemeral, file=file)
+            else:
+                return await interaction.response.send_message(content=content, ephemeral=ephemeral)
+    except Exception as e:
+        logger.error(f"Error in safe_followup: {str(e)}")
+        return None
+
+def test_endpoint_connectivity(endpoint_url, timeout=5):
+    """
+    Test if an Ollama endpoint is available and responsive.
+    
+    Args:
+        endpoint_url (str): The URL of the endpoint to test (e.g., http://ip:port)
+        timeout (int): Connection timeout in seconds
+        
+    Returns:
+        bool: True if the endpoint is available, False otherwise
+    """
+    try:
+        # Add version endpoint for Ollama API
+        test_url = f"{endpoint_url}/api/version"
+        
+        # Make request with timeout
+        response = requests.get(test_url, timeout=timeout)
+        
+        # Check if response is successful
+        if response.status_code == 200:
+            # Try to parse JSON response
+            response_data = response.json()
+            
+            # Verify it contains expected Ollama response fields
+            if 'version' in response_data:
+                logger.info(f"Endpoint {endpoint_url} is available. Ollama version: {response_data.get('version')}")
+                return True
+        
+        logger.warning(f"Endpoint {endpoint_url} returned unexpected response: {response.status_code}")
+        return False
+        
+    except requests.exceptions.Timeout:
+        logger.warning(f"Connection to {endpoint_url} timed out after {timeout} seconds")
+        return False
+    except requests.exceptions.ConnectionError:
+        logger.warning(f"Connection error while connecting to {endpoint_url}")
+        return False
+    except Exception as e:
+        logger.error(f"Error testing endpoint connectivity for {endpoint_url}: {str(e)}")
+        return False
+
+# Direct commands to ensure registration
+@bot.tree.command(
+    name="ping", 
+    description="Check if the bot is responding",
+    guild=MY_GUILD
+)
+async def ping_command(interaction: discord.Interaction):
+    try:
+        await interaction.response.send_message("Pong! Bot is working!")
+    except discord.errors.NotFound:
+        logger.warning("Interaction expired before responding to ping command")
+    except Exception as e:
+        logger.error(f"Error in ping command: {str(e)}")
+
+@bot.tree.command(
+    name="test", 
+    description="Simple test command",
+    guild=MY_GUILD
+)
+async def test_command(interaction: discord.Interaction):
+    try:
+        await interaction.response.send_message("Test successful! Guild commands are working!")
+    except discord.errors.NotFound:
+        logger.warning("Interaction expired before responding to test command")
+    except Exception as e:
+        logger.error(f"Error in test command: {str(e)}")
+
+@bot.tree.command(
+    name="db_info", 
+    description="Show database statistics for models and endpoints",
+    guild=MY_GUILD
+)
+async def db_info(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        await safe_followup(interaction, "Querying database statistics... this might take a moment.")
+        
+        # Get database connection parameters from database.py
+        from database import PG_DB_NAME, PG_DB_USER, PG_DB_PASSWORD, PG_DB_HOST, PG_DB_PORT
+        
+        # Connect directly to the database using psycopg2
+        import psycopg2
+        
+        try:
+            # Log connection attempt
+            logger.info(f"Connecting to PostgreSQL: {PG_DB_USER}@{PG_DB_HOST}:{PG_DB_PORT}/{PG_DB_NAME}")
+            
+            # Create a connection with a timeout
+            conn = psycopg2.connect(
+                dbname=PG_DB_NAME,
+                user=PG_DB_USER,
+                password=PG_DB_PASSWORD,
+                host=PG_DB_HOST,
+                port=PG_DB_PORT,
+                # Add a connect timeout to fail more gracefully
+                connect_timeout=10
+            )
+            
+            # Create a cursor
+            cursor = conn.cursor()
+            
+            # Count verified API endpoints
+            endpoint_query = "SELECT COUNT(*) FROM endpoints WHERE verified = 1"
+            cursor.execute(endpoint_query)
+            endpoint_count = cursor.fetchone()[0]
+            
+            # Count total endpoints
+            total_endpoint_query = "SELECT COUNT(*) FROM endpoints"
+            cursor.execute(total_endpoint_query)
+            total_endpoint_count = cursor.fetchone()[0]
+            
+            # Count total models
+            total_models_query = "SELECT COUNT(*) FROM models"
+            cursor.execute(total_models_query)
+            total_models = cursor.fetchone()[0]
+            
+            # Count unique models
+            unique_models_query = "SELECT COUNT(DISTINCT name) FROM models"
+            cursor.execute(unique_models_query)
+            unique_models = cursor.fetchone()[0]
+            
+            # Get model counts by parameter size using direct connection
+            param_size_query = """
+                SELECT parameter_size, COUNT(*) as count
+                FROM models 
+                WHERE parameter_size IS NOT NULL
+                GROUP BY parameter_size 
+                ORDER BY 
+                    CASE WHEN parameter_size LIKE '%B' THEN 
+                        CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS NUMERIC)
+                    ELSE 0
+                    END DESC
+            """
+            try:
+                cursor.execute(param_size_query)
+                param_counts = cursor.fetchall()
+                logger.info(f"Successfully fetched {len(param_counts)} parameter size groups")
+            except Exception as param_error:
+                logger.error(f"Error fetching parameter size data: {str(param_error)}")
+                param_counts = []
+            
+            # Get top models by count
+            top_models_query = """
+                SELECT name, COUNT(*) as count 
+                FROM models 
+                GROUP BY name 
+                ORDER BY count DESC 
+                LIMIT 10
+            """
+            try:
+                cursor.execute(top_models_query)
+                top_models = cursor.fetchall()
+                logger.info(f"Successfully fetched {len(top_models)} top models")
+            except Exception as model_error:
+                logger.error(f"Error fetching top models data: {str(model_error)}")
+                top_models = []
+            
+            # Close connection
+            cursor.close()
+            conn.close()
+            
+            # Create a nicely formatted response with code blocks
+            message = "# Database Statistics\n\n"
+            
+            # Basic stats in a table
+            stats_table = "```md\n| Statistic | Count |\n|-----------|-------|\n"
+            stats_table += f"| Verified Endpoints | {endpoint_count} |\n"
+            stats_table += f"| Total Endpoints | {total_endpoint_count} |\n"
+            stats_table += f"| Total Models | {total_models} |\n"
+            stats_table += f"| Unique Models | {unique_models} |\n"
+            stats_table += "```\n\n"
+            
+            # Parameter sizes in a table
+            if param_counts:
+                param_table = "**Parameter Sizes:**\n```md\n| Size | Count |\n|------|-------|\n"
+                # Sort by count to show most common first
+                for param_size, count in sorted(param_counts, key=lambda x: x[1], reverse=True)[:15]:
+                    param_table += f"| {param_size or 'Unknown'} | {count} |\n"
+                
+                if len(param_counts) > 15:
+                    param_table += f"| ... and {len(param_counts) - 15} more | ... |\n"
+                    
+                param_table += "```\n\n"
+            else:
+                param_table = ""
+                
+            # Top models in a table
+            if top_models:
+                models_table = "**Top Models by Popularity:**\n```md\n| Model Name | Instances |\n|------------|----------|\n"
+                for name, count in top_models:
+                    # Truncate very long names
+                    display_name = (name[:25] + "...") if len(name) > 28 else name
+                    models_table += f"| {display_name:<28} | {count:<9} |\n"
+                models_table += "```"
+            else:
+                models_table = ""
+            
+            # Combine all parts
+            message += stats_table + param_table + models_table
+            
+            # Send the complete message
+            await safe_followup(interaction, message)
+            
+        except psycopg2.OperationalError as db_conn_error:
+            # Handle connection errors specifically
+            logger.error(f"Database connection error: {str(db_conn_error)}")
+            await safe_followup(interaction, f"⚠️ Database connection error: {str(db_conn_error)}\n\nPlease check the database connection.")
+            
+        except Exception as db_error:
+            # Handle other database errors
+            logger.error(f"Database error: {str(db_error)}")
+            await safe_followup(interaction, f"⚠️ Database error: {str(db_error)}")
+        
+    except Exception as e:
+        # Handle any other unexpected errors
+        logger.error(f"Error in db_info: {str(e)}")
+        await safe_followup(interaction, f"⚠️ Error querying database: {str(e)[:1500]}")
+
+@bot.tree.command(
+    name="quickprompt",
+    description="Quickly chat with any Ollama model by name",
+    guild=MY_GUILD
+)
+async def quickprompt(
+    interaction: discord.Interaction, 
+    model_name: str, 
+    prompt: str,
+    system_prompt: str = "",
+    temperature: float = 0.7,
+    max_tokens: int = 1000,
+    param_size: str = ""  # New parameter to filter by parameter size
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        await safe_followup(interaction, f"Looking for models matching '{model_name}'... this might take a moment.")
+        
+        # Connect directly to the database
+        from database import PG_DB_NAME, PG_DB_USER, PG_DB_PASSWORD, PG_DB_HOST, PG_DB_PORT
+        import psycopg2
+        import psycopg2.extras
+        
+        try:
+            # Create direct database connection instead of using Database abstraction
+            conn = psycopg2.connect(
+                dbname=PG_DB_NAME,
+                user=PG_DB_USER,
+                password=PG_DB_PASSWORD,
+                host=PG_DB_HOST,
+                port=PG_DB_PORT,
+                connect_timeout=10
+            )
+            
+            # Create a cursor that returns dictionaries
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            
+            # Build the query parameters
+            params = [f"%{model_name}%"]  # Base model name pattern
+            
+            # Handle parameter size filtering
+            param_size_conditions = []
+            if param_size:
+                # Normalize parameter size - strip 'b' suffix and lowercase
+                normalized_param_size = param_size.lower().rstrip('b')
+                
+                # Handle special cases for text-based sizes
+                if normalized_param_size in ('small', 'medium', 'large', 'tiny'):
+                    param_size_conditions.append("(m.parameter_size ILIKE %s)")
+                    params.append(f"%{normalized_param_size}%")
+                else:
+                    try:
+                        # Try to convert to numeric for exact comparison
+                        param_size_numeric = float(normalized_param_size)
+                        param_size_conditions.append("(m.parameter_size LIKE %s OR m.parameter_size LIKE %s OR m.parameter_size LIKE %s)")
+                        params.append(f"{param_size_numeric}")           # Exact match
+                        params.append(f"{param_size_numeric}b%")         # With 'b' suffix 
+                        params.append(f"{param_size_numeric}B%")         # With 'B' suffix
+                    except ValueError:
+                        # If not numeric, just do a pattern match
+                        param_size_conditions.append("(m.parameter_size ILIKE %s)")
+                        params.append(f"%{normalized_param_size}%")
+            
+            # Build the SQL query with proper params
+            query = """
+            SELECT 
+                m.id, 
+                m.name, 
+                e.ip, 
+                e.port, 
+                m.parameter_size, 
+                m.quantization_level, 
+                m.size_mb,
+                e.verified_date
+            FROM 
+                models m
+            JOIN 
+                endpoints e ON m.id = e.model_id
+            WHERE 
+                m.name ILIKE %s 
+                AND e.verified = TRUE
+            """
+            
+            # Add parameter size conditions if any
+            if param_size_conditions:
+                query += " AND (" + " OR ".join(param_size_conditions) + ")"
+                
+            # Add order and limit
+            query += """
+            ORDER BY RANDOM()
+            LIMIT 10
+            """
+            
+            # Execute the query
+            logger.info(f"Executing query: {query}")
+            logger.info(f"With parameters: {params}")
+            
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            
+            logger.info(f"Query returned {len(results)} results")
+            
+            if not results or len(results) == 0:
+                conn.close()
+                await safe_followup(interaction, f"No models found matching '{model_name}'{' with parameter size ' + param_size if param_size else ''}.")
+                return
+            
+            # Initialize variables for selected model
+            selected_model = None
+            
+            # Try servers until we find a reachable one
+            for result in results:
+                model_id = result['id']
+                name = result['name']
+                ip = result['ip']
+                port = result['port']
+                param_size_info = result['parameter_size']
+                quant_level = result['quantization_level']
+                
+                # Check server connectivity
+                is_reachable = False
+                try:
+                    async with aiohttp.ClientSession() as check_session:
+                        async with check_session.get(f"http://{ip}:{port}/api/version", timeout=3) as response:
+                            is_reachable = response.status == 200
+                except:
+                    is_reachable = False
+                    
+                if is_reachable:
+                    selected_model = result
+                    break
+            
+            conn.close()
+            
+            if not selected_model:
+                await safe_followup(interaction, f"No reachable servers found for models matching '{model_name}'")
+                return
+            
+            # Extract model details
+            model_id = selected_model['id']
+            name = selected_model['name']
+            ip = selected_model['ip']
+            port = selected_model['port']
+            param_size_info = selected_model['parameter_size']
+            quant_level = selected_model['quantization_level']
+            
+            # Build the request data
+            request_data = {
+                "model": name,
+                "prompt": prompt,
+                "stream": False,
+                "temperature": temperature,
+                "max_tokens": max_tokens
+            }
+            
+            # Add system prompt if provided
+            if system_prompt:
+                request_data["system"] = system_prompt
+            
+            # Show user what we're doing
+            model_desc = f"{name}"
+            if param_size_info:
+                model_desc += f" ({param_size_info}"
+                if quant_level:
+                    model_desc += f", {quant_level}"
+                model_desc += ")"
+            
+            await safe_followup(interaction, f"**Using model: {model_desc}**\nSending prompt to {ip}:{port}...")
+            
+            try:
+                # Use aiohttp session for API call
+                async with aiohttp.ClientSession() as api_session:
+                    async with api_session.post(
+                        f"http://{ip}:{port}/api/generate", 
+                        json=request_data, 
+                        timeout=60  # Increased timeout for longer responses
+                    ) as response:
+                        if response.status == 200:
+                            result = await response.json()
+                            response_text = result.get("response", "No response received.")
+                            
+                            # Get stats if available
+                            eval_count = result.get("eval_count", 0)
+                            eval_duration = result.get("eval_duration", 0)
+                            
+                            # Add stats to the response
+                            stats = f"\n\n---\nTokens: {eval_count} | Time: {eval_duration/1000000:.2f}s"
+                            if eval_duration > 0 and eval_count > 0:
+                                tokens_per_second = eval_count / (eval_duration / 1000000000)
+                                stats += f" | Throughput: {tokens_per_second:.2f} tokens/sec"
+                            
+                            # Don't add stats for very short responses to avoid clutter
+                            if len(response_text) > 10:
+                                response_text += stats
+                            
+                            # Store interaction in chat history - disabled for now as we're using direct DB connection
+                            # Will implement if needed
+                            
+                            # Format the response
+                            formatted_response = f"**Response from {name}:**\n{response_text}"
+                            
+                            # Send the response
+                            await safe_followup(interaction, formatted_response)
+                        else:
+                            error_text = await response.text()
+                            await safe_followup(interaction, f"Error from API: {response.status} - {error_text}")
+            except aiohttp.ClientError as e:
+                logger.error(f"API request error: {str(e)}")
+                await safe_followup(interaction, f"Connection error: {str(e)}")
+            except asyncio.TimeoutError:
+                await safe_followup(interaction, "Request timed out. The model may be taking too long to respond.")
+            except Exception as e:
+                logger.error(f"Error in model API request: {str(e)}")
+                await safe_followup(interaction, f"Error: {str(e)}")
+        
+        except psycopg2.OperationalError as db_conn_error:
+            # Handle connection errors specifically
+            logger.error(f"Database connection error: {str(db_conn_error)}")
+            await safe_followup(interaction, f"⚠️ Database connection error: {str(db_conn_error)}\n\nPlease check the database connection.")
+            
+        except Exception as db_error:
+            # Handle other database errors
+            logger.error(f"Database error: {str(db_error)}")
+            await safe_followup(interaction, f"⚠️ Database error: {str(db_error)}")
+            
+    except Exception as e:
+        logger.error(f"Error in quickprompt: {str(e)}")
+        await safe_followup(interaction, f"Error processing request: {str(e)}")
+
+@bot.tree.command(
+    name="listservers",
+    description="List all Ollama servers in the database",
+    guild=MY_GUILD
+)
+async def listservers(interaction: discord.Interaction, as_file: bool = False):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        query = """
+        SELECT 
+            id, 
+            ip, 
+            port, 
+            verified, 
+            verification_date,
+            (SELECT COUNT(*) FROM models WHERE endpoint_id = endpoints.id) as model_count
+        FROM endpoints
+        ORDER BY verified DESC, model_count DESC
+        LIMIT 500
+        """
+        results = Database.fetch_all(query)
+        
+        if not results:
+            await safe_followup(interaction, "No servers found in the database.")
+            return
+        
+        total_count = len(results)
+            
+        # Use file attachment for large result sets or when requested
+        if as_file or total_count > 50:
+            # Create a CSV-formatted text file
+            file_content = "ID,IP,Port,Verified,Last Verified,Model Count\n"
+            
+            for endpoint_id, ip, port, verified, verification_date, model_count in results:
+                verified_str = "Yes" if verified else "No"
+                date_str = verification_date.strftime("%Y-%m-%d") if verification_date else "Unknown"
+                
+                # Add row to CSV
+                file_content += f"{endpoint_id},{ip},{port},{verified_str},{date_str},{model_count}\n"
+            
+            # Create temporary file
+            import tempfile
+            import os
+            with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.csv') as temp_file:
+                temp_file.write(file_content)
+                temp_file_path = temp_file.name
+            
+            # Send summary message and attach file
+            summary = f"**Ollama Servers** (Found {total_count} servers)\n"
+            summary += f"Results are attached as a CSV file."
+            
+            # Attach and send the file
+            with open(temp_file_path, 'rb') as file:
+                await safe_followup(interaction, content=summary)
+                try:
+                    # Send the file in a separate message
+                    await interaction.followup.send(
+                        file=discord.File(file, "ollama_servers.csv")
+                    )
+                except Exception as e:
+                    await safe_followup(interaction, f"Error sending file: {str(e)}")
+            
+            # Clean up temporary file
+            os.unlink(temp_file_path)
+            
+        else:
+            # Use a markdown table for smaller result sets
+            header = f"**Ollama Servers** (Found {total_count} servers)\n"
+            
+            # Create a markdown table in a code block
+            table = "```md\n| ID | Server | Status | Models | Last Verified |\n|-----|--------|--------|--------|---------------|\n"
+            
+            for endpoint_id, ip, port, verified, verification_date, model_count in results:
+                status = "✓ Verified" if verified else "✗ Unverified"
+                date_str = verification_date.strftime("%Y-%m-%d") if verification_date else "Unknown"
+                server = f"{ip}:{port}"
+                
+                # Add row to table
+                row = f"| {endpoint_id:<3} | {server:<20} | {status:<8} | {model_count:<6} | {date_str} |\n"
+                
+                # Check if adding this would exceed Discord's limits
+                if len(table) + len(row) + 3 > 1800:
+                    table += f"... and {total_count - len(table.split('\n')) + 3} more servers (output truncated) ...\n"
+                    break
+                    
+                table += row
+                
+            table += "```"
+            message = header + table
+            
+            message += "\n*Add `as_file=True` parameter to get complete results as a CSV file*"
+            
+            # Send the response
+            await safe_followup(interaction, message)
+    
+    except Exception as e:
+        logger.error(f"Error in listservers: {str(e)}")
+        await safe_followup(interaction, f"```Error querying database: {str(e)[:1500]}```")
+
+@bot.tree.command(
+    name="find_model_endpoints",
+    description="Find all endpoints with a specific model",
+    guild=MY_GUILD
+)
+async def find_model_endpoints(
+    interaction: discord.Interaction,
+    model_name: str,
+    param_size: str = "",  # Add parameter to filter by size (e.g. 7B, 13B)
+    quant_level: str = "",  # Add parameter to filter by quantization level
+    sort_by: str = None,  # Add parameter to sort results
+    is_active: bool = None,  # Add parameter to filter by active status
+    do_conn_test: bool = False,  # Add parameter to perform connection test
+    limit: int = 25  # Add parameter to limit results
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        await safe_followup(interaction, f"Searching for endpoints with model '{model_name}'... this might take a moment.")
+        
+        # Connect directly to the database to avoid the tuple index error
+        from database import PG_DB_NAME, PG_DB_USER, PG_DB_PASSWORD, PG_DB_HOST, PG_DB_PORT
+        import psycopg2
+        import psycopg2.extras
+        
+        try:
+            # Create direct database connection
+            conn = psycopg2.connect(
+                dbname=PG_DB_NAME,
+                user=PG_DB_USER,
+                password=PG_DB_PASSWORD,
+                host=PG_DB_HOST,
+                port=PG_DB_PORT,
+                connect_timeout=10
+            )
+            
+            # Create a cursor that returns dictionaries for easy access
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            
+            # Initialize parameters and conditions
+            conditions = ["LOWER(m.name) LIKE LOWER(%s)", "e.verified = TRUE"]
+            params = [f"%{model_name.lower()}%"]
+            
+            # Add parameter size filter if specified
+            if param_size:
+                conditions.append("m.parameter_size ILIKE %s")
+                params.append(f"%{param_size}%")
+                
+            # Add quantization level filter if specified
+            if quant_level:
+                conditions.append("m.quantization_level ILIKE %s")
+                params.append(f"%{quant_level}%")
+                
+            # Add active status filter if specified
+            if is_active is not None:
+                conditions.append("e.is_active = %s")
+                params.append(is_active)
+                
+            # Build the base query
+            query = """
+            SELECT 
+                m.id,
+                m.name,
+                e.ip,
+                e.port,
+                m.parameter_size,
+                m.quantization_level,
+                m.size_mb,
+                e.verified_date,
+                e.active
+            FROM 
+                models m
+            JOIN 
+                endpoints e ON m.endpoint_id = e.id
+            WHERE 
+            """ + " AND ".join(conditions)
+            
+            # Set the ORDER BY clause based on the sort_by parameter
+            order_by = "ORDER BY m.name ASC"  # Default sorting
+            if sort_by == "ip":
+                order_by = "ORDER BY e.ip ASC"
+            elif sort_by == "port":
+                order_by = "ORDER BY e.port ASC" 
+            elif sort_by == "size":
+                order_by = "ORDER BY m.size_mb DESC"
+            elif sort_by == "date":
+                order_by = "ORDER BY e.verified_date DESC"
+                
+            # Add the order by clause and limit
+            query += f" {order_by} LIMIT %s"
+            params.append(limit)
+            
+            # Log the query for debugging
+            logger.info(f"find_model_endpoints query: {query}")
+            logger.info(f"find_model_endpoints params: {params}")
+            
+            # Execute the query
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            
+            # Get the count for informational purposes
+            cursor.execute(f"SELECT COUNT(*) FROM ({query.replace('LIMIT %s', '')}) AS count_query", params[:-1])
+            total_count = cursor.fetchone()[0]
+            
+            # Close the database connection
+            conn.close()
+            
+            if not results:
+                await safe_followup(interaction, f"No endpoints found for model '{model_name}'{' with parameter size ' + param_size if param_size else ''}{' and quantization level ' + quant_level if quant_level else ''}.")
+                return
+                
+            # Process results for display
+            endpoints_found = len(results)
+            
+            # Format the results into a nice message
+            message = f"**Found {endpoints_found} endpoints for model '{model_name}'**"
+            if param_size:
+                message += f"\nParameter Size Filter: {param_size}"
+            if quant_level:
+                message += f"\nQuantization Filter: {quant_level}"
+                
+            message += f"\n\n```md\n| Model | Parameters | Quantization | Server | Status |\n|-------|------------|--------------|--------|--------|\n"
+            
+            # Test connectivity of each endpoint if requested
+            for row in results:
+                model_id = row['id']
+                name = row['name']
+                param_size_val = row['parameter_size'] or "N/A"
+                quant_val = row['quantization_level'] or "N/A"
+                ip = row['ip']
+                port = row['port']
+                is_active = row['active']
+                
+                # Truncate long model names
+                display_name = name
+                if len(display_name) > 15:
+                    display_name = name[:12] + "..."
+                
+                # Test connectivity if requested
+                status = "Active" if is_active else "Inactive"
+                if do_conn_test:
+                    endpoint_url = f"http://{ip}:{port}"
+                    is_reachable = test_endpoint_connectivity(endpoint_url)
+                    status = "Reachable" if is_reachable else "Unreachable"
+                
+                # Add row to the table
+                message += f"| {display_name:<15} | {param_size_val:<12} | {quant_val:<12} | {ip}:{port} | {status} |\n"
+                
+            message += "```"
+            
+            # Add note about connectivity testing
+            if do_conn_test:
+                message += "\n\n*Connectivity was tested for each endpoint*"
+            else:
+                message += f"\n\n*Use `do_conn_test=True` to verify endpoint connectivity*"
+                
+            # Add note about total results
+            if total_count > endpoints_found:
+                message += f"\n\n*Showing {endpoints_found} of {total_count} total results. Use `limit` parameter to see more.*"
+                
+            # Send the response
+            await safe_followup(interaction, message)
+            
+        except psycopg2.OperationalError as db_conn_error:
+            # Handle connection errors specifically
+            logger.error(f"Database connection error: {str(db_conn_error)}")
+            await safe_followup(interaction, f"⚠️ Database connection error: {str(db_conn_error)}\n\nPlease check the database connection.")
+            
+        except Exception as db_error:
+            # Handle other database errors
+            logger.error(f"Database error in find_model_endpoints: {str(db_error)}")
+            await safe_followup(interaction, f"⚠️ Database error: {str(db_error)}")
+            
+    except Exception as e:
+        logger.error(f"Error in find_model_endpoints: {str(e)}")
+        await safe_followup(interaction, f"⚠️ Error: {str(e)[:1500]}")
+
+@bot.tree.command(
+    name="allmodels",
+    description="List all models with sorting options",
+    guild=MY_GUILD
+)
+async def allmodels(
+    interaction: discord.Interaction,
+    sort_by: str = "size",  # size, name, or date
+    limit: int = 25,
+    as_file: bool = False
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        await safe_followup(interaction, f"Fetching all models sorted by {sort_by}... this might take a moment.")
+        
+        # Connect directly to the database
+        from database import PG_DB_NAME, PG_DB_USER, PG_DB_PASSWORD, PG_DB_HOST, PG_DB_PORT
+        import psycopg2
+        import psycopg2.extras
+        
+        try:
+            # Create direct database connection
+            conn = psycopg2.connect(
+                dbname=PG_DB_NAME,
+                user=PG_DB_USER,
+                password=PG_DB_PASSWORD,
+                host=PG_DB_HOST,
+                port=PG_DB_PORT,
+                connect_timeout=10
+            )
+            
+            # Create a cursor that returns dictionaries
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            
+            # Validate sort_by parameter
+            valid_sort_options = ["size", "name", "date"]
+            if sort_by not in valid_sort_options:
+                sort_by = "size"
+                
+            # Cap limit to a reasonable value
+            if limit < 1:
+                limit = 25
+            elif limit > 200:
+                limit = 200
+                
+            # Base query
+            query = """
+            SELECT 
+                m.id, 
+                m.name, 
+                m.parameter_size, 
+                m.quantization_level, 
+                m.size_mb,
+                e.ip, 
+                e.port, 
+                m.created_at, 
+                m.last_verified
+            FROM 
+                models m
+            JOIN 
+                endpoints e ON m.endpoint_id = e.id
+            WHERE 
+                m.verified = TRUE
+            """
+            
+            # Get total count
+            count_query = """
+            SELECT COUNT(*) 
+            FROM models m
+            JOIN endpoints e ON m.endpoint_id = e.id
+            WHERE m.verified = TRUE
+            """
+            
+            # Set sorting order
+            if sort_by == "size":
+                # Use a CASE statement to handle parameter size sorting
+                order_by = """
+                ORDER BY
+                    CASE 
+                        WHEN m.parameter_size IS NULL THEN 2
+                        ELSE 1
+                    END,
+                    CASE
+                        WHEN m.parameter_size ~ '^[0-9]+(\.[0-9]+)?[Bb]' THEN 
+                            CAST(REGEXP_REPLACE(m.parameter_size, '[^0-9\.]', '', 'g') AS NUMERIC)
+                        ELSE 0
+                    END DESC
+                """
+            elif sort_by == "date":
+                order_by = "ORDER BY m.last_verified DESC NULLS LAST"
+            else:  # Default to alphabetical
+                order_by = "ORDER BY m.name ASC"
+                
+            # Add limit and execute
+            final_query = f"{query} {order_by} LIMIT %s"
+            cursor.execute(final_query, (limit,))
+            results = cursor.fetchall()
+            
+            # Get total count
+            cursor.execute(count_query)
+            total_count = cursor.fetchone()[0]
+            
+            # Close the connection
+            conn.close()
+            
+            if not results:
+                await safe_followup(interaction, "No models found in the database.")
+                return
+                
+            found_count = len(results)
+            
+            # Always use file attachment if requested or if result set is large
+            if as_file or found_count > 30:
+                import tempfile
+                import os
+                
+                # Create a CSV-formatted text file
+                with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.csv') as temp_file:
+                    # Write header
+                    temp_file.write("Model ID,Model Name,Parameters,Quantization,Size MB,Server IP,Port,Creation Date,Last Verified\n")
+                    
+                    # Write data rows
+                    for row in results:
+                        model_id = row['id']
+                        name = row['name'] or "Unknown"
+                        param_size = row['parameter_size'] or "Unknown"
+                        quant_level = row['quantization_level'] or "Unknown"
+                        size_mb = row['size_mb'] or "Unknown"
+                        ip = row['ip'] or "Unknown"
+                        port = row['port'] or "Unknown"
+                        creation_date = row['created_at']
+                        last_verified = row['last_verified']
+                        
+                        # Format dates
+                        created_str = creation_date.strftime("%Y-%m-%d") if creation_date else "Unknown"
+                        verified_str = last_verified.strftime("%Y-%m-%d") if last_verified else "Unknown"
+                        
+                        # Add row to CSV
+                        temp_file.write(f"{model_id},{name},{param_size},{quant_level},{size_mb},{ip},{port},{created_str},{verified_str}\n")
+                        
+                    temp_file_path = temp_file.name
+                
+                # Send summary message and attach file
+                summary = f"**All Models** (Sorted by: {sort_by}, found {found_count} out of {total_count} total models)\n"
+                summary += f"Results are attached as a CSV file for better readability."
+                
+                # Attach and send the file
+                with open(temp_file_path, 'rb') as file:
+                    await safe_followup(interaction, content=summary)
+                    try:
+                        # Send the file in a separate message
+                        await interaction.followup.send(
+                            file=discord.File(file, f"all_models_{sort_by}.csv")
+                        )
+                    except Exception as e:
+                        await safe_followup(interaction, f"Error sending file: {str(e)}")
+                
+                # Clean up temporary file
+                os.unlink(temp_file_path)
+                
+            else:
+                # Format as header and table for smaller result sets
+                header = f"**All Models** (Sorted by: {sort_by}, showing {found_count} of {total_count} total)\n"
+                
+                # Create a markdown table
+                table = "```md\n| ID | Model | Parameters | Quant | Size | Server | Date |\n|----|-------|------------|-------|------|--------|------|\n"
+                
+                for row in results:
+                    # Extract data with proper handling
+                    model_id = row['id']
+                    name = row['name'] or "Unknown"
+                    param_size = row['parameter_size'] or "?"
+                    quant_level = row['quantization_level'] or "-"
+                    size_mb = row['size_mb'] or 0
+                    ip = row['ip'] or "Unknown"
+                    port = row['port'] or "Unknown" 
+                    last_verified = row['last_verified']
+                    
+                    # Format each field with reasonable length limits
+                    short_name = (name[:15] + "...") if len(name) > 18 else name.ljust(18)
+                    param_str = param_size if param_size else "?"
+                    quant_str = quant_level[:8] if quant_level else "-"
+                    size_str = f"{size_mb}" if size_mb is not None else "?"
+                    date_str = last_verified.strftime("%Y-%m-%d") if last_verified else "?"
+                    server = f"{ip}:{port}"
+                    
+                    # Add row to table
+                    row = f"| {model_id:<2} | {short_name:<18} | {param_str:<10} | {quant_str:<7} | {size_str:<4} | {server:<15} | {date_str} |\n"
+                    
+                    # Check if adding this would exceed Discord's limits
+                    if len(table) + len(row) + 3 > 1800:
+                        table += "... output truncated (too many results) ...\n"
+                        break
+                        
+                    table += row
+                    
+                table += "```"
+                message = header + table
+                message += "\n*Add `as_file=True` parameter to get complete results as a CSV file*"
+                
+                # Send the response
+                await safe_followup(interaction, message)
+                
+        except psycopg2.OperationalError as db_conn_error:
+            # Handle connection errors specifically
+            logger.error(f"Database connection error: {str(db_conn_error)}")
+            await safe_followup(interaction, f"⚠️ Database connection error: {str(db_conn_error)}\n\nPlease check the database connection.")
+            
+        except Exception as db_error:
+            # Handle other database errors
+            logger.error(f"Database error in allmodels: {str(db_error)}")
+            await safe_followup(interaction, f"⚠️ Database error: {str(db_error)}")
+        
+    except Exception as e:
+        logger.error(f"Error in allmodels: {str(e)}")
+        await safe_followup(interaction, f"⚠️ Error retrieving models: {str(e)[:1500]}")
+
+@bot.tree.command(
+    name="help",
+    description="Show help information for commands",
+    guild=MY_GUILD
+)
+async def help_command(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    help_text = """
+**Ollama Scanner Bot Commands**
+
+*Basic Commands:*
+• `/ping`
+"""
+
+    await safe_followup(interaction, help_text)
+
+@bot.tree.command(
+    name="resync_commands", 
+    description="Force resync all slash commands (fixes command not found errors)",
+    guild=MY_GUILD
+)
+async def resync_commands(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Identify if user has admin permissions
+        if not interaction.user.guild_permissions.administrator:
+            await safe_followup(interaction, "You need administrator permissions to use this command.")
+            return
+            
+        # Clear and resync all commands
+        await safe_followup(interaction, "Resyncing commands... this might take a few minutes to propagate through Discord's systems.")
+        
+        # First clear all global commands
+        bot.tree.clear_commands(guild=None)
+        await bot.tree.sync()
+        await asyncio.sleep(1)  # Brief pause
+        
+        # Then clear and sync guild-specific commands
+        bot.tree.clear_commands(guild=MY_GUILD)
+        
+        # Re-add all commands
+        # We're doing this dynamically by reloading the module
+        import importlib
+        import sys
+        
+        # Reload this module to refresh command definitions
+        current_module = sys.modules[__name__]
+        importlib.reload(current_module)
+        
+        # Sync the commands to the guild
+        await bot.tree.sync(guild=MY_GUILD)
+        
+        # Log the registered commands
+        commands = bot.tree.get_commands(guild=MY_GUILD)
+        command_list = "\n".join([f"- {cmd.name}" for cmd in commands])
+        
+        await safe_followup(interaction, 
+            f"Command resync completed! Registered {len(commands)} commands:\n```\n{command_list}\n```\n" +
+            "Please note that it might take a few minutes for Discord to make the commands available."
+        )
+    except Exception as e:
+        logger.error(f"Error in resync_commands: {str(e)}")
+        await safe_followup(interaction, f"Error resyncing commands: {str(e)}")
+
+# Add bot startup code and debug info
+@bot.event
+async def on_ready():
+    print(f"Bot connected as {bot.user} (ID: {bot.user.id})")
+    print(f"Guild ID: {GUILD_ID}")
+    print(f"Bot is in {len(bot.guilds)} guild(s):")
+    for guild in bot.guilds:
+        print(f"- {guild.name} (ID: {guild.id})")
+    
+    try:
+        # First perform a global sync to clean up any old commands
+        print("Performing global sync to clear old commands...")
+        await bot.tree.sync()
+        
+        # Then sync to the specific guild
+        print(f"Syncing commands to guild {GUILD_ID}...")
+        await bot.tree.sync(guild=MY_GUILD)
+        
+        # Log the registered commands for debugging
+        print("Registered commands:")
+        for cmd in bot.tree.get_commands(guild=MY_GUILD):
+            print(f"- {cmd.name}")
+        
+        print("Command sync complete!")
+    except Exception as e:
+        print(f"Error syncing commands: {str(e)}")
+
+# Add a debug command to check registered commands
+@bot.tree.command(
+    name="debug_commands",
+    description="Show all registered commands for debugging",
+    guild=MY_GUILD
+)
+async def debug_commands(interaction: discord.Interaction):
+    try:
+        commands_list = []
+        
+        # Get commands for this specific guild
+        guild_commands = bot.tree.get_commands(guild=MY_GUILD)
+        if guild_commands:
+            commands_list.append(f"**Guild Commands for {interaction.guild.name}:**")
+            for cmd in guild_commands:
+                commands_list.append(f"- `/{cmd.name}`: {cmd.description}")
+        
+        # Get global commands
+        global_commands = bot.tree.get_commands()
+        if global_commands:
+            commands_list.append(f"\n**Global Commands:**")
+            for cmd in global_commands:
+                commands_list.append(f"- `/{cmd.name}`: {cmd.description}")
+                
+        if not commands_list:
+            await interaction.response.send_message("No commands registered!", ephemeral=True)
+            return
+            
+        # Join the commands list with newlines
+        commands_text = "\n".join(commands_list)
+        
+        # Send the commands list
+        await interaction.response.send_message(f"**Registered Commands:**\n{commands_text}", ephemeral=True)
+    except Exception as e:
+        logger.error(f"Error in debug_commands: {str(e)}")
+        await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
+
+# Main function to start the bot
+def main():
+    print("Starting Discord bot...")
+    # Load the token from environment
+    token = os.getenv('DISCORD_TOKEN')
+    if not token:
+        print("ERROR: No DISCORD_TOKEN found in environment variables!")
+        sys.exit(1)
+    
+    try:
+        # Add error handling for database initialization
+        print("Initializing database connection...")
+        if 'init_database' in globals():
+            init_database()
+        
+        # Run the bot
+        print(f"Starting bot with token: {token[:5]}...{token[-5:]}")
+        bot.run(token)
+    except Exception as e:
+        print(f"Critical error starting bot: {str(e)}")
+        logger.critical(f"Bot failed to start: {str(e)}", exc_info=True)
+
+if __name__ == "__main__":
+    main()

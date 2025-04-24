@@ -1,0 +1,630 @@
+# Ollama Scanner - Honeypot and Inactive Endpoint Implementation Plan
+
+## Current Issues
+
+1. **Honeypot Detection Disconnect**:
+   - While we have sophisticated honeypot detection in the pruning script (`is_honeypot` function), this information isn't stored in the database.
+   - The bot is still checking only if an endpoint has `verified = 1`, not whether it's a honeypot.
+   - Honeypot flags aren't persisted, leading to users getting responses from fake endpoints.
+
+2. **Inactive Endpoints Not Tracked**:
+   - Endpoints that return 404 errors or other HTTP errors aren't properly flagged as inactive.
+   - These inactive endpoints might still be present in the verification table.
+
+## Database Schema Changes
+
+### 1. Add Honeypot and Inactive Status Columns
+
+#### PostgreSQL:
+```sql
+-- Add honeypot tracking
+ALTER TABLE endpoints ADD COLUMN is_honeypot BOOLEAN DEFAULT FALSE;
+ALTER TABLE endpoints ADD COLUMN honeypot_reason TEXT;
+
+-- Add inactive endpoint tracking
+ALTER TABLE endpoints ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE endpoints ADD COLUMN inactive_reason TEXT;
+ALTER TABLE endpoints ADD COLUMN last_check_date TIMESTAMP WITH TIME ZONE;
+
+-- Add indexes for performance
+CREATE INDEX idx_endpoints_honeypot ON endpoints(is_honeypot);
+CREATE INDEX idx_endpoints_active ON endpoints(is_active);
+CREATE INDEX idx_endpoints_verified_honeypot ON endpoints(verified, is_honeypot);
+CREATE INDEX idx_endpoints_verified_active ON endpoints(verified, is_active);
+```
+
+#### SQLite:
+```sql
+-- Add honeypot tracking
+ALTER TABLE endpoints ADD COLUMN is_honeypot INTEGER DEFAULT 0;
+ALTER TABLE endpoints ADD COLUMN honeypot_reason TEXT;
+
+-- Add inactive endpoint tracking
+ALTER TABLE endpoints ADD COLUMN is_active INTEGER DEFAULT 1;
+ALTER TABLE endpoints ADD COLUMN inactive_reason TEXT;
+ALTER TABLE endpoints ADD COLUMN last_check_date TIMESTAMP;
+
+-- Add indexes for performance
+CREATE INDEX idx_endpoints_honeypot ON endpoints(is_honeypot);
+CREATE INDEX idx_endpoints_active ON endpoints(is_active);
+CREATE INDEX idx_endpoints_verified_honeypot ON endpoints(verified, is_honeypot);
+CREATE INDEX idx_endpoints_verified_active ON endpoints(verified, is_active);
+```
+
+### 2. Update Database Schema Init Function
+
+Modify `database.py` to include the new columns in the schema initialization:
+
+```python
+# Inside init_database() function in database.py
+# For SQLite schema:
+
+CREATE TABLE IF NOT EXISTS endpoints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip TEXT NOT NULL,
+    port INTEGER NOT NULL,
+    scan_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified INTEGER DEFAULT 0,
+    verification_date TIMESTAMP,
+    is_honeypot INTEGER DEFAULT 0,
+    honeypot_reason TEXT,
+    is_active INTEGER DEFAULT 1,
+    inactive_reason TEXT,
+    last_check_date TIMESTAMP,
+    UNIQUE(ip, port)
+);
+```
+
+## Code Changes for Honeypot Detection
+
+### 1. Update `prune_bad_endpoints.py` - Mark Honeypot in Database
+
+```python
+def mark_endpoint_as_honeypot(server_id, reason):
+    """
+    Mark an endpoint as a honeypot in the database
+    
+    Args:
+        server_id: The ID of the server/endpoint to mark as a honeypot
+        reason: The reason why the endpoint is considered a honeypot
+        
+    Returns:
+        bool: Success status
+    """
+    try:
+        # Ensure database connection is properly initialized
+        Database.ensure_pool_initialized()
+        
+        # Update the endpoint status in the database
+        if DATABASE_TYPE == "postgres":
+            # For PostgreSQL
+            Database.execute(
+                "UPDATE endpoints SET is_honeypot = TRUE, honeypot_reason = %s, last_check_date = NOW() WHERE id = %s",
+                (reason, server_id)
+            )
+        else:
+            # For SQLite
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            Database.execute(
+                "UPDATE endpoints SET is_honeypot = 1, honeypot_reason = ?, last_check_date = ? WHERE id = ?",
+                (reason, now, server_id)
+            )
+        
+        # Get the IP and port for logging
+        endpoint_info = Database.fetch_one(
+            "SELECT ip, port FROM endpoints WHERE id = %s",
+            (server_id,)
+        )
+        
+        if endpoint_info:
+            ip, port = endpoint_info
+            logger.info(f"Marked endpoint {ip}:{port} (ID: {server_id}) as honeypot: {reason}")
+        else:
+            logger.warning(f"Endpoint with ID {server_id} not found when trying to mark as honeypot")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error marking server {server_id} as honeypot: {str(e)}")
+        return False
+```
+
+### 2. Update `check_endpoint` Function to Set Honeypot Status
+
+```python
+# Inside check_endpoint function in prune_bad_endpoints.py
+# After detecting a honeypot:
+
+if is_honeypot_result:
+    result["status"] = "honeypot"
+    result["should_remove"] = True
+    result["reason"] = honeypot_reason
+    result["is_honeypot"] = True
+    logger.warning(f"Honeypot detected at {ip}:{port} - {honeypot_reason}")
+    
+    # Mark as honeypot in the database
+    mark_endpoint_as_honeypot(server_id, honeypot_reason)
+    
+    return result
+```
+
+## Code Changes for Inactive Endpoint Detection
+
+### 1. Add Function to Mark Inactive Endpoints
+
+```python
+def mark_endpoint_as_inactive(server_id, reason):
+    """
+    Mark an endpoint as inactive in the database
+    
+    Args:
+        server_id: The ID of the server/endpoint to mark as inactive
+        reason: The reason why the endpoint is considered inactive
+        
+    Returns:
+        bool: Success status
+    """
+    try:
+        # Ensure database connection is properly initialized
+        Database.ensure_pool_initialized()
+        
+        # Update the endpoint status in the database
+        if DATABASE_TYPE == "postgres":
+            # For PostgreSQL
+            Database.execute(
+                "UPDATE endpoints SET is_active = FALSE, inactive_reason = %s, last_check_date = NOW() WHERE id = %s",
+                (reason, server_id)
+            )
+        else:
+            # For SQLite
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            Database.execute(
+                "UPDATE endpoints SET is_active = 0, inactive_reason = ?, last_check_date = ? WHERE id = ?",
+                (reason, now, server_id)
+            )
+        
+        # Get the IP and port for logging
+        endpoint_info = Database.fetch_one(
+            "SELECT ip, port FROM endpoints WHERE id = %s",
+            (server_id,)
+        )
+        
+        if endpoint_info:
+            ip, port = endpoint_info
+            logger.info(f"Marked endpoint {ip}:{port} (ID: {server_id}) as inactive: {reason}")
+        else:
+            logger.warning(f"Endpoint with ID {server_id} not found when trying to mark as inactive")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error marking server {server_id} as inactive: {str(e)}")
+        return False
+```
+
+### 2. Update Error Handling in `check_endpoint` Function
+
+```python
+# Inside check_endpoint function - HTTP error handling
+
+if response.status_code != 200:
+    reason = f"HTTP error: {response.status_code}"
+    logger.warning(f"Endpoint {ip}:{port} /api/tags request failed: {reason}")
+    
+    # Mark as inactive in the database if it's a 404 or similar error
+    if response.status_code in [404, 403, 401, 500]:
+        mark_endpoint_as_inactive(server_id, reason)
+    
+    mark_endpoint_failed(endpoint_id, ip, port, reason)
+    return False, reason
+```
+
+### 3. Update `mark_endpoint_verified` to Reset Inactive and Honeypot Status
+
+```python
+# Inside mark_endpoint_verified function
+
+def mark_endpoint_verified(endpoint_id, ip, port, response_quality=1.0):
+    """Mark endpoint as verified and update response quality metrics"""
+    try:
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        if DATABASE_TYPE == "postgres":
+            # For PostgreSQL, set verified = 1 and update verification_date
+            # Also reset honeypot and inactive status
+            Database.execute("""
+                UPDATE endpoints
+                SET verified = 1, 
+                    verification_date = %s,
+                    is_honeypot = FALSE,
+                    honeypot_reason = NULL,
+                    is_active = TRUE,
+                    inactive_reason = NULL,
+                    last_check_date = %s
+                WHERE id = %s
+            """, (now, now, endpoint_id))
+            
+            # Check if this endpoint is already in verified_endpoints
+            verified_exists = Database.fetch_one("SELECT id FROM verified_endpoints WHERE endpoint_id = %s", (endpoint_id,)) is not None
+            
+            if not verified_exists:
+                # Add to verified_endpoints
+                Database.execute("""
+                    INSERT INTO verified_endpoints (endpoint_id, verification_date)
+                    VALUES (%s, %s)
+                """, (endpoint_id, now))
+            else:
+                # Update verification date
+                Database.execute("""
+                    UPDATE verified_endpoints 
+                    SET verification_date = %s 
+                    WHERE endpoint_id = %s
+                """, (now, endpoint_id))
+        else:
+            # SQLite 
+            Database.execute("""
+                UPDATE endpoints
+                SET verified = 1, 
+                    verification_date = %s,
+                    is_honeypot = 0,
+                    honeypot_reason = NULL,
+                    is_active = 1,
+                    inactive_reason = NULL,
+                    last_check_date = %s
+                WHERE id = %s
+            """, (now, now, endpoint_id))
+            
+            # Check if this endpoint is already in verified_endpoints
+            verified_exists = Database.fetch_one("SELECT id FROM verified_endpoints WHERE endpoint_id = %s", (endpoint_id,)) is not None
+            
+            if not verified_exists:
+                # Add to verified_endpoints
+                Database.execute("""
+                    INSERT INTO verified_endpoints (endpoint_id, verification_date)
+                    VALUES (%s, %s)
+                """, (endpoint_id, now))
+            else:
+                # Update verification date
+                Database.execute("""
+                    UPDATE verified_endpoints 
+                    SET verification_date = %s 
+                    WHERE endpoint_id = %s
+                """, (now, endpoint_id))
+        
+        logger.info(f"Endpoint {ip}:{port} verified successfully (response quality: {response_quality:.2f})")
+        return True
+    except Exception as e:
+        logger.error(f"Error marking endpoint {ip}:{port} as verified: {e}")
+        return False
+```
+
+## Discord Bot Updates
+
+### 1. Update Bot Queries to Include Honeypot and Active Status
+
+```python
+# In discord_bot.py, update endpoint selection queries:
+
+# Original query:
+query = """
+    SELECT m.id, m.name, m.parameter_size, m.quantization_level, e.ip, e.port
+    FROM models m
+    JOIN endpoints e ON m.endpoint_id = e.id
+    WHERE LOWER(m.name) = LOWER(%s) AND e.verified = 1
+    ORDER BY RANDOM()
+"""
+
+# Updated query:
+query = """
+    SELECT m.id, m.name, m.parameter_size, m.quantization_level, e.ip, e.port
+    FROM models m
+    JOIN endpoints e ON m.endpoint_id = e.id
+    WHERE LOWER(m.name) = LOWER(%s) 
+      AND e.verified = 1 
+      AND (e.is_honeypot = FALSE OR e.is_honeypot IS NULL)
+      AND (e.is_active = TRUE OR e.is_active IS NULL)
+    ORDER BY RANDOM()
+"""
+```
+
+### 2. Add Bot Command to Show Honeypot Statistics
+
+```python
+@bot.tree.command(name="honeypot_stats", description="Show statistics about detected honeypots")
+async def honeypot_stats(interaction: discord.Interaction):
+    """Show statistics about detected honeypots"""
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Count total endpoints
+        total_count = Database.fetch_one("SELECT COUNT(*) FROM endpoints")[0]
+        
+        # Count honeypots
+        honeypot_count = Database.fetch_one("SELECT COUNT(*) FROM endpoints WHERE is_honeypot = TRUE")[0]
+        
+        # Count inactive endpoints
+        inactive_count = Database.fetch_one("SELECT COUNT(*) FROM endpoints WHERE is_active = FALSE")[0]
+        
+        # Count verified endpoints
+        verified_count = Database.fetch_one("SELECT COUNT(*) FROM endpoints WHERE verified = 1")[0]
+        
+        # Get most common honeypot reasons
+        reasons_query = """
+            SELECT honeypot_reason, COUNT(*) as count
+            FROM endpoints
+            WHERE is_honeypot = TRUE
+            GROUP BY honeypot_reason
+            ORDER BY count DESC
+            LIMIT 5
+        """
+        honeypot_reasons = Database.fetch_all(reasons_query)
+        
+        # Get most common inactive reasons
+        inactive_reasons_query = """
+            SELECT inactive_reason, COUNT(*) as count
+            FROM endpoints
+            WHERE is_active = FALSE
+            GROUP BY inactive_reason
+            ORDER BY count DESC
+            LIMIT 5
+        """
+        inactive_reasons = Database.fetch_all(inactive_reasons_query)
+        
+        # Create embed
+        embed = discord.Embed(
+            title="Endpoint Quality Statistics",
+            description=f"Information about endpoints in the database",
+            color=discord.Color.gold()
+        )
+        
+        embed.add_field(
+            name="Summary", 
+            value=f"Total Endpoints: {total_count}\nVerified Endpoints: {verified_count}\nHoneypots: {honeypot_count}\nInactive: {inactive_count}", 
+            inline=False
+        )
+        
+        if honeypot_count > 0:
+            honeypot_percent = (honeypot_count / total_count) * 100
+            embed.add_field(
+                name="Honeypot Ratio", 
+                value=f"{honeypot_percent:.1f}% of all endpoints are honeypots", 
+                inline=False
+            )
+            
+            reasons_text = "\n".join([f"• {reason[0]}: {reason[1]} endpoints" for reason in honeypot_reasons])
+            embed.add_field(
+                name="Top Honeypot Reasons", 
+                value=reasons_text if reasons_text else "No reasons recorded", 
+                inline=False
+            )
+        
+        if inactive_count > 0:
+            inactive_percent = (inactive_count / total_count) * 100
+            embed.add_field(
+                name="Inactive Ratio", 
+                value=f"{inactive_percent:.1f}% of all endpoints are inactive", 
+                inline=False
+            )
+            
+            reasons_text = "\n".join([f"• {reason[0]}: {reason[1]} endpoints" for reason in inactive_reasons])
+            embed.add_field(
+                name="Top Inactive Reasons", 
+                value=reasons_text if reasons_text else "No reasons recorded", 
+                inline=False
+            )
+        
+        await safe_followup(interaction, embed=embed)
+        
+    except Exception as e:
+        logger.error(f"Error getting endpoint stats: {e}")
+        await safe_followup(interaction, f"Error retrieving endpoint statistics: {str(e)}")
+```
+
+## Migration Scripts
+
+### 1. Create Database Migration Script
+
+```python
+#!/usr/bin/env python3
+"""
+Add honeypot and inactive endpoint tracking columns to the Ollama Scanner database
+"""
+
+from database import Database, init_database, DATABASE_TYPE
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("database_migration.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+def migrate_database():
+    """Add honeypot and inactive endpoint tracking columns to endpoints table"""
+    try:
+        logger.info("Starting database migration for honeypot and inactive endpoint tracking")
+        
+        # Initialize the database connection
+        init_database()
+        
+        # Check if honeypot column already exists
+        if DATABASE_TYPE == "postgres":
+            column_exists = Database.fetch_one("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns 
+                    WHERE table_name = 'endpoints' AND column_name = 'is_honeypot'
+                )
+            """)[0]
+        else:
+            # SQLite
+            pragma_result = Database.fetch_all("PRAGMA table_info(endpoints)")
+            column_exists = any(row[1] == 'is_honeypot' for row in pragma_result)
+        
+        if column_exists:
+            logger.info("Honeypot column already exists, skipping migration")
+            return True
+            
+        # Add honeypot and inactive endpoint columns to endpoints table
+        logger.info("Adding honeypot and inactive endpoint columns to endpoints table")
+        
+        if DATABASE_TYPE == "postgres":
+            # Add honeypot tracking
+            Database.execute("ALTER TABLE endpoints ADD COLUMN is_honeypot BOOLEAN DEFAULT FALSE")
+            Database.execute("ALTER TABLE endpoints ADD COLUMN honeypot_reason TEXT")
+            
+            # Add inactive endpoint tracking
+            Database.execute("ALTER TABLE endpoints ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
+            Database.execute("ALTER TABLE endpoints ADD COLUMN inactive_reason TEXT")
+            Database.execute("ALTER TABLE endpoints ADD COLUMN last_check_date TIMESTAMP WITH TIME ZONE")
+            
+            # Add indexes for performance
+            logger.info("Creating indexes for new columns")
+            Database.execute("CREATE INDEX idx_endpoints_honeypot ON endpoints(is_honeypot)")
+            Database.execute("CREATE INDEX idx_endpoints_active ON endpoints(is_active)")
+            Database.execute("CREATE INDEX idx_endpoints_verified_honeypot ON endpoints(verified, is_honeypot)")
+            Database.execute("CREATE INDEX idx_endpoints_verified_active ON endpoints(verified, is_active)")
+            
+        else:
+            # SQLite doesn't support adding multiple columns in one statement
+            Database.execute("ALTER TABLE endpoints ADD COLUMN is_honeypot INTEGER DEFAULT 0")
+            Database.execute("ALTER TABLE endpoints ADD COLUMN honeypot_reason TEXT")
+            Database.execute("ALTER TABLE endpoints ADD COLUMN is_active INTEGER DEFAULT 1")
+            Database.execute("ALTER TABLE endpoints ADD COLUMN inactive_reason TEXT")
+            Database.execute("ALTER TABLE endpoints ADD COLUMN last_check_date TEXT")
+            
+            # SQLite doesn't support CREATE INDEX IF NOT EXISTS
+            try:
+                Database.execute("CREATE INDEX idx_endpoints_honeypot ON endpoints(is_honeypot)")
+            except:
+                logger.info("Index idx_endpoints_honeypot already exists")
+                
+            try:
+                Database.execute("CREATE INDEX idx_endpoints_active ON endpoints(is_active)")
+            except:
+                logger.info("Index idx_endpoints_active already exists")
+                
+            try:
+                Database.execute("CREATE INDEX idx_endpoints_verified_honeypot ON endpoints(verified, is_honeypot)")
+            except:
+                logger.info("Index idx_endpoints_verified_honeypot already exists")
+                
+            try:
+                Database.execute("CREATE INDEX idx_endpoints_verified_active ON endpoints(verified, is_active)")
+            except:
+                logger.info("Index idx_endpoints_verified_active already exists")
+        
+        # Update metadata to track migration
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        Database.execute(
+            "INSERT INTO metadata (key, value, updated_at) VALUES (%s, %s, %s) ON CONFLICT (key) DO UPDATE SET value = %s, updated_at = %s",
+            ('honeypot_columns_added', 'true', now, 'true', now)
+        )
+        
+        logger.info("Database migration completed successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error during database migration: {e}")
+        return False
+
+if __name__ == "__main__":
+    migrate_database()
+```
+
+## Implementation Steps
+
+1. **Create Backup**:
+   ```bash
+   pg_dump -U ollama ollama_scanner > ollama_scanner_backup_$(date +%Y%m%d).sql
+   ```
+
+2. **Run Database Migration**:
+   ```bash
+   python migrate_honeypot_columns.py
+   ```
+
+3. **Update Pruning Script**:
+   - Add the honeypot and inactive endpoint marking code to `prune_bad_endpoints.py`
+   - Test with a limited set of endpoints:
+     ```bash
+     ./run_pruner.sh --limit 100 --verbose
+     ```
+
+4. **Update Discord Bot**:
+   - Modify all queries to exclude honeypots and inactive endpoints
+   - Add the new honeypot statistics command
+   - Test the model retrieval commands to ensure they only show valid endpoints
+
+5. **Run Full Pruning**:
+   ```bash
+   ./run_pruner.sh --retest-all --verbose
+   ```
+
+6. **Monitor Results**:
+   - Check the pruning logs
+   - Use the new honeypot_stats command
+   - Verify that the bot only uses high-quality endpoints
+
+## Testing Procedure
+
+1. **Database Schema Test**:
+   - Verify that the new columns exist:
+     ```sql
+     SELECT column_name FROM information_schema.columns 
+     WHERE table_name = 'endpoints' AND (column_name LIKE 'is_%' OR column_name LIKE '%_reason');
+     ```
+
+2. **Pruning Script Test**:
+   - Run with a small sample to verify detection:
+     ```bash
+     ./run_pruner.sh --limit 10 --verbose
+     ```
+   - Check the logs for honeypot and inactive endpoint detection
+
+3. **Bot Query Test**:
+   - Verify that honeypots and inactive endpoints are properly excluded:
+     ```sql
+     EXPLAIN SELECT m.id, m.name, e.ip, e.port
+     FROM models m
+     JOIN endpoints e ON m.endpoint_id = e.id
+     WHERE e.verified = 1 
+       AND (e.is_honeypot = FALSE OR e.is_honeypot IS NULL)
+       AND (e.is_active = TRUE OR e.is_active IS NULL)
+     LIMIT 5;
+     ```
+
+4. **User Experience Test**:
+   - Send multiple prompts to ensure responses are genuine
+   - Test with models that previously gave nonsensical responses
+   - Verify inactive endpoints are not being selected
+
+## Performance Considerations
+
+1. **Index Usage**:
+   - The added indexes should help query performance
+   - Monitor query execution plans to ensure indexes are used
+
+2. **Batch Processing**:
+   - Continue using batch processing in the pruning script
+   - Consider adjusting batch size for optimal performance
+
+3. **Periodic Checks**:
+   - Implement a periodic job to check if inactive endpoints have come back online
+   - This could be a separate script that runs daily/weekly
+
+## Conclusion
+
+This comprehensive plan will significantly improve the quality of endpoints used by the Discord bot by:
+
+1. Properly tracking and filtering out honeypot endpoints
+2. Identifying and filtering out inactive endpoints
+3. Providing better statistics and monitoring for endpoint quality
+
+Once implemented, users should only interact with legitimate, functioning Ollama endpoints that provide sensible responses to prompts. 

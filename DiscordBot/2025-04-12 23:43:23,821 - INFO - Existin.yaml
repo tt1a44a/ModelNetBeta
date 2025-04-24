@@ -1,0 +1,883 @@
+2025-04-12 23:43:23,821 - INFO - Existing model: nomic-embed-text:latest, Size: 261.59520149230957 MB, Params: 137M, Quant: F16
+2025-04-12 23:43:23,821 - INFO - No changes for model nomic-embed-text:latest
+2025-04-12 23:43:23,824 - INFO - Server 178.254.29.199:11434 - Added: 0, Updated: 0, Deleted: 0
+2025-04-12 23:43:23,824 - INFO - ===== Updating models for server 54.226.50.78:18081 =====
+2025-04-12 23:43:23,824 - INFO - Fetching models from http://54.226.50.78:18081/api/tags
+2025-04-12 23:43:24,346 - INFO - API Response: {
+  "models": [
+    {
+      "name": "codellama:13b",
+      "modified_at": "2023-11-04T14:56:49.277302595-07:00",
+      "size": 7365960935,
+      "digest": "9f438cb9cd581fc025612d27f7c1a6669ff83a8bb0ed86c94fcf4c5440555697",
+      "details": {
+        "format": "gguf",
+        "family": "llama",
+        "families": null,
+        "parameter_size": "13B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "qwen2.5:1.5b",
+      "model": "qwen2.5:1.5b",
+      "modified_at": "2025-02-13T19:55:50.4459752+08:00",
+      "size": 986061892,
+      "digest": "65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "1.5B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "llama3:latest",
+      "modified_at": "2023-12-07T09:32:18.757212583-08:00",
+      "size": 3825819519,
+      "digest": "fe938a131f40e6f6d40083c9f0f430a515233eb2edaa6d72eb85c50d64f2300e",
+      "details": {
+        "format": "gguf",
+        "family": "llama",
+        "families": null,
+        "parameter_size": "7B",
+        "quantization_level": "Q4_0"
+      }
+    }
+  ]
+}
+2025-04-12 23:43:24,346 - INFO - Found 3 models on server 54.226.50.78:18081
+2025-04-12 23:43:24,346 - INFO - Current DB models for 54.226.50.78:18081: [
+  {
+    "id": 2441,
+    "name": "codellama:13b",
+    "parameter_size": "13B",
+    "quantization_level": "Q4_0",
+    "size_mb": 7024.727759361267
+  },
+  {
+    "id": 2439,
+    "name": "llama2:latest",
+    "parameter_size": "7B",
+    "quantization_level": "Q4_0",
+    "size_mb": 3649.514843940735
+  },
+  {
+    "id": 2440,
+    "name": "qwen2.5:1.5b",
+    "parameter_size": "1.5B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 940.3819007873535
+  }
+]
+2025-04-12 23:43:24,346 - INFO - API Model: codellama:13b, Size: 7024.727759361267 MB, Params: 13B, Quant: Q4_0
+2025-04-12 23:43:24,347 - INFO - Existing model: codellama:13b, Size: 7024.727759361267 MB, Params: 13B, Quant: Q4_0
+2025-04-12 23:43:24,347 - INFO - No changes for model codellama:13b
+2025-04-12 23:43:24,347 - INFO - API Model: qwen2.5:1.5b, Size: 940.3819007873535 MB, Params: 1.5B, Quant: Q4_K_M
+2025-04-12 23:43:24,347 - INFO - Existing model: qwen2.5:1.5b, Size: 940.3819007873535 MB, Params: 1.5B, Quant: Q4_K_M
+2025-04-12 23:43:24,347 - INFO - No changes for model qwen2.5:1.5b
+2025-04-12 23:43:24,347 - INFO - API Model: llama3:latest, Size: 3648.585814476013 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:24,347 - INFO - Adding new model: llama3:latest, Size: 3648.585814476013 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:24,347 - INFO - Removing model no longer on server: llama2:latest
+2025-04-12 23:43:24,359 - INFO - Server 54.226.50.78:18081 - Added: 1, Updated: 0, Deleted: 1
+2025-04-12 23:43:24,359 - INFO - ===== Updating models for server 116.14.227.16:5271 =====
+2025-04-12 23:43:24,359 - INFO - Fetching models from http://116.14.227.16:5271/api/tags
+2025-04-12 23:43:24,602 - INFO - API Response: {
+  "models": [
+    {
+      "name": "qwen2.5:14b",
+      "model": "qwen2.5:14b",
+      "modified_at": "2025-04-07T08:37:26.6058622+08:00",
+      "size": 8988124069,
+      "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "14.8B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "command-a:latest",
+      "model": "command-a:latest",
+      "modified_at": "2025-04-07T07:36:44.2954951+08:00",
+      "size": 67135530816,
+      "digest": "cd22bd4845993b9021ef383fd04bccfeb6f9bf06160839faf2bb53588544cb1a",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "cohere2",
+        "families": [
+          "cohere2"
+        ],
+        "parameter_size": "111.1B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  ]
+}
+2025-04-12 23:43:24,602 - INFO - Found 2 models on server 116.14.227.16:5271
+2025-04-12 23:43:24,603 - INFO - Current DB models for 116.14.227.16:5271: [
+  {
+    "id": 2437,
+    "name": "command-a:latest",
+    "parameter_size": "111.1B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 64025.43145751953
+  },
+  {
+    "id": 2436,
+    "name": "qwen2.5:14b",
+    "parameter_size": "14.8B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 8571.743077278137
+  }
+]
+2025-04-12 23:43:24,603 - INFO - API Model: qwen2.5:14b, Size: 8571.743077278137 MB, Params: 14.8B, Quant: Q4_K_M
+2025-04-12 23:43:24,603 - INFO - Existing model: qwen2.5:14b, Size: 8571.743077278137 MB, Params: 14.8B, Quant: Q4_K_M
+2025-04-12 23:43:24,603 - INFO - No changes for model qwen2.5:14b
+2025-04-12 23:43:24,603 - INFO - API Model: command-a:latest, Size: 64025.43145751953 MB, Params: 111.1B, Quant: Q4_K_M
+2025-04-12 23:43:24,603 - INFO - Existing model: command-a:latest, Size: 64025.43145751953 MB, Params: 111.1B, Quant: Q4_K_M
+2025-04-12 23:43:24,603 - INFO - No changes for model command-a:latest
+2025-04-12 23:43:24,613 - INFO - Server 116.14.227.16:5271 - Added: 0, Updated: 0, Deleted: 0
+2025-04-12 23:43:24,613 - INFO - ===== Updating models for server 34.254.179.120:11300 =====
+2025-04-12 23:43:24,613 - INFO - Fetching models from http://34.254.179.120:11300/api/tags
+2025-04-12 23:43:25,107 - ERROR - Exception fetching models: HTTPConnectionPool(host='35.95.150.198', port=17000): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421ce90>, 'Connection to 35.95.150.198 timed out. (connect timeout=10)'))
+2025-04-12 23:43:25,107 - WARNING - No models found for server 35.95.150.198:17000
+2025-04-12 23:43:25,107 - INFO - ===== Updating models for server 54.200.147.255:49153 =====
+2025-04-12 23:43:25,107 - INFO - Fetching models from http://54.200.147.255:49153/api/tags
+2025-04-12 23:43:25,559 - INFO - API Response: {
+  "models": [
+    {
+      "name": "llama3:latest",
+      "modified_at": "2023-12-07T09:32:18.757212583-08:00",
+      "size": 3825819519,
+      "digest": "fe938a131f40e6f6d40083c9f0f430a515233eb2edaa6d72eb85c50d64f2300e",
+      "details": {
+        "format": "gguf",
+        "family": "llama",
+        "families": null,
+        "parameter_size": "7B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "llama2:latest",
+      "model": "llama2:latest",
+      "modified_at": "2024-04-22T20:42:41.0502575+08:00",
+      "size": 3826793677,
+      "digest": "78e26419b4469263f75331927a00a0284ef6544c1975b826b15abdaef17bb962",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "7B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "deepseek-r1:latest",
+      "model": "deepseek-r1:latest",
+      "modified_at": "2025-03-29T20:18:17.974766226Z",
+      "size": 4683075271,
+      "digest": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "7.6B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "qwen2.5:1.5b",
+      "model": "qwen2.5:1.5b",
+      "modified_at": "2025-02-13T19:55:50.4459752+08:00",
+      "size": 986061892,
+      "digest": "65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "1.5B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  ]
+}
+2025-04-12 23:43:25,559 - INFO - Found 4 models on server 54.200.147.255:49153
+2025-04-12 23:43:25,559 - INFO - Current DB models for 54.200.147.255:49153: [
+  {
+    "id": 2413,
+    "name": "qwen2.5:1.5b",
+    "parameter_size": "1.5B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 940.3819007873535
+  }
+]
+2025-04-12 23:43:25,560 - INFO - API Model: llama3:latest, Size: 3648.585814476013 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:25,560 - INFO - Adding new model: llama3:latest, Size: 3648.585814476013 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:25,560 - INFO - API Model: llama2:latest, Size: 3649.514843940735 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:25,560 - INFO - Adding new model: llama2:latest, Size: 3649.514843940735 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:25,560 - INFO - API Model: deepseek-r1:latest, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:43:25,560 - INFO - Adding new model: deepseek-r1:latest, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:43:25,560 - INFO - API Model: qwen2.5:1.5b, Size: 940.3819007873535 MB, Params: 1.5B, Quant: Q4_K_M
+2025-04-12 23:43:25,560 - INFO - Existing model: qwen2.5:1.5b, Size: 940.3819007873535 MB, Params: 1.5B, Quant: Q4_K_M
+2025-04-12 23:43:25,560 - INFO - No changes for model qwen2.5:1.5b
+2025-04-12 23:43:25,572 - INFO - Server 54.200.147.255:49153 - Added: 3, Updated: 0, Deleted: 0
+2025-04-12 23:43:25,572 - INFO - ===== Updating models for server 18.144.40.248:18003 =====
+2025-04-12 23:43:25,572 - INFO - Fetching models from http://18.144.40.248:18003/api/tags
+2025-04-12 23:43:26,780 - ERROR - Exception fetching models: HTTPConnectionPool(host='63.177.77.104', port=18081): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421c530>, 'Connection to 63.177.77.104 timed out. (connect timeout=10)'))
+2025-04-12 23:43:26,780 - WARNING - No models found for server 63.177.77.104:18081
+2025-04-12 23:43:26,780 - INFO - ===== Updating models for server 114.32.203.179:11434 =====
+2025-04-12 23:43:26,780 - INFO - Fetching models from http://114.32.203.179:11434/api/tags
+2025-04-12 23:43:29,621 - ERROR - Exception fetching models: HTTPConnectionPool(host='35.77.223.131', port=2062): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421de80>, 'Connection to 35.77.223.131 timed out. (connect timeout=10)'))
+2025-04-12 23:43:29,621 - WARNING - No models found for server 35.77.223.131:2062
+2025-04-12 23:43:29,621 - INFO - ===== Updating models for server 112.121.179.186:11434 =====
+2025-04-12 23:43:29,621 - INFO - Fetching models from http://112.121.179.186:11434/api/tags
+2025-04-12 23:43:29,890 - INFO - API Response: {
+  "models": [
+    {
+      "name": "deepseek-r1:1.5b",
+      "model": "deepseek-r1:1.5b",
+      "modified_at": "2025-03-06T14:52:56.663521407Z",
+      "size": 1117322599,
+      "digest": "a42b25d8c10a841bd24724309898ae851466696a7d7f3a0a408b895538ccbc96",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "1.8B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  ]
+}
+2025-04-12 23:43:29,890 - INFO - Found 1 models on server 112.121.179.186:11434
+2025-04-12 23:43:29,890 - INFO - Current DB models for 112.121.179.186:11434: [
+  {
+    "id": 2390,
+    "name": "deepseek-r1:1.5b",
+    "parameter_size": "1.8B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 1065.5618658065796
+  }
+]
+2025-04-12 23:43:29,891 - INFO - API Model: deepseek-r1:1.5b, Size: 1065.5618658065796 MB, Params: 1.8B, Quant: Q4_K_M
+2025-04-12 23:43:29,891 - INFO - Existing model: deepseek-r1:1.5b, Size: 1065.5618658065796 MB, Params: 1.8B, Quant: Q4_K_M
+2025-04-12 23:43:29,891 - INFO - No changes for model deepseek-r1:1.5b
+2025-04-12 23:43:29,893 - INFO - Server 112.121.179.186:11434 - Added: 0, Updated: 0, Deleted: 0
+2025-04-12 23:43:29,893 - INFO - ===== Updating models for server 119.45.135.146:11434 =====
+2025-04-12 23:43:29,893 - INFO - Fetching models from http://119.45.135.146:11434/api/tags
+2025-04-12 23:43:30,562 - INFO - API Response: {
+  "models": [
+    {
+      "name": "linux6200/bge-reranker-v2-m3:latest",
+      "model": "linux6200/bge-reranker-v2-m3:latest",
+      "modified_at": "2025-03-23T12:29:52.365153637+08:00",
+      "size": 1159777159,
+      "digest": "abf5c6d8bc567ccdb3000bf66c402a473e06bcaf1a2f8e465278f110ea493670",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "bert",
+        "families": [
+          "bert"
+        ],
+        "parameter_size": "567.75M",
+        "quantization_level": "F16"
+      }
+    },
+    {
+      "name": "deepseek-r1:32b",
+      "model": "deepseek-r1:32b",
+      "modified_at": "2025-03-09T04:00:39.373830055+08:00",
+      "size": 19851337640,
+      "digest": "38056bbcbb2d068501ecb2d5ea9cea9dd4847465f1ab88c4d4a412a9f7792717",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "32.8B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "nomic-embed-text:latest",
+      "model": "nomic-embed-text:latest",
+      "modified_at": "2025-03-09T01:41:14.496142229+08:00",
+      "size": 274302450,
+      "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "nomic-bert",
+        "families": [
+          "nomic-bert"
+        ],
+        "parameter_size": "137M",
+        "quantization_level": "F16"
+      }
+    },
+    {
+      "name": "deepseek-r1:7b",
+      "model": "deepseek-r1:7b",
+      "modified_at": "2025-03-09T01:37:20.321967178+08:00",
+      "size": 4683075271,
+      "digest": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "7.6B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "bge-m3:latest",
+      "model": "bge-m3:latest",
+      "modified_at": "2025-03-08T23:59:32.903993462+08:00",
+      "size": 1157672605,
+      "digest": "7907646426070047a77226ac3e684fbbe8410524f7b4a74d02837e43f2146bab",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "bert",
+        "families": [
+          "bert"
+        ],
+        "parameter_size": "566.70M",
+        "quantization_level": "F16"
+      }
+    }
+  ]
+}
+2025-04-12 23:43:30,563 - INFO - Found 5 models on server 119.45.135.146:11434
+2025-04-12 23:43:30,563 - INFO - Current DB models for 119.45.135.146:11434: [
+  {
+    "id": 2374,
+    "name": "bge-m3:latest",
+    "parameter_size": "566.70M",
+    "quantization_level": "F16",
+    "size_mb": 1104.0426301956177
+  },
+  {
+    "id": 2371,
+    "name": "deepseek-r1:32b",
+    "parameter_size": "32.8B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 18931.71085357666
+  },
+  {
+    "id": 2373,
+    "name": "deepseek-r1:7b",
+    "parameter_size": "7.6B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 4466.128607749939
+  },
+  {
+    "id": 2370,
+    "name": "linux6200/bge-reranker-v2-m3:latest",
+    "parameter_size": "567.75M",
+    "quantization_level": "F16",
+    "size_mb": 1106.0496892929077
+  },
+  {
+    "id": 2372,
+    "name": "nomic-embed-text:latest",
+    "parameter_size": "137M",
+    "quantization_level": "F16",
+    "size_mb": 261.59520149230957
+  }
+]
+2025-04-12 23:43:30,563 - INFO - API Model: linux6200/bge-reranker-v2-m3:latest, Size: 1106.0496892929077 MB, Params: 567.75M, Quant: F16
+2025-04-12 23:43:30,563 - INFO - Existing model: linux6200/bge-reranker-v2-m3:latest, Size: 1106.0496892929077 MB, Params: 567.75M, Quant: F16
+2025-04-12 23:43:30,563 - INFO - No changes for model linux6200/bge-reranker-v2-m3:latest
+2025-04-12 23:43:30,563 - INFO - API Model: deepseek-r1:32b, Size: 18931.71085357666 MB, Params: 32.8B, Quant: Q4_K_M
+2025-04-12 23:43:30,563 - INFO - Existing model: deepseek-r1:32b, Size: 18931.71085357666 MB, Params: 32.8B, Quant: Q4_K_M
+2025-04-12 23:43:30,563 - INFO - No changes for model deepseek-r1:32b
+2025-04-12 23:43:30,563 - INFO - API Model: nomic-embed-text:latest, Size: 261.59520149230957 MB, Params: 137M, Quant: F16
+2025-04-12 23:43:30,563 - INFO - Existing model: nomic-embed-text:latest, Size: 261.59520149230957 MB, Params: 137M, Quant: F16
+2025-04-12 23:43:30,563 - INFO - No changes for model nomic-embed-text:latest
+2025-04-12 23:43:30,563 - INFO - API Model: deepseek-r1:7b, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:43:30,564 - INFO - Existing model: deepseek-r1:7b, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:43:30,564 - INFO - No changes for model deepseek-r1:7b
+2025-04-12 23:43:30,564 - INFO - API Model: bge-m3:latest, Size: 1104.0426301956177 MB, Params: 566.70M, Quant: F16
+2025-04-12 23:43:30,564 - INFO - Existing model: bge-m3:latest, Size: 1104.0426301956177 MB, Params: 566.70M, Quant: F16
+2025-04-12 23:43:30,564 - INFO - No changes for model bge-m3:latest
+2025-04-12 23:43:30,577 - INFO - Server 119.45.135.146:11434 - Added: 0, Updated: 0, Deleted: 0
+2025-04-12 23:43:30,578 - INFO - ===== Updating models for server 15.152.34.20:21515 =====
+2025-04-12 23:43:30,578 - INFO - Fetching models from http://15.152.34.20:21515/api/tags
+2025-04-12 23:43:33,737 - ERROR - Exception fetching models: HTTPConnectionPool(host='13.36.194.163', port=21025): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74232600>, 'Connection to 13.36.194.163 timed out. (connect timeout=10)'))
+2025-04-12 23:43:33,737 - WARNING - No models found for server 13.36.194.163:21025
+2025-04-12 23:43:33,737 - INFO - ===== Updating models for server 203.69.53.137:12392 =====
+2025-04-12 23:43:33,737 - INFO - Fetching models from http://203.69.53.137:12392/api/tags
+2025-04-12 23:43:34,042 - INFO - API Response: {
+  "models": [
+    {
+      "name": "deepseek-r1:70b",
+      "model": "deepseek-r1:70b",
+      "modified_at": "2025-04-09T10:13:04.051616274Z",
+      "size": 42520397704,
+      "digest": "0c1615a8ca32ef41e433aa420558b4685f9fc7f3fd74119860a8e2e389cd7942",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "70.6B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "command-a:latest",
+      "model": "command-a:latest",
+      "modified_at": "2025-04-07T00:17:04.01719203Z",
+      "size": 67135530816,
+      "digest": "cd22bd4845993b9021ef383fd04bccfeb6f9bf06160839faf2bb53588544cb1a",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "cohere2",
+        "families": [
+          "cohere2"
+        ],
+        "parameter_size": "111.1B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "llama3.2-vision:latest",
+      "model": "llama3.2-vision:latest",
+      "modified_at": "2025-03-31T07:01:21.547134577Z",
+      "size": 7901829417,
+      "digest": "085a1fdae525a3804ac95416b38498099c241defd0f1efc71dcca7f63190ba3d",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "mllama",
+        "families": [
+          "mllama",
+          "mllama"
+        ],
+        "parameter_size": "9.8B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  ]
+}
+2025-04-12 23:43:34,042 - INFO - Found 3 models on server 203.69.53.137:12392
+2025-04-12 23:43:34,043 - INFO - Current DB models for 203.69.53.137:12392: [
+  {
+    "id": 2355,
+    "name": "command-a:latest",
+    "parameter_size": "111.1B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 64025.43145751953
+  },
+  {
+    "id": 2354,
+    "name": "deepseek-r1:70b",
+    "parameter_size": "70.6B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 40550.61121368408
+  },
+  {
+    "id": 2356,
+    "name": "llama3.2-vision:latest",
+    "parameter_size": "9.8B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 7535.771767616272
+  }
+]
+2025-04-12 23:43:34,043 - INFO - API Model: deepseek-r1:70b, Size: 40550.61121368408 MB, Params: 70.6B, Quant: Q4_K_M
+2025-04-12 23:43:34,043 - INFO - Existing model: deepseek-r1:70b, Size: 40550.61121368408 MB, Params: 70.6B, Quant: Q4_K_M
+2025-04-12 23:43:34,043 - INFO - No changes for model deepseek-r1:70b
+2025-04-12 23:43:34,043 - INFO - API Model: command-a:latest, Size: 64025.43145751953 MB, Params: 111.1B, Quant: Q4_K_M
+2025-04-12 23:43:34,043 - INFO - Existing model: command-a:latest, Size: 64025.43145751953 MB, Params: 111.1B, Quant: Q4_K_M
+2025-04-12 23:43:34,043 - INFO - No changes for model command-a:latest
+2025-04-12 23:43:34,043 - INFO - API Model: llama3.2-vision:latest, Size: 7535.771767616272 MB, Params: 9.8B, Quant: Q4_K_M
+2025-04-12 23:43:34,043 - INFO - Existing model: llama3.2-vision:latest, Size: 7535.771767616272 MB, Params: 9.8B, Quant: Q4_K_M
+2025-04-12 23:43:34,043 - INFO - No changes for model llama3.2-vision:latest
+2025-04-12 23:43:34,046 - INFO - Server 203.69.53.137:12392 - Added: 0, Updated: 0, Deleted: 0
+2025-04-12 23:43:34,046 - INFO - ===== Updating models for server 52.34.69.214:8181 =====
+2025-04-12 23:43:34,046 - INFO - Fetching models from http://52.34.69.214:8181/api/tags
+2025-04-12 23:43:34,624 - ERROR - Exception fetching models: HTTPConnectionPool(host='34.254.179.120', port=11300): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c742333b0>, 'Connection to 34.254.179.120 timed out. (connect timeout=10)'))
+2025-04-12 23:43:34,624 - WARNING - No models found for server 34.254.179.120:11300
+2025-04-12 23:43:34,624 - INFO - ===== Updating models for server 3.8.199.209:6588 =====
+2025-04-12 23:43:34,624 - INFO - Fetching models from http://3.8.199.209:6588/api/tags
+2025-04-12 23:43:35,583 - ERROR - Exception fetching models: HTTPConnectionPool(host='18.144.40.248', port=18003): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74233ec0>, 'Connection to 18.144.40.248 timed out. (connect timeout=10)'))
+2025-04-12 23:43:35,583 - WARNING - No models found for server 18.144.40.248:18003
+2025-04-12 23:43:35,583 - INFO - ===== Updating models for server 16.170.238.116:14894 =====
+2025-04-12 23:43:35,583 - INFO - Fetching models from http://16.170.238.116:14894/api/tags
+2025-04-12 23:43:36,791 - ERROR - Exception fetching models: HTTPConnectionPool(host='114.32.203.179', port=11434): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421c140>, 'Connection to 114.32.203.179 timed out. (connect timeout=10)'))
+2025-04-12 23:43:36,791 - WARNING - No models found for server 114.32.203.179:11434
+2025-04-12 23:43:36,791 - INFO - ===== Updating models for server 3.95.152.148:30017 =====
+2025-04-12 23:43:36,791 - INFO - Fetching models from http://3.95.152.148:30017/api/tags
+2025-04-12 23:43:40,588 - ERROR - Exception fetching models: HTTPConnectionPool(host='15.152.34.20', port=21515): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c742444d0>, 'Connection to 15.152.34.20 timed out. (connect timeout=10)'))
+2025-04-12 23:43:40,588 - WARNING - No models found for server 15.152.34.20:21515
+2025-04-12 23:43:40,588 - INFO - ===== Updating models for server 43.201.7.172:2375 =====
+2025-04-12 23:43:40,588 - INFO - Fetching models from http://43.201.7.172:2375/api/tags
+2025-04-12 23:43:44,056 - ERROR - Exception fetching models: HTTPConnectionPool(host='52.34.69.214', port=8181): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421e480>, 'Connection to 52.34.69.214 timed out. (connect timeout=10)'))
+2025-04-12 23:43:44,056 - WARNING - No models found for server 52.34.69.214:8181
+2025-04-12 23:43:44,056 - INFO - ===== Updating models for server 18.181.190.62:8731 =====
+2025-04-12 23:43:44,056 - INFO - Fetching models from http://18.181.190.62:8731/api/tags
+2025-04-12 23:43:44,635 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.8.199.209', port=6588): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421d5b0>, 'Connection to 3.8.199.209 timed out. (connect timeout=10)'))
+2025-04-12 23:43:44,635 - WARNING - No models found for server 3.8.199.209:6588
+2025-04-12 23:43:44,636 - INFO - ===== Updating models for server 51.20.114.46:12499 =====
+2025-04-12 23:43:44,636 - INFO - Fetching models from http://51.20.114.46:12499/api/tags
+2025-04-12 23:43:45,592 - ERROR - Exception fetching models: HTTPConnectionPool(host='16.170.238.116', port=14894): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c742304a0>, 'Connection to 16.170.238.116 timed out. (connect timeout=10)'))
+2025-04-12 23:43:45,592 - WARNING - No models found for server 16.170.238.116:14894
+2025-04-12 23:43:45,592 - INFO - ===== Updating models for server 65.0.97.180:2376 =====
+2025-04-12 23:43:45,592 - INFO - Fetching models from http://65.0.97.180:2376/api/tags
+2025-04-12 23:43:46,802 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.95.152.148', port=30017): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74230e60>, 'Connection to 3.95.152.148 timed out. (connect timeout=10)'))
+2025-04-12 23:43:46,802 - WARNING - No models found for server 3.95.152.148:30017
+2025-04-12 23:43:46,802 - INFO - ===== Updating models for server 13.53.36.81:2598 =====
+2025-04-12 23:43:46,802 - INFO - Fetching models from http://13.53.36.81:2598/api/tags
+2025-04-12 23:43:50,599 - ERROR - Exception fetching models: HTTPConnectionPool(host='43.201.7.172', port=2375): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74232750>, 'Connection to 43.201.7.172 timed out. (connect timeout=10)'))
+2025-04-12 23:43:50,599 - WARNING - No models found for server 43.201.7.172:2375
+2025-04-12 23:43:50,599 - INFO - ===== Updating models for server 3.38.253.35:4700 =====
+2025-04-12 23:43:50,599 - INFO - Fetching models from http://3.38.253.35:4700/api/tags
+2025-04-12 23:43:54,067 - ERROR - Exception fetching models: HTTPConnectionPool(host='18.181.190.62', port=8731): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c742468a0>, 'Connection to 18.181.190.62 timed out. (connect timeout=10)'))
+2025-04-12 23:43:54,067 - WARNING - No models found for server 18.181.190.62:8731
+2025-04-12 23:43:54,067 - INFO - ===== Updating models for server 18.200.195.72:12000 =====
+2025-04-12 23:43:54,067 - INFO - Fetching models from http://18.200.195.72:12000/api/tags
+2025-04-12 23:43:54,641 - ERROR - Exception fetching models: HTTPConnectionPool(host='51.20.114.46', port=12499): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74232de0>, 'Connection to 51.20.114.46 timed out. (connect timeout=10)'))
+2025-04-12 23:43:54,641 - WARNING - No models found for server 51.20.114.46:12499
+2025-04-12 23:43:54,641 - INFO - ===== Updating models for server 13.203.204.120:8000 =====
+2025-04-12 23:43:54,641 - INFO - Fetching models from http://13.203.204.120:8000/api/tags
+2025-04-12 23:43:55,548 - INFO - API Response: {
+  "models": [
+    {
+      "name": "codellama:13b",
+      "modified_at": "2023-11-04T14:56:49.277302595-07:00",
+      "size": 7365960935,
+      "digest": "9f438cb9cd581fc025612d27f7c1a6669ff83a8bb0ed86c94fcf4c5440555697",
+      "details": {
+        "format": "gguf",
+        "family": "llama",
+        "families": null,
+        "parameter_size": "13B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "deepseek-r1:latest",
+      "model": "deepseek-r1:latest",
+      "modified_at": "2025-03-29T20:18:17.974766226Z",
+      "size": 4683075271,
+      "digest": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "7.6B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "openchat:7b",
+      "model": "openchat:7b",
+      "modified_at": "2025-02-03T17:45:24.5347459+08:00",
+      "size": 4109876386,
+      "digest": "537a4e03b649d93bf57381199a85f412bfc35912e46db197407740230968e71f",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "7B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "qwen2.5:1.5b",
+      "model": "qwen2.5:1.5b",
+      "modified_at": "2025-02-13T19:55:50.4459752+08:00",
+      "size": 986061892,
+      "digest": "65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "1.5B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  ]
+}
+2025-04-12 23:43:55,548 - INFO - Found 4 models on server 13.203.204.120:8000
+2025-04-12 23:43:55,548 - INFO - Current DB models for 13.203.204.120:8000: [
+  {
+    "id": 1783,
+    "name": "codellama:13b",
+    "parameter_size": "13B",
+    "quantization_level": "Q4_0",
+    "size_mb": 7024.727759361267
+  },
+  {
+    "id": 1782,
+    "name": "deepseek-r1:latest",
+    "parameter_size": "7.6B",
+    "quantization_level": "Q4_K_M",
+    "size_mb": 4466.128607749939
+  },
+  {
+    "id": 1781,
+    "name": "openchat:7b",
+    "parameter_size": "7B",
+    "quantization_level": "Q4_0",
+    "size_mb": 3919.4835529327393
+  }
+]
+2025-04-12 23:43:55,548 - INFO - API Model: codellama:13b, Size: 7024.727759361267 MB, Params: 13B, Quant: Q4_0
+2025-04-12 23:43:55,548 - INFO - Existing model: codellama:13b, Size: 7024.727759361267 MB, Params: 13B, Quant: Q4_0
+2025-04-12 23:43:55,548 - INFO - No changes for model codellama:13b
+2025-04-12 23:43:55,548 - INFO - API Model: deepseek-r1:latest, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:43:55,548 - INFO - Existing model: deepseek-r1:latest, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:43:55,548 - INFO - No changes for model deepseek-r1:latest
+2025-04-12 23:43:55,548 - INFO - API Model: openchat:7b, Size: 3919.4835529327393 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:55,549 - INFO - Existing model: openchat:7b, Size: 3919.4835529327393 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:43:55,549 - INFO - No changes for model openchat:7b
+2025-04-12 23:43:55,549 - INFO - API Model: qwen2.5:1.5b, Size: 940.3819007873535 MB, Params: 1.5B, Quant: Q4_K_M
+2025-04-12 23:43:55,549 - INFO - Adding new model: qwen2.5:1.5b, Size: 940.3819007873535 MB, Params: 1.5B, Quant: Q4_K_M
+2025-04-12 23:43:55,564 - INFO - Server 13.203.204.120:8000 - Added: 1, Updated: 0, Deleted: 0
+2025-04-12 23:43:55,564 - INFO - ===== Updating models for server 3.79.36.25:3067 =====
+2025-04-12 23:43:55,564 - INFO - Fetching models from http://3.79.36.25:3067/api/tags
+2025-04-12 23:43:55,603 - ERROR - Exception fetching models: HTTPConnectionPool(host='65.0.97.180', port=2376): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c77b67ad0>, 'Connection to 65.0.97.180 timed out. (connect timeout=10)'))
+2025-04-12 23:43:55,603 - WARNING - No models found for server 65.0.97.180:2376
+2025-04-12 23:43:55,603 - INFO - ===== Updating models for server 3.79.42.23:12217 =====
+2025-04-12 23:43:55,603 - INFO - Fetching models from http://3.79.42.23:12217/api/tags
+2025-04-12 23:43:56,813 - ERROR - Exception fetching models: HTTPConnectionPool(host='13.53.36.81', port=2598): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421f500>, 'Connection to 13.53.36.81 timed out. (connect timeout=10)'))
+2025-04-12 23:43:56,813 - WARNING - No models found for server 13.53.36.81:2598
+2025-04-12 23:43:56,813 - INFO - ===== Updating models for server 34.220.176.49:2065 =====
+2025-04-12 23:43:56,813 - INFO - Fetching models from http://34.220.176.49:2065/api/tags
+2025-04-12 23:44:00,603 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.38.253.35', port=4700): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421cc50>, 'Connection to 3.38.253.35 timed out. (connect timeout=10)'))
+2025-04-12 23:44:00,603 - WARNING - No models found for server 3.38.253.35:4700
+2025-04-12 23:44:00,611 - INFO - ===== Updating models for server 54.202.119.73:347 =====
+2025-04-12 23:44:00,611 - INFO - Fetching models from http://54.202.119.73:347/api/tags
+2025-04-12 23:44:04,077 - ERROR - Exception fetching models: HTTPConnectionPool(host='18.200.195.72', port=12000): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421eb40>, 'Connection to 18.200.195.72 timed out. (connect timeout=10)'))
+2025-04-12 23:44:04,077 - WARNING - No models found for server 18.200.195.72:12000
+2025-04-12 23:44:04,077 - INFO - ===== Updating models for server 54.184.19.149:1962 =====
+2025-04-12 23:44:04,077 - INFO - Fetching models from http://54.184.19.149:1962/api/tags
+2025-04-12 23:44:05,575 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.79.36.25', port=3067): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74233b00>, 'Connection to 3.79.36.25 timed out. (connect timeout=10)'))
+2025-04-12 23:44:05,575 - WARNING - No models found for server 3.79.36.25:3067
+2025-04-12 23:44:05,575 - INFO - ===== Updating models for server 3.123.228.88:18081 =====
+2025-04-12 23:44:05,575 - INFO - Fetching models from http://3.123.228.88:18081/api/tags
+2025-04-12 23:44:05,614 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.79.42.23', port=12217): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c742308c0>, 'Connection to 3.79.42.23 timed out. (connect timeout=10)'))
+2025-04-12 23:44:05,614 - WARNING - No models found for server 3.79.42.23:12217
+2025-04-12 23:44:05,614 - INFO - ===== Updating models for server 34.203.194.59:8243 =====
+2025-04-12 23:44:05,614 - INFO - Fetching models from http://34.203.194.59:8243/api/tags
+2025-04-12 23:44:06,818 - ERROR - Exception fetching models: HTTPConnectionPool(host='34.220.176.49', port=2065): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74232a80>, 'Connection to 34.220.176.49 timed out. (connect timeout=10)'))
+2025-04-12 23:44:06,818 - WARNING - No models found for server 34.220.176.49:2065
+2025-04-12 23:44:06,819 - INFO - ===== Updating models for server 15.228.101.133:2048 =====
+2025-04-12 23:44:06,819 - INFO - Fetching models from http://15.228.101.133:2048/api/tags
+2025-04-12 23:44:10,622 - ERROR - Exception fetching models: HTTPConnectionPool(host='54.202.119.73', port=347): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74244c50>, 'Connection to 54.202.119.73 timed out. (connect timeout=10)'))
+2025-04-12 23:44:10,622 - WARNING - No models found for server 54.202.119.73:347
+2025-04-12 23:44:10,622 - INFO - ===== Updating models for server 54.200.147.255:11434 =====
+2025-04-12 23:44:10,622 - INFO - Fetching models from http://54.200.147.255:11434/api/tags
+2025-04-12 23:44:11,106 - INFO - API Response: {
+  "models": [
+    {
+      "name": "deepseek-r1:latest",
+      "model": "deepseek-r1:latest",
+      "modified_at": "2025-03-29T20:18:17.974766226Z",
+      "size": 4683075271,
+      "digest": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "7.6B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "llama3:latest",
+      "modified_at": "2023-12-07T09:32:18.757212583-08:00",
+      "size": 3825819519,
+      "digest": "fe938a131f40e6f6d40083c9f0f430a515233eb2edaa6d72eb85c50d64f2300e",
+      "details": {
+        "format": "gguf",
+        "family": "llama",
+        "families": null,
+        "parameter_size": "7B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "openchat:7b",
+      "model": "openchat:7b",
+      "modified_at": "2025-02-03T17:45:24.5347459+08:00",
+      "size": 4109876386,
+      "digest": "537a4e03b649d93bf57381199a85f412bfc35912e46db197407740230968e71f",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "7B",
+        "quantization_level": "Q4_0"
+      }
+    }
+  ]
+}
+2025-04-12 23:44:11,106 - INFO - Found 3 models on server 54.200.147.255:11434
+2025-04-12 23:44:11,107 - INFO - Current DB models for 54.200.147.255:11434: [
+  {
+    "id": 1537,
+    "name": "codellama:13b",
+    "parameter_size": "13B",
+    "quantization_level": "Q4_0",
+    "size_mb": 7024.727759361267
+  },
+  {
+    "id": 1536,
+    "name": "openchat:7b",
+    "parameter_size": "7B",
+    "quantization_level": "Q4_0",
+    "size_mb": 3919.4835529327393
+  }
+]
+2025-04-12 23:44:11,107 - INFO - API Model: deepseek-r1:latest, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:44:11,107 - INFO - Adding new model: deepseek-r1:latest, Size: 4466.128607749939 MB, Params: 7.6B, Quant: Q4_K_M
+2025-04-12 23:44:11,107 - INFO - API Model: llama3:latest, Size: 3648.585814476013 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:44:11,107 - INFO - Adding new model: llama3:latest, Size: 3648.585814476013 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:44:11,107 - INFO - API Model: openchat:7b, Size: 3919.4835529327393 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:44:11,107 - INFO - Existing model: openchat:7b, Size: 3919.4835529327393 MB, Params: 7B, Quant: Q4_0
+2025-04-12 23:44:11,107 - INFO - No changes for model openchat:7b
+2025-04-12 23:44:11,107 - INFO - Removing model no longer on server: codellama:13b
+2025-04-12 23:44:11,127 - INFO - Server 54.200.147.255:11434 - Added: 2, Updated: 0, Deleted: 1
+2025-04-12 23:44:11,127 - INFO - ===== Updating models for server 54.237.243.213:12399 =====
+2025-04-12 23:44:11,127 - INFO - Fetching models from http://54.237.243.213:12399/api/tags
+2025-04-12 23:44:14,088 - ERROR - Exception fetching models: HTTPConnectionPool(host='54.184.19.149', port=1962): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74247740>, 'Connection to 54.184.19.149 timed out. (connect timeout=10)'))
+2025-04-12 23:44:14,088 - WARNING - No models found for server 54.184.19.149:1962
+2025-04-12 23:44:14,088 - INFO - ===== Updating models for server 15.168.173.70:1080 =====
+2025-04-12 23:44:14,088 - INFO - Fetching models from http://15.168.173.70:1080/api/tags
+2025-04-12 23:44:15,586 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.123.228.88', port=18081): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74247fb0>, 'Connection to 3.123.228.88 timed out. (connect timeout=10)'))
+2025-04-12 23:44:15,586 - WARNING - No models found for server 3.123.228.88:18081
+2025-04-12 23:44:15,586 - INFO - ===== Updating models for server 35.78.205.71:18081 =====
+2025-04-12 23:44:15,586 - INFO - Fetching models from http://35.78.205.71:18081/api/tags
+2025-04-12 23:44:15,625 - ERROR - Exception fetching models: HTTPConnectionPool(host='34.203.194.59', port=8243): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421ecf0>, 'Connection to 34.203.194.59 timed out. (connect timeout=10)'))
+2025-04-12 23:44:15,625 - WARNING - No models found for server 34.203.194.59:8243
+2025-04-12 23:44:15,625 - INFO - ===== Updating models for server 13.53.126.127:3144 =====
+2025-04-12 23:44:15,625 - INFO - Fetching models from http://13.53.126.127:3144/api/tags
+2025-04-12 23:44:16,829 - ERROR - Exception fetching models: HTTPConnectionPool(host='15.228.101.133', port=2048): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421c950>, 'Connection to 15.228.101.133 timed out. (connect timeout=10)'))
+2025-04-12 23:44:16,829 - WARNING - No models found for server 15.228.101.133:2048
+2025-04-12 23:44:16,829 - INFO - ===== Updating models for server 3.144.225.80:12183 =====
+2025-04-12 23:44:16,829 - INFO - Fetching models from http://3.144.225.80:12183/api/tags
+2025-04-12 23:44:21,138 - ERROR - Exception fetching models: HTTPConnectionPool(host='54.237.243.213', port=12399): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74232f00>, 'Connection to 54.237.243.213 timed out. (connect timeout=10)'))
+2025-04-12 23:44:21,138 - WARNING - No models found for server 54.237.243.213:12399
+2025-04-12 23:44:21,138 - INFO - ===== Updating models for server 52.41.173.179:8506 =====
+2025-04-12 23:44:21,138 - INFO - Fetching models from http://52.41.173.179:8506/api/tags
+2025-04-12 23:44:24,096 - ERROR - Exception fetching models: HTTPConnectionPool(host='15.168.173.70', port=1080): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74230e00>, 'Connection to 15.168.173.70 timed out. (connect timeout=10)'))
+2025-04-12 23:44:24,096 - WARNING - No models found for server 15.168.173.70:1080
+2025-04-12 23:44:24,096 - INFO - ===== Updating models for server 35.91.76.142:234 =====
+2025-04-12 23:44:24,096 - INFO - Fetching models from http://35.91.76.142:234/api/tags
+2025-04-12 23:44:25,588 - ERROR - Exception fetching models: HTTPConnectionPool(host='35.78.205.71', port=18081): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74246600>, 'Connection to 35.78.205.71 timed out. (connect timeout=10)'))
+2025-04-12 23:44:25,588 - WARNING - No models found for server 35.78.205.71:18081
+2025-04-12 23:44:25,588 - INFO - ===== Updating models for server 34.227.194.82:12101 =====
+2025-04-12 23:44:25,588 - INFO - Fetching models from http://34.227.194.82:12101/api/tags
+2025-04-12 23:44:25,636 - ERROR - Exception fetching models: HTTPConnectionPool(host='13.53.126.127', port=3144): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c76d65910>, 'Connection to 13.53.126.127 timed out. (connect timeout=10)'))
+2025-04-12 23:44:25,636 - WARNING - No models found for server 13.53.126.127:3144
+2025-04-12 23:44:25,636 - INFO - ===== Updating models for server 43.203.252.85:8072 =====
+2025-04-12 23:44:25,636 - INFO - Fetching models from http://43.203.252.85:8072/api/tags
+2025-04-12 23:44:26,839 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.144.225.80', port=12183): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421ce90>, 'Connection to 3.144.225.80 timed out. (connect timeout=10)'))
+2025-04-12 23:44:26,839 - WARNING - No models found for server 3.144.225.80:12183
+2025-04-12 23:44:26,839 - INFO - ===== Updating models for server 3.109.154.68:30002 =====
+2025-04-12 23:44:26,839 - INFO - Fetching models from http://3.109.154.68:30002/api/tags
+2025-04-12 23:44:31,144 - ERROR - Exception fetching models: HTTPConnectionPool(host='52.41.173.179', port=8506): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74230620>, 'Connection to 52.41.173.179 timed out. (connect timeout=10)'))
+2025-04-12 23:44:31,144 - WARNING - No models found for server 52.41.173.179:8506
+2025-04-12 23:44:31,144 - INFO - ===== Updating models for server 18.183.162.56:18081 =====
+2025-04-12 23:44:31,144 - INFO - Fetching models from http://18.183.162.56:18081/api/tags
+2025-04-12 23:44:34,106 - ERROR - Exception fetching models: HTTPConnectionPool(host='35.91.76.142', port=234): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74233410>, 'Connection to 35.91.76.142 timed out. (connect timeout=10)'))
+2025-04-12 23:44:34,106 - WARNING - No models found for server 35.91.76.142:234
+2025-04-12 23:44:34,106 - INFO - ===== Updating models for server 15.168.11.204:12283 =====
+2025-04-12 23:44:34,106 - INFO - Fetching models from http://15.168.11.204:12283/api/tags
+2025-04-12 23:44:35,599 - ERROR - Exception fetching models: HTTPConnectionPool(host='34.227.194.82', port=12101): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74232840>, 'Connection to 34.227.194.82 timed out. (connect timeout=10)'))
+2025-04-12 23:44:35,599 - WARNING - No models found for server 34.227.194.82:12101
+2025-04-12 23:44:35,599 - INFO - ===== Updating models for server 3.96.141.18:20256 =====
+2025-04-12 23:44:35,599 - INFO - Fetching models from http://3.96.141.18:20256/api/tags
+2025-04-12 23:44:35,647 - ERROR - Exception fetching models: HTTPConnectionPool(host='43.203.252.85', port=8072): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74247e00>, 'Connection to 43.203.252.85 timed out. (connect timeout=10)'))
+2025-04-12 23:44:35,647 - WARNING - No models found for server 43.203.252.85:8072
+2025-04-12 23:44:35,647 - INFO - ===== Updating models for server 3.27.145.20:50009 =====
+2025-04-12 23:44:35,647 - INFO - Fetching models from http://3.27.145.20:50009/api/tags
+2025-04-12 23:44:36,850 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.109.154.68', port=30002): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74233c80>, 'Connection to 3.109.154.68 timed out. (connect timeout=10)'))
+2025-04-12 23:44:36,850 - WARNING - No models found for server 3.109.154.68:30002
+2025-04-12 23:44:36,850 - INFO - ===== Updating models for server 51.84.67.88:23182 =====
+2025-04-12 23:44:36,850 - INFO - Fetching models from http://51.84.67.88:23182/api/tags
+2025-04-12 23:44:41,155 - ERROR - Exception fetching models: HTTPConnectionPool(host='18.183.162.56', port=18081): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74230b60>, 'Connection to 18.183.162.56 timed out. (connect timeout=10)'))
+2025-04-12 23:44:41,155 - WARNING - No models found for server 18.183.162.56:18081
+2025-04-12 23:44:41,155 - INFO - ===== Updating models for server 15.223.198.22:12379 =====
+2025-04-12 23:44:41,155 - INFO - Fetching models from http://15.223.198.22:12379/api/tags
+2025-04-12 23:44:44,117 - ERROR - Exception fetching models: HTTPConnectionPool(host='15.168.11.204', port=12283): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421c6b0>, 'Connection to 15.168.11.204 timed out. (connect timeout=10)'))
+2025-04-12 23:44:44,117 - WARNING - No models found for server 15.168.11.204:12283
+2025-04-12 23:44:44,117 - INFO - ===== Updating models for server 35.180.25.168:452 =====
+2025-04-12 23:44:44,117 - INFO - Fetching models from http://35.180.25.168:452/api/tags
+2025-04-12 23:44:45,608 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.96.141.18', port=20256): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421ec90>, 'Connection to 3.96.141.18 timed out. (connect timeout=10)'))
+2025-04-12 23:44:45,608 - WARNING - No models found for server 3.96.141.18:20256
+2025-04-12 23:44:45,608 - INFO - ===== Updating models for server 3.96.145.30:4664 =====
+2025-04-12 23:44:45,608 - INFO - Fetching models from http://3.96.145.30:4664/api/tags
+2025-04-12 23:44:45,658 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.27.145.20', port=50009): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421cf20>, 'Connection to 3.27.145.20 timed out. (connect timeout=10)'))
+2025-04-12 23:44:45,658 - WARNING - No models found for server 3.27.145.20:50009
+2025-04-12 23:44:45,658 - INFO - ===== Updating models for server 35.77.216.213:17020 =====
+2025-04-12 23:44:45,658 - INFO - Fetching models from http://35.77.216.213:17020/api/tags
+2025-04-12 23:44:46,860 - ERROR - Exception fetching models: HTTPConnectionPool(host='51.84.67.88', port=23182): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74244890>, 'Connection to 51.84.67.88 timed out. (connect timeout=10)'))
+2025-04-12 23:44:46,860 - WARNING - No models found for server 51.84.67.88:23182
+2025-04-12 23:44:46,860 - INFO - ===== Updating models for server 54.95.119.3:22345 =====
+2025-04-12 23:44:46,860 - INFO - Fetching models from http://54.95.119.3:22345/api/tags
+2025-04-12 23:44:51,166 - ERROR - Exception fetching models: HTTPConnectionPool(host='15.223.198.22', port=12379): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421ef60>, 'Connection to 15.223.198.22 timed out. (connect timeout=10)'))
+2025-04-12 23:44:51,166 - WARNING - No models found for server 15.223.198.22:12379
+2025-04-12 23:44:54,128 - ERROR - Exception fetching models: HTTPConnectionPool(host='35.180.25.168', port=452): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c7421ce30>, 'Connection to 35.180.25.168 timed out. (connect timeout=10)'))
+2025-04-12 23:44:54,128 - WARNING - No models found for server 35.180.25.168:452
+2025-04-12 23:44:55,618 - ERROR - Exception fetching models: HTTPConnectionPool(host='3.96.145.30', port=4664): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74231160>, 'Connection to 3.96.145.30 timed out. (connect timeout=10)'))
+2025-04-12 23:44:55,618 - WARNING - No models found for server 3.96.145.30:4664
+2025-04-12 23:44:55,668 - ERROR - Exception fetching models: HTTPConnectionPool(host='35.77.216.213', port=17020): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74231fd0>, 'Connection to 35.77.216.213 timed out. (connect timeout=10)'))
+2025-04-12 23:44:55,668 - WARNING - No models found for server 35.77.216.213:17020
+2025-04-12 23:44:56,871 - ERROR - Exception fetching models: HTTPConnectionPool(host='54.95.119.3', port=22345): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x720c74230f20>, 'Connection to 54.95.119.3 timed out. (connect timeout=10)'))
+2025-04-12 23:44:56,871 - WARNING - No models found for server 54.95.119.3:22345
+2025-04-12 23:44:56,872 - INFO - Model update completed in 840.92 seconds
+2025-04-12 23:44:56,872 - INFO - Summary: 461 successful, 416 failed
+2025-04-12 23:44:56,872 - INFO - Models: 176 added, 0 updated, 137 deleted
+(venv) adam@docker:~/Documents/Code/Ollama_Scanner/DiscordBot$ 

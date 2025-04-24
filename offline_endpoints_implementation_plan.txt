@@ -1,0 +1,76 @@
+# Implementation Plan for Offline Endpoint Management
+
+## 1. Current Database Structure Analysis
+- The `endpoints` table already has columns for tracking inactive endpoints:
+  - `is_active`: Stores whether an endpoint is active (1) or inactive (0)
+  - `inactive_reason`: Stores the reason why an endpoint is inactive
+  - `last_check_date`: Stores when the endpoint was last checked
+
+## 2. Code Structure Analysis
+- The `prune_bad_endpoints.py` script is already set up to check endpoints and mark them as inactive
+- The `mark_endpoint_as_inactive()` function already exists and updates the necessary fields
+- The script can be run with various parameters to control which endpoints to check
+
+## 3. Implementation Strategy
+
+### 3.1 Create Scheduled Job for Reactivation
+We'll create a new script `check_offline_endpoints.py` that will:
+1. Query all inactive endpoints
+2. Test their connectivity
+3. Reactivate endpoints that come back online
+4. Run on a scheduled basis (hourly)
+
+### 3.2 Update Discord Bot Logic
+We'll modify the Discord bot to:
+1. Filter out inactive endpoints from commands that list available endpoints
+2. Add a dedicated command to view offline endpoints
+3. Add a command to force recheck of specific offline endpoints
+4. Add a command to see statistics about offline vs. active endpoints
+
+### 3.3 Database Usage
+Since the necessary columns already exist, we'll focus on using them effectively:
+- Queries will filter by `is_active = TRUE` to get only active endpoints
+- Displays will include inactive status when relevant
+- Timestamp checking will help prioritize which offline endpoints to check first
+
+## 4. Implementation Steps
+
+### Step 1: Create check_offline_endpoints.py Script
+This script will check offline endpoints and reactivate them if they come back online. It will:
+- Query for endpoints where is_active = FALSE
+- Only check endpoints that haven't been checked recently
+- Use existing check_endpoint function to test connectivity
+- Mark endpoints as active if they come back online
+- Log statistics about reactivated endpoints
+
+### Step 2: Add Commands to Discord Bot
+We'll add a new command to view and manage offline endpoints:
+- `/offline_endpoints action:list` - List offline endpoints with reasons
+- `/offline_endpoints action:recheck ip:<ip> port:<port>` - Recheck a specific endpoint
+- `/offline_endpoints action:stats` - Show statistics about offline endpoints
+
+### Step 3: Update Bot's Command Registration
+Update the `on_ready` event to register the new offline_endpoints command
+
+### Step 4: Set Up Cron Job
+Create a script to set up a cron job to run the check_offline_endpoints.py script hourly
+
+## 5. Testing Plan
+1. Mark a few endpoints as inactive for testing
+2. Run the check_offline_endpoints.py script manually
+3. Test the new bot commands
+4. Verify that endpoints are correctly marked as active when they come back online
+5. Verify that inactive endpoints are not included in regular endpoint listings
+
+## 6. Additional Improvements
+1. Add database indexes for faster queries:
+   ```sql
+   CREATE INDEX IF NOT EXISTS idx_endpoints_active ON endpoints(is_active);
+   CREATE INDEX IF NOT EXISTS idx_endpoints_last_check ON endpoints(last_check_date);
+   ```
+
+2. Add monitor dashboard to track inactive endpoint statistics over time
+
+3. Add webhook notifications for when a significant number of endpoints go offline or come back online
+
+This implementation plan leverages the existing database structure and code, requiring minimal changes while providing a robust system for tracking offline endpoints and automatically recovering them when they come back online. 

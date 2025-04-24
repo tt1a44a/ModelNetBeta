@@ -1,0 +1,19 @@
+# Test URLs for LiteLLM proxies
+# Format: one URL per line
+
+# Known LiteLLM examples
+https://api.litellm.ai
+https://api.openai.com
+
+# AI service providers that might use LiteLLM
+https://api.deepinfra.com
+https://api.together.xyz
+https://api.anthropic.com
+https://api.mistral.ai
+
+# Self-hosted common ports 
+http://localhost:8000
+http://localhost:8080
+http://localhost:11434
+
+# Add your own URLs below 

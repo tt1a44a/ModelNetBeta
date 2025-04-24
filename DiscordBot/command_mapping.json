@@ -1,0 +1,94 @@
+{
+    "searchmodels": {
+        "unified_command": "unified_search",
+        "type": "name"
+    },
+    "modelsbyparam": {
+        "unified_command": "unified_search",
+        "type": "params"
+    },
+    "allmodels": {
+        "unified_command": "unified_search",
+        "type": "all"
+    },
+    "models_with_servers": {
+        "unified_command": "unified_search",
+        "type": "with_servers"
+    },
+    "listservers": {
+        "unified_command": "server",
+        "action": "list"
+    },
+    "checkserver": {
+        "unified_command": "server",
+        "action": "check"
+    },
+    "syncserver": {
+        "unified_command": "server",
+        "action": "sync"
+    },
+    "serverinfo": {
+        "unified_command": "server",
+        "action": "info"
+    },
+    "verifyall": {
+        "unified_command": "server",
+        "action": "verify"
+    },
+    "purgeunreachable": {
+        "unified_command": "server",
+        "action": "purge"
+    },
+    "refreshcommands": {
+        "unified_command": "admin",
+        "action": "refresh"
+    },
+    "guild_sync": {
+        "unified_command": "admin",
+        "action": "guild_sync"
+    },
+    "refreshcommandsv2": {
+        "unified_command": "admin",
+        "action": "full_refresh"
+    },
+    "cleanup": {
+        "unified_command": "admin",
+        "action": "cleanup"
+    },
+    "updateallmodels": {
+        "unified_command": "admin",
+        "action": "update_models"
+    },
+    "listmodels": {
+        "unified_command": "model",
+        "action": "list"
+    },
+    "selectmodel": {
+        "unified_command": "model",
+        "action": "select"
+    },
+    "addmodel": {
+        "unified_command": "model",
+        "action": "add"
+    },
+    "deletemodel": {
+        "unified_command": "model",
+        "action": "delete"
+    },
+    "currentmodel": {
+        "unified_command": "model",
+        "action": "current"
+    },
+    "interact": {
+        "unified_command": "chat"
+    },
+    "quickprompt": {
+        "unified_command": "chat"
+    },
+    "benchmark": {
+        "unified_command": "benchmark"
+    },
+    "help": {
+        "unified_command": "help"
+    }
+}

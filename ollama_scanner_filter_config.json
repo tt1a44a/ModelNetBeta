@@ -1,0 +1,58 @@
+{
+    "id": "ollama_scanner_filter",
+    "name": "Ollama Scanner",
+    "description": "Discover, analyze, and connect to Ollama instances across the internet using Shodan API",
+    "version": "1.0.0",
+    "author": "Ollama Scanner Team",
+    "license": "MIT",
+    "type": "filter",
+    "icon": "search",
+    "tags": ["ollama", "shodan", "scanner", "discovery"],
+    "homepage": "https://github.com/yourusername/ollama-scanner",
+    "valves": {
+        "SHODAN_API_KEY": {
+            "description": "Shodan API key for scanning Ollama instances",
+            "type": "string",
+            "required": false,
+            "default": ""
+        },
+        "MAX_RESULTS": {
+            "description": "Maximum number of results to return from a scan",
+            "type": "number",
+            "required": false,
+            "default": 100
+        },
+        "SEARCH_QUERY": {
+            "description": "Default Shodan search query",
+            "type": "string",
+            "required": false,
+            "default": "product:Ollama"
+        },
+        "REQUEST_TIMEOUT": {
+            "description": "Timeout in seconds for requests to Ollama instances",
+            "type": "number",
+            "required": false,
+            "default": 5
+        }
+    },
+    "userValves": {
+        "enable_scanner": {
+            "description": "Enable Ollama Scanner features",
+            "type": "boolean",
+            "required": false,
+            "default": true
+        },
+        "default_country_filter": {
+            "description": "Default country code filter for searching instances",
+            "type": "string",
+            "required": false,
+            "default": ""
+        },
+        "auto_add_endpoints": {
+            "description": "Automatically add discovered endpoints",
+            "type": "boolean",
+            "required": false,
+            "default": false
+        }
+    }
+} 

@@ -1,0 +1,12 @@
+# List of IP ranges to scan for Ollama instances
+# These are example ranges - replace with ranges you have permission to scan
+
+# Cloud provider ranges where Ollama instances might be deployed
+104.16.0.0/12  # Example: Cloudflare range
+34.64.0.0/10   # Example: Google Cloud range
+52.0.0.0/8     # Example: AWS range
+
+# Individual IPs known to host Ollama instances (examples)
+3.80.54.1
+34.239.104.215
+13.57.187.225 

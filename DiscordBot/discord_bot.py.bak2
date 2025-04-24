@@ -1,0 +1,2958 @@
+#!/usr/bin/env python3
+"""
+Discord Bot for interacting with Ollama Models.
+"""
+
+import os
+import json
+import requests
+import discord
+import logging
+import aiohttp
+import asyncio
+from discord import app_commands
+from discord.ext import commands
+from dotenv import load_dotenv
+from ollama_models import (
+    setup_database, 
+    get_models, 
+    get_model_by_id, 
+    add_model, 
+    delete_model, 
+    sync_models_with_server, 
+    get_servers
+)
+import sys
+import subprocess
+from pathlib import Path
+import sqlite3
+import time
+import commands_for_syncing  # Import the new module
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("discord_bot.log")
+    ]
+)
+logger = logging.getLogger('ollama_bot')
+
+# Load environment variables from .env file
+load_dotenv()
+    
+# Initialize bot
+intents = discord.Intents.default()
+intents.message_content = True  # Enable message content intent
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+DB_FILE = "ollama_instances.db"
+
+# Global aiohttp session
+session = None
+
+# Register additional commands from the commands_for_syncing module
+# This will happen after the session is initialized in on_ready
+
+# Define sorting choices for different contexts
+model_sort_choices = [
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Count", value="count")
+]
+
+server_sort_choices = [
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Size", value="size")
+]
+
+model_server_sort_choices = [
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Size", value="size"),
+    app_commands.Choice(name="IP", value="ip")
+]
+
+@bot.tree.command(name="ping", description="Check if the bot is responding")
+async def ping_command(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        start_time = time.time()
+        
+        # Get current time with more precision for latency calculation
+        response = await interaction.followup.send(f"Pong! 🏓")
+        
+        end_time = time.time()
+        response_time = (end_time - start_time) * 1000  # Convert to ms
+        
+        # Edit the message with the ping time
+        await response.edit(content=f"Pong! 🏓 Response time: {response_time:.2f}ms")
+        
+    except Exception as e:
+        logger.error(f"Error in ping command: {e}")
+        await safe_followup(interaction, f"Error in ping command: {e}")
+
+@bot.event
+async def on_ready():
+    """Called when the bot is ready and connected to Discord"""
+    try:
+        # Create global aiohttp session with proper timeouts
+        global session
+        timeout = aiohttp.ClientTimeout(total=30, sock_connect=10, sock_read=10)
+        session = aiohttp.ClientSession(timeout=timeout)
+        
+        logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
+        logger.info("------")
+        
+        # Start a keep-alive task for preventing disconnections
+        bot.loop.create_task(keep_alive())
+        
+        # DO NOT clear commands on startup - this was causing all commands to disappear
+        # Instead, we'll manage command registration more carefully
+        
+        # The list of approved commands for the streamlined bot
+        approved_commands = [
+            "manage_models",
+            "list_models", 
+            "db_info", 
+            "chat", 
+            "quickprompt", 
+            "benchmark",
+            "help",
+            "ping"
+        ]
+        
+        # Clear any commands not in our approved list
+        commands = await bot.tree.fetch_commands()
+        logger.info(f"Current commands: {', '.join([cmd.name for cmd in commands])}")
+        
+        for cmd in commands:
+            if cmd.name not in approved_commands:
+                logger.info(f"Removing command: {cmd.name}")
+                bot.tree.remove_command(cmd.name)
+        
+        # Sync the commands
+        await bot.tree.sync()
+        
+        # Register with each guild for immediate availability
+        for guild in bot.guilds:
+            try:
+                await bot.tree.sync(guild=guild)
+                logger.info(f"Synced commands with guild: {guild.name} (ID: {guild.id})")
+            except Exception as e:
+                logger.error(f"Error syncing commands with guild {guild.name}: {e}")
+        
+        # Set bot status
+        activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
+        await bot.change_presence(activity=activity)
+        
+        logger.info("Bot is ready!")
+        print(f"Bot is ready! Logged in as {bot.user} (ID: {bot.user.id})")
+        
+    except Exception as e:
+        logger.error(f"Error in on_ready: {str(e)}")
+        print(f"Error in on_ready: {str(e)}")
+
+async def keep_alive():
+    """Maintains bot connection with periodic network activity"""
+    logger.info("Connection maintenance task initiated")
+    while not bot.is_closed():
+        try:
+            # Log a heartbeat message every 5 minutes
+            logger.debug("Connection maintenance heartbeat")
+            await asyncio.sleep(300)  # 5 minutes
+        except Exception as e:
+            logger.error(f"Error in connection maintenance: {str(e)}")
+            await asyncio.sleep(60)  # Wait a minute and try again
+
+@bot.event
+async def on_close():
+    # Close aiohttp session when bot closes
+    if session:
+        await session.close()
+        logger.info("Closed aiohttp session")
+
+async def safe_defer(interaction):
+    """Safely defer an interaction with error handling for expired interactions"""
+    try:
+        # Check if the interaction is already responded to
+        if interaction.response.is_done():
+            logger.debug(f"Interaction {interaction.id} has already been responded to")
+            return True
+        
+        # Set a shorter timeout for deferring to avoid common timeouts
+        logger.debug(f"Deferring interaction {interaction.id}")
+        
+        # Use a timeout to ensure defer doesn't hang
+        try:
+            # Give a reasonable timeout for the defer operation
+            async with asyncio.timeout(2.0):  # 2 second timeout for defer
+                await interaction.response.defer(thinking=True, ephemeral=False)
+                logger.debug(f"Successfully deferred interaction {interaction.id}")
+                return True
+        except asyncio.TimeoutError:
+            logger.warning(f"Defer operation timed out for interaction {interaction.id}")
+            # Try to proceed anyway
+            return True
+            
+    except discord.errors.NotFound as e:
+        if e.code == 10062:  # Unknown interaction error code
+            logger.warning(f"Interaction {interaction.id} expired before deferring")
+            return False
+        else:
+            logger.error(f"Unidentified NotFound error in defer operation: {e}")
+            raise
+    except Exception as e:
+        logger.error(f"Error during defer operation: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        return False
+
+async def safe_followup(interaction, content, ephemeral=False):
+    """Safely send a followup message with error handling"""
+    try:
+        # For embeds, just send directly with length check
+        if isinstance(content, discord.Embed):
+            return await interaction.followup.send(content, ephemeral=ephemeral)
+        
+        # Check if content contains code blocks that might need to be preserved
+        contains_codeblock = "```" in content
+        
+        # If content is too long and contains codeblocks, handle special splitting
+        if len(content) > 2000 and contains_codeblock:
+            # Find all code blocks in the content
+            import re
+            # Regex to find code blocks with or without language specification
+            code_block_pattern = r'```(?:\w+)?\n([\s\S]*?)```'
+            
+            # Split the content around code blocks
+            parts = re.split(code_block_pattern, content)
+            
+            # Extract the code blocks themselves
+            code_blocks = re.findall(code_block_pattern, content)
+            
+            # Initialize variables for reconstructing the message
+            messages = []
+            current_message = ""
+            
+            # If the content starts with text before a code block
+            if not content.startswith("```"):
+                current_message = parts[0]
+                parts = parts[1:]
+            
+            # Process each code block and the text after it
+            for i, code_block in enumerate(code_blocks):
+                # Determine the language if specified
+                # Look for the language specifier in the original content
+                content_before_this_block = content[:content.find(code_block)]
+                last_code_marker = content_before_this_block.rfind("```")
+                if last_code_marker >= 0:
+                    # Extract the text between ``` and the newline
+                    lang_line = content_before_this_block[last_code_marker+3:].split("\n")[0].strip()
+                    lang_spec = lang_line if lang_line else ""
+                else:
+                    lang_spec = ""
+                
+                # Format the code block with language specifier
+                if lang_spec:
+                    formatted_block = f"```{lang_spec}\n{code_block}```"
+                else:
+                    formatted_block = f"```\n{code_block}```"
+                
+                # Check if adding this block would exceed Discord's limit
+                if len(current_message) + len(formatted_block) > 1950:
+                    # Send the current message before it gets too long
+                    if current_message:
+                        messages.append(current_message)
+                    current_message = formatted_block
+                else:
+                    current_message += formatted_block
+                
+                # Add any text that follows this code block (if any)
+                if i < len(parts) - 1:
+                    text_after = parts[i + 1]
+                    if len(current_message) + len(text_after) > 1950:
+                        messages.append(current_message)
+                        current_message = text_after
+                    else:
+                        current_message += text_after
+            
+            # Add any remaining content
+            if current_message:
+                messages.append(current_message)
+            
+            # Send all the message parts
+            responses = []
+            for i, msg in enumerate(messages):
+                if i == 0:
+                    responses.append(await interaction.followup.send(msg, ephemeral=ephemeral))
+                else:
+                    responses.append(await interaction.channel.send(msg))
+            return responses
+        
+        # For simple content without code blocks or short enough content
+        elif len(content) > 2000:
+            # Split into multiple messages of 2000 characters or less
+            messages = []
+            for i in range(0, len(content), 1900):
+                chunk = content[i:i+1900]
+                
+                # Add indicators for continuation
+                if i > 0:
+                    chunk = "... " + chunk
+                if i + 1900 < len(content):
+                    chunk = chunk + " ..."
+                
+                # Wrap non-embed content in code blocks to prevent message splitting
+                # But preserve content that contains Discord markdown formatting
+                if not (
+                    "**" in chunk or  # Bold
+                    "*" in chunk or   # Italic
+                    "~~" in chunk or  # Strikethrough
+                    "`" in chunk or   # Inline code
+                    "```" in chunk or # Code block
+                    ">" in chunk or   # Quote
+                    "||" in chunk     # Spoiler
+                ):
+                    chunk = f"```\n{chunk}\n```"
+                
+                if i == 0:
+                    messages.append(await interaction.followup.send(chunk, ephemeral=ephemeral))
+                else:
+                    messages.append(await interaction.channel.send(chunk))
+            
+            return messages
+        else:
+            # Standard handling for content within Discord's limits
+            # Wrap non-embed content in code blocks to prevent message splitting
+            # But preserve content that contains Discord markdown formatting
+            if not (
+                "**" in content or  # Bold
+                "*" in content or   # Italic
+                "~~" in content or  # Strikethrough
+                "`" in content or   # Inline code
+                "```" in content or # Code block
+                ">" in content or   # Quote
+                "||" in content     # Spoiler
+            ):
+                content = f"```\n{content}\n```"
+                
+            return await interaction.followup.send(content, ephemeral=ephemeral)
+    except discord.errors.NotFound:
+        logger.warning(f"Interaction {interaction.id} expired before followup could be sent")
+        return None
+    except discord.errors.HTTPException as e:
+        logger.error(f"HTTP error sending followup: {str(e)}")
+        # Try to send a simpler message if possible
+        try:
+            return await interaction.followup.send("```\nError sending response. Message may exceed length limitations.\n```", ephemeral=True)
+        except:
+            return None
+    except Exception as e:
+        logger.error(f"Error sending followup message: {str(e)}")
+        return None
+
+async def safe_response(interaction, content, ephemeral=False):
+    """Safely send a direct response message with error handling"""
+    try:
+        # For embeds, just send directly with length check
+        if isinstance(content, discord.Embed):
+            return await interaction.response.send_message(content, ephemeral=ephemeral)
+        
+        # Check if content contains code blocks that might need to be preserved
+        contains_codeblock = "```" in content
+        
+        # If content is too long and contains codeblocks, handle special splitting
+        if len(content) > 2000 and contains_codeblock:
+            # Need to defer first to enable followup messages
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.defer(ephemeral=ephemeral)
+            except:
+                pass  # Already responded or deferred
+                
+            # Use safe_followup since we're sending multiple messages
+            return await safe_followup(interaction, content, ephemeral=ephemeral)
+        
+        # For simple content without code blocks or short enough content
+        elif len(content) > 2000:
+            # Need to use followup for multiple messages
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.defer(ephemeral=ephemeral)
+            except:
+                pass  # Already responded or deferred
+                
+            # Use safe_followup for sending multiple messages
+            return await safe_followup(interaction, content, ephemeral=ephemeral)
+        else:
+            # Standard handling for content within Discord's limits
+            # Wrap non-embed content in code blocks to prevent message splitting
+            # But preserve content that contains Discord markdown formatting
+            if not (
+                "**" in content or  # Bold
+                "*" in content or   # Italic
+                "~~" in content or  # Strikethrough
+                "`" in content or   # Inline code
+                "```" in content or # Code block
+                ">" in content or   # Quote
+                "||" in content     # Spoiler
+            ):
+                content = f"```\n{content}\n```"
+                
+            return await interaction.response.send_message(content, ephemeral=ephemeral)
+    except discord.errors.NotFound:
+        logger.warning(f"Interaction {interaction.id} expired before response could be sent")
+        return None
+    except discord.errors.HTTPException as e:
+        logger.error(f"HTTP error sending response: {str(e)}")
+        # Try to send a simpler message if possible
+        try:
+            return await interaction.response.send_message("```\nError sending response. Message may exceed length limitations.\n```", ephemeral=True)
+        except:
+            return None
+    except Exception as e:
+        logger.error(f"Error sending response message: {str(e)}")
+        return None
+
+@bot.tree.command(name="listmodels", description="List all available Ollama models")
+async def list_models(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        models = get_models()
+        if not models:
+            await safe_followup(interaction, "No models found.")
+            return
+        
+        # Organize models by server
+        servers = {}
+        for model in models:
+            model_id, ip, port, name, param_size, quant_level, size_mb = model
+            server_key = f"{ip}:{port}"
+            
+            if server_key not in servers:
+                servers[server_key] = []
+                
+            model_info = f"ID: {model_id}, Name: {name}"
+            if param_size:
+                model_info += f", Params: {param_size}"
+            if quant_level:
+                model_info += f", Quant: {quant_level}"
+            if size_mb:
+                model_info += f", Size: {size_mb} MB"
+                
+            servers[server_key].append(model_info)
+        
+        # Create a single consolidated message
+        full_message = ""
+        for server, model_list in servers.items():
+            full_message += f"**Server: {server}**\n"
+            for model_info in model_list:
+                full_message += f"- {model_info}\n"
+            full_message += "\n"  # Add extra newline between servers
+            
+        # Send as a single message
+        await safe_followup(interaction, full_message)
+            
+    except Exception as e:
+        logger.error(f"Error in list_models: {str(e)}")
+        await safe_followup(interaction, f"Error listing models: {str(e)}")
+
+@bot.tree.command(name="selectmodel", description="Select a model by ID")
+async def select_model(interaction: discord.Interaction, model_id: int):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Validate the model ID
+        validation = await validate_model_id(model_id)
+        
+        if not validation["valid"]:
+            await safe_followup(interaction, validation["message"])
+            return
+        
+        # Get the validated model data
+        model_id = validation["model_id"]
+        name = validation["name"]
+        param_size = validation["param_size"]
+        quant_level = validation["quant_level"]
+        size_mb = validation["size_mb"]
+        server_id = validation["server_id"]
+        ip = validation["ip"]
+        port = validation["port"]
+        
+        # Get scan date
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT scan_date FROM servers WHERE id = ?", (server_id,))
+        scan_date = cursor.fetchone()[0]
+        conn.close()
+        
+        # Format a detailed response
+        info_embed = discord.Embed(
+            title=f"Model: {name}",
+            description=f"Complete details for model ID: {model_id}",
+            color=discord.Color.blue()
+        )
+        
+        # Model details
+        info_embed.add_field(name="Model ID", value=str(model_id), inline=True)
+        info_embed.add_field(name="Name", value=name, inline=True)
+        info_embed.add_field(name="Parameters", value=param_size or "Unknown", inline=True)
+        info_embed.add_field(name="Quantization", value=quant_level or "Unknown", inline=True)
+        
+        if size_mb:
+            size_formatted = f"{size_mb:.2f} MB"
+            if size_mb > 1024:
+                size_formatted += f" ({size_mb/1024:.2f} GB)"
+            info_embed.add_field(name="Size", value=size_formatted, inline=True)
+        else:
+            info_embed.add_field(name="Size", value="Unknown", inline=True)
+        
+        # Server details
+        info_embed.add_field(name="Server ID", value=str(server_id), inline=True)
+        info_embed.add_field(name="Server", value=f"{ip}:{port}", inline=True)
+        info_embed.add_field(name="Last Scan", value=scan_date, inline=True)
+        
+        # Add usage examples
+        info_embed.add_field(
+            name="Usage Examples",
+            value=(
+                f"**Interact with model:**\n"
+                f"`/interact model_id:{model_id} message:\"Your prompt here\"`\n\n"
+                f"**Benchmark model:**\n"
+                f"`/benchmark model_id:{model_id}`"
+            ),
+            inline=False
+        )
+        
+        info_embed.set_footer(text=f"Use this model ID ({model_id}) with the interact command to chat with this model")
+        
+        # Send the embed response
+        await safe_followup(interaction, info_embed)
+        
+    except Exception as e:
+        logger.error(f"Error in select_model: {str(e)}")
+        await safe_followup(interaction, f"Error selecting model: {str(e)}")
+
+@bot.tree.command(name="addmodel", description="Add a new Ollama model or pull model to existing endpoint")
+async def add_model_command(
+    interaction: discord.Interaction, 
+    ip: str, 
+    port: int, 
+    name: str, 
+    info: str = "{}"
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Try to parse the info as JSON
+        try:
+            json_info = json.loads(info)
+        except json.JSONDecodeError:
+            json_info = {}
+        
+        # Clean the IP to remove any trailing/leading colons
+        clean_ip = ip.strip(":")
+        
+        # Check if server is reachable before attempting to pull
+        is_reachable, error = await check_server_connectivity(clean_ip, port)
+        if not is_reachable:
+            await safe_followup(interaction, f"Error: Server {clean_ip}:{port} is not reachable: {error}")
+            return
+        
+        # First, let the user know we're starting the pull process
+        await safe_followup(interaction, f"📥 Starting pull request for model `{name}` on server {clean_ip}:{port}...")
+        
+        # Initialize variables to track download progress
+        last_update_time = time.time()
+        last_status = None
+        current_digest = None
+        total_size = None
+        completed_size = None
+        
+        # Use aiohttp instead of requests for async operation
+        try:
+            # Prepare the pull request payload according to Ollama API docs
+            pull_payload = {
+                "model": name,  # Per API docs, this should be "model" not "name"
+                "insecure": json_info.get("insecure", False),
+                "stream": True  # Enable streaming to track progress
+            }
+            
+            logger.info(f"Pulling model {name} with payload: {pull_payload}")
+            
+            async with session.post(
+                f"http://{clean_ip}:{port}/api/pull",
+                json=pull_payload,
+                timeout=30  # Initial connection timeout
+            ) as response:
+                if response.status != 200:
+                    response_text = await response.text()
+                    await safe_followup(interaction, f"⚠️ Error: Failed to start model pull: {response_text}")
+                    return
+                
+                # Model pull started successfully - add to database
+                model_id = add_model(clean_ip, port, name, info)
+                status_message = await safe_followup(
+                    interaction, 
+                    f"✅ Pull request initiated for model `{name}` on {clean_ip}:{port}.\n"
+                    f"📊 Added to database with ID: {model_id}\n"
+                    f"⏳ Downloading model... (0%)"
+                )
+                
+                # Process the streaming response to track progress
+                async for line in response.content:
+                    try:
+                        if not line.strip():
+                            continue
+                            
+                        data = json.loads(line)
+                        status = data.get("status")
+                        
+                        # Only update message if status has changed or significant progress has been made
+                        current_time = time.time()
+                        should_update = (
+                            status != last_status or 
+                            current_time - last_update_time > 3  # Update at least every 3 seconds
+                        )
+                        
+                        if status == "pulling manifest":
+                            if should_update:
+                                await interaction.edit_original_response(
+                                    content=f"📋 Pulling manifest for model `{name}`..."
+                                )
+                                last_update_time = current_time
+                                last_status = status
+                                
+                        elif status == "downloading":
+                            # Track download progress
+                            current_digest = data.get("digest", "unknown")
+                            total_size = data.get("total", 0)
+                            completed_size = data.get("completed", 0)
+                            
+                            if total_size and completed_size:
+                                percent = min(100, int((completed_size / total_size) * 100))
+                                
+                                # Update progress less frequently to avoid rate limits
+                                if should_update:
+                                    # Format sizes for better readability
+                                    total_gb = total_size / (1024**3)
+                                    completed_gb = completed_size / (1024**3)
+                                    
+                                    progress_bar = "█" * (percent // 5) + "░" * (20 - (percent // 5))
+                                    
+                                    await interaction.edit_original_response(
+                                        content=(
+                                            f"📥 Downloading model `{name}` on {clean_ip}:{port}...\n"
+                                            f"📦 Digest: {current_digest[:12]}...\n"
+                                            f"⏳ Progress: {percent}% |{progress_bar}| {completed_gb:.2f}GB / {total_gb:.2f}GB"
+                                        )
+                                    )
+                                    last_update_time = current_time
+                                    last_status = status
+                                    
+                        elif status == "verifying sha256 digest":
+                            if should_update:
+                                await interaction.edit_original_response(
+                                    content=f"🔒 Verifying SHA256 digest for model `{name}`..."
+                                )
+                                last_update_time = current_time
+                                last_status = status
+                                
+                        elif status == "writing manifest":
+                            if should_update:
+                                await interaction.edit_original_response(
+                                    content=f"📝 Writing manifest for model `{name}`..."
+                                )
+                                last_update_time = current_time
+                                last_status = status
+                                
+                        elif status == "removing any unused layers":
+                            if should_update:
+                                await interaction.edit_original_response(
+                                    content=f"🧹 Cleaning up unused layers for model `{name}`..."
+                                )
+                                last_update_time = current_time
+                                last_status = status
+                                
+                        elif status == "success":
+                            # Final success message with full details
+                            await interaction.edit_original_response(
+                                content=(
+                                    f"✅ Successfully pulled model `{name}` on {clean_ip}:{port}\n"
+                                    f"📊 Database ID: {model_id}\n"
+                                    f"🔗 Server URL: http://{clean_ip}:{port}\n"
+                                    f"ℹ️ Use `/interact {model_id} <your message>` to chat with this model"
+                                )
+                            )
+                            
+                            # Sync with server to update model details
+                            try:
+                                await sync_models_with_server_async(clean_ip, port)
+                                logger.info(f"Synced models for server {clean_ip}:{port} after successful pull")
+                            except Exception as sync_error:
+                                logger.error(f"Error syncing models after pull: {str(sync_error)}")
+                            
+                            return
+                            
+                        elif status and status.startswith("error"):
+                            error_msg = data.get("error", "Unknown error")
+                            await interaction.edit_original_response(
+                                content=f"❌ Error pulling model `{name}`: {error_msg}"
+                            )
+                            return
+                            
+                    except json.JSONDecodeError:
+                        # Skip invalid JSON lines
+                        continue
+                    except Exception as e:
+                        logger.error(f"Error processing streaming response: {str(e)}")
+                
+                # If we get here without a success status, show a final status message
+                if last_status != "success":
+                    await interaction.edit_original_response(
+                        content=(
+                            f"⚠️ Pull process for `{name}` on {clean_ip}:{port} is continuing in the background.\n"
+                            f"The model has been added to the database with ID {model_id}.\n"
+                            f"Last status: {last_status or 'Unknown'}"
+                        )
+                    )
+                    
+        except asyncio.TimeoutError:
+            # Initial connection timeout
+            await safe_followup(interaction, 
+                f"⏱️ Connection timed out when attempting to reach {clean_ip}:{port}.\n"
+                f"The pull request might still be processing in the background.\n" 
+                f"Check server status with `/checkserver {clean_ip} {port}` later."
+            )
+        except aiohttp.ClientError as e:
+            await safe_followup(interaction, f"🌐 Connection error: {str(e)}")
+        
+    except Exception as e:
+        logger.error(f"Error in add_model: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        await safe_followup(interaction, f"❌ Error adding model: {str(e)}")
+
+@bot.tree.command(name="deletemodel", description="Delete a model from Ollama server and database")
+async def delete_model_command(interaction: discord.Interaction, model_id: int):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Validate the model ID
+        validation = await validate_model_id(model_id)
+        
+        if not validation["valid"]:
+            await safe_followup(interaction, validation["message"])
+            return
+        
+        # Get the validated model data
+        model_id = validation["model_id"]
+        name = validation["name"]
+        ip = validation["ip"]
+        port = validation["port"]
+        
+        # First, make API request to delete the model from the Ollama server
+        await safe_followup(interaction, f"Attempting to delete model {name} from {ip}:{port}...")
+        
+        try:
+            # Use aiohttp instead of requests for async operation
+            async with session.delete(
+                f"http://{ip}:{port}/api/delete",
+                json={"name": name},
+                timeout=10
+            ) as response:
+                if response.status != 200:
+                    response_text = await response.text()
+                    await safe_followup(interaction, f"Error: Failed to delete model from Ollama server: {response_text}")
+                    return
+                
+                # If API call was successful, remove from our database
+                delete_model(model_id)
+                await safe_followup(interaction, f"Model {name} deleted successfully from server {ip}:{port} and database.")
+        except asyncio.TimeoutError:
+            await safe_followup(interaction, f"Connection timed out when attempting to reach {ip}:{port}")
+    
+    except aiohttp.ClientError as e:
+        logger.error(f"Connection error in delete_model: {str(e)}")
+        await safe_followup(interaction, f"Connection error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error in delete_model: {str(e)}")
+        await safe_followup(interaction, f"Error: {str(e)}")
+
+@bot.tree.command(name="interact", description="Interact with a selected Ollama model")
+async def interact_with_model(
+    interaction: discord.Interaction, 
+    model_id: int, 
+    message: str,
+    system_prompt: str = "",
+    temperature: float = 0.7,
+    max_tokens: int = 1000
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Validate the model ID
+        validation = await validate_model_id(model_id)
+        
+        if not validation["valid"]:
+            await safe_followup(interaction, validation["message"])
+            return
+        
+        # Get the validated model data
+        model_id = validation["model_id"]
+        name = validation["name"]
+        ip = validation["ip"]
+        port = validation["port"]
+        
+        # Build the request based on provided parameters
+        request_data = {
+            "model": name,
+            "prompt": message,
+            "stream": False,
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+        
+        # Add system prompt if provided
+        if system_prompt:
+            request_data["system"] = system_prompt
+        
+        await safe_followup(interaction, f"Sending request to {name} on {ip}:{port}...")
+        
+        try:
+            # Use aiohttp instead of requests for async operation
+            async with session.post(
+                f"http://{ip}:{port}/api/generate", 
+                json=request_data, 
+                timeout=60  # Increased timeout for longer responses
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    response_text = result.get("response", "No response received.")
+                    
+                    # Get some stats if available
+                    eval_count = result.get("eval_count", 0)
+                    eval_duration = result.get("eval_duration", 0)
+                    
+                    # Add some stats to the response
+                    stats = f"\n\n---\nTokens: {eval_count} | Time: {eval_duration/1000000:.2f}s"
+                    if eval_duration > 0 and eval_count > 0:
+                        tokens_per_second = eval_count / (eval_duration / 1000000000)
+                        stats += f" | Throughput: {tokens_per_second:.2f} tokens/sec"
+                    
+                    response_text += stats
+                    
+                    # Format the response with bold header but keep the model's output as is
+                    formatted_response = f"**Response from {name}:**\n{response_text}"
+                        
+                    await safe_followup(interaction, formatted_response)
+                else:
+                    response_text = await response.text()
+                    await safe_followup(interaction, f"Error: {response.status} - {response_text}")
+        except asyncio.TimeoutError:
+            await safe_followup(interaction, "Request timed out. The model may be taking too long to respond.")
+        except aiohttp.ClientError as e:
+            logger.error(f"Connection error in interact: {str(e)}")
+            await safe_followup(interaction, f"Request failed: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error in interact: {str(e)}")
+        await safe_followup(interaction, f"Error: {str(e)}")
+
+@bot.tree.command(name="help", description="Show help information")
+async def help_command(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+        
+    try:
+        # Create help text with sections for each group of commands
+        help_text = ["**Ollama Scanner Bot Commands**\n"]
+        
+        # Model search and listing
+        help_text.append("\n**Model Search & Listing:**")
+        help_text.append("- `/list_models [search_term] [quant_level] [param_size] [sort_by] [descending] [limit]` - List and search models with filtering options")
+        
+        # Model management
+        help_text.append("\n**Model Management:**")
+        help_text.append("- `/manage_models add <server_ip> <model_name> [server_port]` - Add a model to a server")
+        help_text.append("- `/manage_models delete <model_id>` - Delete a model from a server")
+        
+        # Chat and interaction
+        help_text.append("\n**Chat Commands:**")
+        help_text.append("- `/chat <prompt> [system_prompt] [temperature] [max_tokens] [model_id]` - Extended chat with a model")
+        help_text.append("- `/quickprompt <action> <prompt> [model_name] [server_name] [system_prompt]` - Quick chat with a model")
+        
+        # Information and utilities
+        help_text.append("\n**Utilities:**")
+        help_text.append("- `/benchmark <model_id> [server_ip] [server_port] [model_name]` - Run performance benchmark on a model")
+        help_text.append("- `/db_info` - Show database statistics for models and endpoints")
+        help_text.append("- `/ping` - Check if the bot is responding")
+        
+        # Tips section
+        help_text.append("\n**Tips:**")
+        help_text.append("• Commands with many options will show parameter descriptions when you start typing them")
+        help_text.append("• Use TAB to autocomplete command parameters")
+        help_text.append("• Optional parameters are shown in [brackets]")
+        
+        # Send the help text
+        await safe_followup(interaction, "\n".join(help_text))
+        
+    except Exception as e:
+        logger.error(f"Error in help command: {e}")
+        await safe_followup(interaction, f"Error getting help: {e}")
+
+@bot.tree.command(name="checkserver", description="Check which models are available on a specific server")
+async def check_server(interaction: discord.Interaction, ip: str, port: int):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Call the API to get the list of available models on the server
+        try:
+            async with session.get(f"http://{ip}:{port}/api/tags", timeout=10) as response:
+                if response.status != 200:
+                    response_text = await response.text()
+                    await safe_followup(interaction, f"Error: Failed to retrieve models from server {ip}:{port}: {response_text}")
+                    return
+                
+                # Parse the response
+                result = await response.json()
+                models = result.get("models", [])
+        except asyncio.TimeoutError:
+            await safe_followup(interaction, f"Connection timed out when attempting to reach {ip}:{port}")
+            return
+        
+        if not models:
+            await safe_followup(interaction, f"No models found on server {ip}:{port}.")
+            return
+        
+        # Create a single consolidated message
+        details = f"**Found {len(models)} models on {ip}:{port}**\n\n"
+        
+        # Limit to a reasonable number to avoid message length issues
+        MAX_MODELS_TO_SHOW = 15
+        models_to_show = models[:MAX_MODELS_TO_SHOW]
+        
+        # Process each model
+        for i, model in enumerate(models_to_show):
+            name = model.get("name", "Unknown")
+            model_size = model.get("size", 0) / (1024 * 1024)  # Convert to MB
+            modified_at = model.get("modified_at", "Unknown")
+            
+            details += f"**{i+1}. {name}**\n"
+            details += f"- Size: {model_size:.2f} MB\n"
+            details += f"- Modified: {modified_at}\n"
+            
+            # Get parameter info if available
+            if "details" in model:
+                details += f"- Format: {model['details'].get('format', 'Unknown')}\n"
+                details += f"- Family: {model['details'].get('family', 'Unknown')}\n"
+                details += f"- Parameter Size: {model['details'].get('parameter_size', 'Unknown')}\n"
+                details += f"- Quantization: {model['details'].get('quantization_level', 'Unknown')}\n"
+            
+            details += "\n"  # Add line break between models
+        
+        # If there are more models, mention how many weren't shown
+        if len(models) > MAX_MODELS_TO_SHOW:
+            details += f"(Additional {len(models) - MAX_MODELS_TO_SHOW} models not displayed)"
+        
+        # Cap message length if needed
+        if len(details) > 1900:
+            details = details[:1897] + "..."
+            
+        await safe_followup(interaction, details)
+            
+    except aiohttp.ClientError as e:
+        logger.error(f"Connection error in check_server: {str(e)}")
+        await safe_followup(interaction, f"Connection error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error in check_server: {str(e)}")
+        await safe_followup(interaction, f"Error: {str(e)}")
+
+@bot.tree.command(name="syncserver", description="Sync the database with models actually on the server")
+async def sync_server(interaction: discord.Interaction, ip: str, port: int):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Clean the IP to remove any trailing/leading colons
+        clean_ip = ip.strip(":")
+        
+        await safe_followup(interaction, f"Synchronizing database with models on {clean_ip}:{port}...")
+        
+        try:
+            # Call the sync function
+            added, updated, removed = sync_models_with_server(clean_ip, port)
+            
+            # Create a structured report
+            message = f"Database synchronization with {clean_ip}:{port} complete:\n"
+            message += f"Added {len(added)} new models\n"
+            message += f"Updated {len(updated)} existing models\n"
+            message += f"Removed {len(removed)} models no longer on server"
+            
+            # If there are specific models to report, add them
+            if added:
+                message += "\n\nAdded models: " + ", ".join(added[:10])
+                if len(added) > 10:
+                    message += f" and {len(added) - 10} additional models"
+            
+            if updated:
+                message += "\n\nUpdated models: " + ", ".join(updated[:10])
+                if len(updated) > 10:
+                    message += f" and {len(updated) - 10} additional models"
+            
+            if removed:
+                message += "\n\nRemoved models: " + ", ".join(removed[:10])
+                if len(removed) > 10:
+                    message += f" and {len(removed) - 10} additional models"
+            
+            await safe_followup(interaction, message)
+        except Exception as e:
+            await safe_followup(interaction, f"Error during synchronization: {str(e)}")
+            logger.error(f"Error in sync_server: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error in sync_server: {str(e)}")
+        await safe_followup(interaction, f"Error synchronizing models: {str(e)}")
+
+@bot.tree.command(name="listservers", description="List all Ollama servers in the database")
+async def list_servers(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        servers = get_servers()
+        
+        if not servers:
+            await safe_followup(interaction, "No servers found in the database.")
+            return
+        
+        message = "**Ollama Servers:**\n\n"
+        
+        for server in servers:
+            server_id, ip, port, scan_date, model_count = server
+            scan_date = scan_date or "Never"
+            
+            message += f"**Server ID: {server_id}**\n"
+            message += f"- Address: {ip}:{port}\n"
+            message += f"- Last Scan: {scan_date}\n"
+            message += f"- Models: {model_count}\n\n"
+        
+        # Send as a single message, truncating if necessary
+        if len(message) > 1900:
+            message = message[:1897] + "..."
+            
+        await safe_followup(interaction, message)
+    except Exception as e:
+        logger.error(f"Error in list_servers: {str(e)}")
+        await safe_followup(interaction, f"Error listing servers: {str(e)}")
+
+@bot.tree.command(name="benchmark", description="Run benchmark on a specific model and server")
+async def benchmark_model(
+    interaction: discord.Interaction, 
+    model_id: int = None,
+    server_ip: str = None,
+    server_port: int = None,
+    model_name: str = None
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # If model_id is provided, get the model details
+        if model_id is not None:
+            # Validate the model ID
+            validation = await validate_model_id(model_id)
+            
+            if not validation["valid"]:
+                await safe_followup(interaction, validation["message"])
+                return
+            
+            # Get the validated model data
+            model_id = validation["model_id"]
+            name = validation["name"]
+            ip = validation["ip"]
+            port = validation["port"]
+            
+            await safe_followup(interaction, f"Initiating benchmark for model {name} on {ip}:{port}...")
+            
+            # Call the benchmark script with the model details
+            benchmark_path = Path(__file__).parent.parent / "ollama_benchmark.py"
+            cmd = [sys.executable, str(benchmark_path), "run", "--server", ip, "--port", str(port), "--model-name", name]
+            
+        # If direct server/model info is provided
+        elif server_ip and model_name:
+            port = server_port or 11434  # Default port if not specified
+            await safe_followup(interaction, f"Initiating benchmark for model {model_name} on {server_ip}:{port}...")
+            
+            # Call the benchmark script with the provided details
+            benchmark_path = Path(__file__).parent.parent / "ollama_benchmark.py"
+            cmd = [sys.executable, str(benchmark_path), "run", "--server", server_ip, "--port", str(port), "--model-name", model_name]
+            
+        else:
+            await safe_followup(interaction, "Please provide either a model_id or both server_ip and model_name parameters.")
+            return
+        
+        # Run the benchmark process in a non-blocking way
+        await safe_followup(interaction, "Benchmark process initiated. This operation may take several minutes. Results will be provided upon completion.")
+        
+        # Create a task to run the benchmark
+        asyncio.create_task(run_benchmark_async(interaction, cmd))
+        
+    except Exception as e:
+        logger.error(f"Error initiating benchmark: {str(e)}")
+        await safe_followup(interaction, f"Error running benchmark: {str(e)}")
+
+async def run_benchmark_async(interaction, cmd):
+    """Run benchmark as an async task and post results when done"""
+    try:
+        # Create process
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        # Wait for process to complete
+        stdout, stderr = await process.communicate()
+        
+        # Process complete - check results
+        stdout_content = stdout.decode('utf-8')
+        stderr_content = stderr.decode('utf-8')
+        
+        if process.returncode != 0:
+            # Error occurred
+            if stderr_content:
+                error_msg = f"Benchmark operation failed with error:\n```\n{stderr_content[:1000]}...\n```"
+                await safe_followup(interaction, error_msg)
+            else:
+                await safe_followup(interaction, "Benchmark operation failed with an unspecified error.")
+            return
+        
+        # If successful, send summarized results
+        # Extract the most important sections (looking for specific headers)
+        lines = stdout_content.splitlines()
+        
+        # Find BENCHMARK RESULTS section
+        result_section_started = False
+        result_lines = []
+        summary_started = False
+        summary_lines = []
+        
+        for line in lines:
+            if "BENCHMARK RESULTS" in line:
+                result_section_started = True
+                result_lines.append(line)
+            elif result_section_started and line.strip():
+                result_lines.append(line)
+            elif "BENCHMARK SUMMARY" in line:
+                summary_started = True
+                summary_lines.append(line)
+            elif summary_started and line.strip():
+                summary_lines.append(line)
+        
+        # Send the results and summary (if found)
+        if result_lines:
+            # Send just the most important parts, limited to avoid Discord limits
+            results_text = "\n".join(result_lines[:30])
+            # Remove unnecessary code block wrapping as safe_followup will add it
+            await safe_followup(interaction, f"Benchmark results:\n{results_text}")
+            
+        if summary_lines:
+            summary_text = "\n".join(summary_lines)
+            # Remove unnecessary code block wrapping as safe_followup will add it
+            await safe_followup(interaction, f"Benchmark summary:\n{summary_text}")
+            
+        if not result_lines and not summary_lines:
+            # If we couldn't find specific sections, just send the last bit
+            truncated_output = "\n".join(lines[-25:])
+            # Remove unnecessary code block wrapping as safe_followup will add it
+            await safe_followup(interaction, f"Benchmark completed. Output:\n{truncated_output}")
+    except Exception as e:
+        logger.error(f"Error in benchmark process: {str(e)}")
+        await safe_followup(interaction, f"Error during benchmark execution: {str(e)}")
+
+async def sync_models_with_server_async(ip, port):
+    """Async version of sync_models_with_server using aiohttp"""
+    from ollama_models import sync_models_with_server
+    
+    # Create a task in the default thread pool to run the sync function
+    # This allows the blocking database operations to run without blocking the main thread
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: sync_models_with_server(ip, port))
+
+@bot.tree.command(name="searchmodels", description="Search for models by name with sorting options")
+@app_commands.describe(
+    model_name="Part of the model name to search for",
+    sort_by="Field to sort results by",
+    descending="Sort in descending order (true) or ascending order (false)",
+    limit="Maximum number of results to return"
+)
+@app_commands.choices(sort_by=[
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Count", value="count")
+])
+async def search_models(
+    interaction: discord.Interaction,
+    model_name: str,
+    sort_by: str = None,
+    descending: bool = True,
+    limit: int = 25
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Default sorting - by server count in descending order
+        orderby = "server_count DESC"
+        
+        # Apply sorting options if provided
+        if sort_by:
+            if sort_by == "name":
+                if descending:
+                    orderby = "name DESC"
+                else:
+                    orderby = "name ASC"
+            elif sort_by == "params":
+                if descending:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END DESC"""
+                else:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END ASC"""
+            elif sort_by == "quant":
+                if descending:
+                    orderby = "quantization_level DESC"
+                else:
+                    orderby = "quantization_level ASC"
+            elif sort_by == "count":
+                if descending:
+                    orderby = "server_count DESC"
+                else:
+                    orderby = "server_count ASC"
+        
+        # Add wildcards to search pattern
+        search = "%" + model_name + "%"
+        
+        # Search query with improved sorting
+        query = f"""
+            SELECT 
+                m.name, 
+                m.parameter_size, 
+                m.quantization_level, 
+                COUNT(*) as server_count
+            FROM models m
+            WHERE m.name LIKE ?
+            GROUP BY m.name, m.parameter_size, m.quantization_level
+            ORDER BY {orderby}
+            LIMIT ?
+        """
+        
+        cursor.execute(query, (search, limit))
+        
+        results = cursor.fetchall()
+        
+        if not results:
+            await safe_followup(interaction, f"No models found containing '{model_name}'")
+            conn.close()
+            return
+        
+        # Format the results
+        message = f"**Models containing '{model_name}'**\nFound {len(results)} unique models\n\n"
+        message += "Model Name | Parameters | Quantization | Count | Endpoints\n"
+        message += "-" * 90 + "\n"
+        
+        for model in results:
+            name, params, quant, count = model
+            
+            # Get ALL servers for this model (not just examples)
+            cursor.execute("""
+                SELECT m.id, s.ip, s.port
+                FROM models m
+                JOIN servers s ON m.server_id = s.id
+                WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
+            """, (name, params, quant))
+            
+            servers = cursor.fetchall()
+            
+            # Trim long model names
+            display_name = name
+            if len(display_name) > 20:
+                display_name = name[:17] + "..."
+                
+            # Add this model to the message with header info
+            message += f"{display_name} | {params or 'N/A'} | {quant or 'N/A'} | {count} | "
+            
+            # Check if endpoint list is too long
+            if len(servers) > 10:
+                # List the first 5 servers
+                servers_text = "\n  • " + "\n  • ".join([f"ID:{s[0]}:{s[1]}:{s[2]}" for s in servers[:5]])
+                message += f"{servers_text}\n  • ... and {len(servers) - 5} more endpoints\n"
+            else:
+                # List all servers with bullet points for better readability
+                servers_text = "\n  • " + "\n  • ".join([f"ID:{s[0]}:{s[1]}:{s[2]}" for s in servers])
+                message += f"{servers_text}\n"
+            
+        # Check if message is too long and truncate if needed
+        if len(message) > 1900:
+            # Truncate and indicate there's more
+            message = message[:1850] + "\n... (additional content truncated) ..."
+            
+        # Don't wrap in code blocks here as safe_followup will do it
+        await safe_followup(interaction, message)
+        
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"Error in search_models: {str(e)}")
+        await safe_followup(interaction, f"Error searching models: {str(e)}")
+
+@bot.tree.command(name="modelsbyparam", description="Find models with specific parameter size")
+@app_commands.describe(
+    parameter_size="Parameter size to search for (e.g. 7B, 13B)",
+    sort_by="Field to sort results by",
+    descending="Sort in descending order (true) or ascending order (false)",
+    limit="Maximum number of results to return"
+)
+@app_commands.choices(sort_by=[
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Count", value="count")
+])
+async def models_by_param(
+    interaction: discord.Interaction,
+    parameter_size: str,
+    sort_by: str = None,
+    descending: bool = True,
+    limit: int = 25
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Default sorting
+        orderby = "server_count DESC"
+        
+        # Apply sorting options if provided
+        if sort_by:
+            if sort_by == "name":
+                if descending:
+                    orderby = "name DESC"
+                else:
+                    orderby = "name ASC"
+            elif sort_by == "params":
+                if descending:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END DESC"""
+                else:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END ASC"""
+            elif sort_by == "quant":
+                if descending:
+                    orderby = "quantization_level DESC"
+                else:
+                    orderby = "quantization_level ASC"
+            elif sort_by == "count":
+                if descending:
+                    orderby = "server_count DESC"
+                else:
+                    orderby = "server_count ASC"
+        
+        # Add wildcards to search pattern
+        search = "%" + parameter_size + "%"
+        
+        # Search query with improved sorting
+        query = f"""
+            SELECT 
+                m.name, 
+                m.parameter_size, 
+                m.quantization_level, 
+                COUNT(*) as server_count
+            FROM models m
+            WHERE m.parameter_size LIKE ?
+            GROUP BY m.name, m.parameter_size, m.quantization_level
+            ORDER BY {orderby}
+            LIMIT ?
+        """
+        
+        cursor.execute(query, (search, limit))
+        
+        results = cursor.fetchall()
+        
+        if not results:
+            await safe_followup(interaction, f"No models found with parameter size containing '{parameter_size}'")
+            conn.close()
+            return
+        
+        # Format the results
+        message = f"**Models with parameter size containing '{parameter_size}'**\nFound {len(results)} unique models\n\n"
+        message += "Model Name | Parameters | Quantization | Count | Example Servers (ID:IP:Port)\n"
+        message += "-" * 90 + "\n"
+        
+        for model in results:
+            name, params, quant, count = model
+            
+            # Get example servers for this model WITH MODEL IDs
+            cursor.execute("""
+                SELECT m.id, s.ip, s.port
+                FROM models m
+                JOIN servers s ON m.server_id = s.id
+                WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
+                LIMIT 3
+            """, (name, params, quant))
+            
+            servers = cursor.fetchall()
+            servers_text = ", ".join([f"ID:{s[0]}:{s[1]}:{s[2]}" for s in servers])
+            
+            if count > 3:
+                servers_text += f" (+{count-3} more)"
+            
+            # Trim long model names
+            display_name = name
+            if len(display_name) > 20:
+                display_name = name[:17] + "..."
+                
+            # Add this model to the message
+            message += f"{display_name} | {params or 'N/A'} | {quant or 'N/A'} | {count} | {servers_text}\n"
+        
+        # Check if message is too long and truncate if needed
+        if len(message) > 1900:
+            # Truncate and indicate there's more
+            message = message[:1850] + "\n... (additional models truncated) ..."
+            
+        # Don't wrap in code blocks here as safe_followup will do it
+        await safe_followup(interaction, message)
+        
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"Error in models_by_param: {str(e)}")
+        await safe_followup(interaction, f"Error finding models by parameter size: {str(e)}")
+
+@bot.tree.command(name="allmodels", description="List all models with sorting options")
+@app_commands.describe(
+    sort_by="Field to sort results by",
+    descending="Sort in descending order (true) or ascending order (false)",
+    limit="Maximum number of results to return"
+)
+@app_commands.choices(sort_by=[
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Count", value="count")
+])
+async def all_models(
+    interaction: discord.Interaction,
+    sort_by: str = None,
+    descending: bool = True,
+    limit: int = 25
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Default sorting
+        orderby = "server_count DESC"
+        
+        # Apply sorting options if provided
+        if sort_by:
+            if sort_by == "name":
+                if descending:
+                    orderby = "name DESC"
+                else:
+                    orderby = "name ASC"
+            elif sort_by == "params":
+                if descending:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END DESC"""
+                else:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END ASC"""
+            elif sort_by == "quant":
+                if descending:
+                    orderby = "quantization_level DESC"
+                else:
+                    orderby = "quantization_level ASC"
+            elif sort_by == "count":
+                if descending:
+                    orderby = "server_count DESC"
+                else:
+                    orderby = "server_count ASC"
+        
+        # Query for all models with pagination
+        query = f"""
+            SELECT 
+                name, 
+                parameter_size, 
+                quantization_level, 
+                COUNT(*) as server_count
+            FROM models
+            GROUP BY name, parameter_size, quantization_level
+            ORDER BY {orderby}
+            LIMIT ?
+        """
+        
+        cursor.execute(query, (limit,))
+        
+        results = cursor.fetchall()
+        
+        if not results:
+            await safe_followup(interaction, "No models found in the database.")
+            conn.close()
+            return
+        
+        # Format the results
+        message = f"**All Models**\nShowing {len(results)} unique models (limit: {limit})\n\n"
+        message += "Model Name | Parameters | Quantization | Count | Example Servers (ID:IP:Port)\n"
+        message += "-" * 90 + "\n"
+        
+        for model in results:
+            name, params, quant, count = model
+            
+            # Get example servers with model IDs for this model
+            cursor.execute("""
+                SELECT m.id, s.ip, s.port
+                FROM models m
+                JOIN servers s ON m.server_id = s.id
+                WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
+                LIMIT 3
+            """, (name, params, quant))
+            
+            servers = cursor.fetchall()
+            servers_text = ", ".join([f"ID:{s[0]}:{s[1]}:{s[2]}" for s in servers])
+            
+            if count > 3:
+                servers_text += f" (+{count-3} more)"
+            
+            # Trim long model names
+            display_name = name
+            if len(display_name) > 20:
+                display_name = name[:17] + "..."
+                
+            # Add this model to the message
+            message += f"{display_name} | {params or 'N/A'} | {quant or 'N/A'} | {count} | {servers_text}\n"
+        
+        # Check if message is too long and truncate if needed
+        if len(message) > 1900:
+            # Truncate and indicate there's more
+            message = message[:1850] + "\n... (additional models truncated) ..."
+            
+        # Don't wrap in code blocks here as safe_followup will do it
+        await safe_followup(interaction, message)
+        
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"Error in all_models: {str(e)}")
+        await safe_followup(interaction, f"Error retrieving models: {str(e)}")
+
+@bot.tree.command(name="serverinfo", description="Show detailed info about a specific server")
+@app_commands.describe(
+    ip="IP address of the server",
+    port="Port number (defaults to 11434 if not specified)",
+    sort_by="Field to sort results by",
+    descending="Sort in descending order (true) or ascending order (false)"
+)
+@app_commands.choices(sort_by=[
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Size", value="size")
+])
+async def server_info(
+    interaction: discord.Interaction,
+    ip: str,
+    port: int = None,
+    sort_by: str = None,
+    descending: bool = True
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Clean IP address
+        clean_ip = ip.strip(":")
+        
+        # Look for server(s) by IP and optional port
+        if port is not None:
+            cursor.execute("SELECT id, scan_date FROM servers WHERE ip = ? AND port = ?", (clean_ip, port))
+            servers = cursor.fetchall()
+            if not servers:
+                await safe_followup(interaction, f"No server found with IP {clean_ip} and port {port}")
+                conn.close()
+                return
+        else:
+            cursor.execute("SELECT id, port, scan_date FROM servers WHERE ip = ?", (clean_ip,))
+            servers = cursor.fetchall()
+            if not servers:
+                await safe_followup(interaction, f"No server found with IP {clean_ip}")
+                conn.close()
+                return
+        
+        # Default sorting
+        orderby = "name ASC"
+        
+        # Apply sorting options if provided
+        if sort_by:
+            if sort_by == "name":
+                if descending:
+                    orderby = "name DESC"
+                else:
+                    orderby = "name ASC"
+            elif sort_by == "params":
+                if descending:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END DESC"""
+                else:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END ASC"""
+            elif sort_by == "quant":
+                if descending:
+                    orderby = "quantization_level DESC"
+                else:
+                    orderby = "quantization_level ASC"
+            elif sort_by == "size":
+                if descending:
+                    orderby = "size_mb DESC"
+                else:
+                    orderby = "size_mb ASC"
+        
+        # Process each server
+        for server in servers:
+            if port is not None:
+                server_id, scan_date = server
+                server_port = port
+            else:
+                server_id, server_port, scan_date = server
+            
+            # Get models for this server
+            query = f"""
+                SELECT id, name, parameter_size, quantization_level, size_mb
+                FROM models
+                WHERE server_id = ?
+                ORDER BY {orderby}
+            """
+            
+            cursor.execute(query, (server_id,))
+            models = cursor.fetchall()
+            
+            # Format server details
+            server_header = f"**Server: {clean_ip}:{server_port} (Server ID: {server_id})**\n"
+            server_header += f"Last scan: {scan_date}\n"
+            server_header += f"Models available: {len(models)}\n\n"
+            
+            await safe_followup(interaction, server_header)
+            
+            if models:
+                # Create a formatted table of models
+                model_table = "**Model Table:**\n```\n"
+                model_table += "Model ID | Model Name | Parameters | Quantization | Size (MB)\n"
+                model_table += "-" * 75 + "\n"
+                
+                for model in models:
+                    model_id, name, params, quant, size = model
+                    
+                    # Trim long names
+                    display_name = name
+                    if len(display_name) > 20:
+                        display_name = name[:17] + "..."
+                    
+                    # Format size with 2 decimal places
+                    size_str = f"{size:.2f}" if size else "N/A"
+                    
+                    model_table += f"{model_id} | {display_name} | {params or 'N/A'} | {quant or 'N/A'} | {size_str}\n"
+                
+                model_table += "```"
+                
+                # Truncate if too long instead of splitting into chunks
+                if len(model_table) > 1900:
+                    # Simplify by truncating and indicating there's more
+                    model_table = model_table[:1850] + "\n... (additional models truncated) ...```"
+                
+                await safe_followup(interaction, model_table)
+            else:
+                await safe_followup(interaction, "No models found on this server.")
+        
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"Error in server_info: {str(e)}")
+        await safe_followup(interaction, f"Error retrieving server info: {str(e)}")
+
+@bot.tree.command(name="models_with_servers", description="List models with their server IPs and ports")
+@app_commands.describe(
+    sort_by="Field to sort results by",
+    descending="Sort in descending order (true) or ascending order (false)",
+    limit="Maximum number of results to return"
+)
+@app_commands.choices(sort_by=[
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Size", value="size"),
+    app_commands.Choice(name="IP", value="ip")
+])
+async def models_with_servers(
+    interaction: discord.Interaction,
+    sort_by: str = None,
+    descending: bool = True,
+    limit: int = 25
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Default sorting
+        orderby = "m.name ASC"
+        
+        # Apply sorting options if provided
+        if sort_by:
+            if sort_by == "name":
+                if descending:
+                    orderby = "m.name DESC"
+                else:
+                    orderby = "m.name ASC"
+            elif sort_by == "params":
+                if descending:
+                    orderby = """
+                    CASE 
+                        WHEN m.parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(m.parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END DESC"""
+                else:
+                    orderby = """
+                    CASE 
+                        WHEN m.parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(m.parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END ASC"""
+            elif sort_by == "quant":
+                if descending:
+                    orderby = "m.quantization_level DESC"
+                else:
+                    orderby = "m.quantization_level ASC"
+            elif sort_by == "size":
+                if descending:
+                    orderby = "m.size_mb DESC"
+                else:
+                    orderby = "m.size_mb ASC"
+            elif sort_by == "ip":
+                if descending:
+                    orderby = "s.ip DESC"
+                else:
+                    orderby = "s.ip ASC"
+        
+        # Get all models with their server information
+        query = f"""
+            SELECT m.id, m.name, m.parameter_size, m.quantization_level, m.size_mb, s.id, s.ip, s.port
+            FROM models m
+            JOIN servers s ON m.server_id = s.id
+            ORDER BY {orderby}
+            LIMIT ?
+        """
+        
+        cursor.execute(query, (limit,))
+        
+        results = cursor.fetchall()
+        
+        if not results:
+            await safe_followup(interaction, "No models found in the database.")
+            conn.close()
+            return
+        
+        # Format the results
+        message = f"**All Models with Server Information**\nShowing {len(results)} model instances (limit: {limit})\n\n"
+        message += "Model ID | Model Name | Parameters | Quantization | Size (MB) | Server ID | Server IP:Port\n"
+        message += "-" * 100 + "\n"
+        
+        for model in results:
+            model_id, name, params, quant, size, server_id, ip, port = model
+            
+            # Trim long model names
+            display_name = name
+            if len(display_name) > 15:
+                display_name = name[:12] + "..."
+            
+            # Format size with 2 decimal places
+            size_str = f"{size:.2f}" if size else "N/A"
+            
+            message += f"{model_id} | {display_name} | {params or 'N/A'} | {quant or 'N/A'} | {size_str} | {server_id} | {ip}:{port}\n"
+        
+        # Check if message is too long and truncate if needed
+        if len(message) > 1900:
+            # Truncate and indicate there's more
+            message = message[:1850] + "\n... (additional models truncated) ..."
+            
+        # Don't wrap in code blocks here as safe_followup will do it
+        await safe_followup(interaction, message)
+        
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"Error in models_with_servers: {str(e)}")
+        await safe_followup(interaction, f"Error retrieving models with servers: {str(e)}")
+
+@bot.tree.command(name="cleanup", description="Remove duplicate servers and models from the database")
+async def cleanup_database(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        await safe_followup(interaction, "Checking for duplicate entries in the database...")
+        
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Find duplicate servers
+        cursor.execute("""
+            SELECT ip, port, COUNT(*), GROUP_CONCAT(id) as ids
+            FROM servers
+            GROUP BY ip, port
+            HAVING COUNT(*) > 1
+        """)
+        
+        dupes = cursor.fetchall()
+        
+        # Process duplicate servers
+        if len(dupes) == 0:
+            server_msg = "No duplicate servers found."
+        else:
+            server_msg = f"Found {len(dupes)} duplicate server entries - resolving now..."
+            
+            # Process each set of duplicates
+            for dupe in dupes:
+                ip, port, count, ids = dupe
+                id_list = ids.split(',')
+                keep_id = id_list[0]  # Keep first one
+                remove_ids = id_list[1:]  # Remove the rest
+                
+                server_msg += f"\n  - Retaining server: {ip}:{port} (ID {keep_id})"
+                server_msg += f"\n  - Removing {len(remove_ids)} duplicates with same IP/port"
+                
+                # Update models to point to the ID we're keeping
+                for remove_id in remove_ids:
+                    cursor.execute("""
+                        UPDATE models
+                        SET server_id = ?
+                        WHERE server_id = ?
+                    """, (keep_id, remove_id))
+                    
+                    # Delete the duplicate server
+                    cursor.execute("DELETE FROM servers WHERE id = ?", (remove_id,))
+        
+        # Find duplicate models
+        cursor.execute("""
+            SELECT server_id, name, COUNT(*), GROUP_CONCAT(id) as ids
+            FROM models
+            GROUP BY server_id, name
+            HAVING COUNT(*) > 1
+        """)
+        
+        dupe_models = cursor.fetchall()
+        
+        # Process duplicate models
+        if len(dupe_models) == 0:
+            model_msg = "No duplicate models found."
+        else:
+            model_msg = f"Found {len(dupe_models)} duplicate model entries - resolving now..."
+            
+            # Process each set of duplicates
+            for dupe in dupe_models:
+                server_id, name, count, ids = dupe
+                id_list = ids.split(',')
+                keep_id = id_list[0]  # Keep first one
+                remove_ids = id_list[1:]  # Remove the rest
+                
+                # Get server info
+                cursor.execute("SELECT ip, port FROM servers WHERE id = ?", (server_id,))
+                server = cursor.fetchone()
+                if server:
+                    server_info = f"{server[0]}:{server[1]}"
+                else:
+                    server_info = "Unknown server"
+                
+                model_msg += f"\n  - Retaining model: {name} on {server_info} (ID {keep_id})"
+                model_msg += f"\n  - Removing {len(remove_ids)} duplicates of same model on same server"
+                
+                # Delete the duplicate models
+                for remove_id in remove_ids:
+                    cursor.execute("DELETE FROM models WHERE id = ?", (remove_id,))
+        
+        # Save all changes
+        conn.commit()
+        conn.close()
+        
+        # Send the result
+        await safe_followup(interaction, f"**Database Cleanup Results:**\n\n{server_msg}\n\n{model_msg}\n\nDatabase cleanup complete.")
+        
+    except Exception as e:
+        logger.error(f"Error in cleanup_database: {str(e)}")
+        await safe_followup(interaction, f"Error cleaning up database: {str(e)}")
+
+@bot.tree.command(name="refreshcommands", description="Force refresh of bot commands (admin only)")
+async def refresh_commands(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Check if user has admin permissions
+        if not interaction.user.guild_permissions.administrator:
+            await safe_followup(interaction, "This command requires administrator permissions.")
+            return
+        
+        # Get current commands
+        before_count = len(await bot.tree.fetch_commands())
+        before_commands = await bot.tree.fetch_commands()
+        
+        await safe_followup(interaction, "Refreshing commands. This may take up to a minute...")
+        
+        # Log the current commands
+        logger.info(f"Current commands before refresh: {', '.join([cmd.name for cmd in before_commands])}")
+        
+        # Clear command cache in current guild
+        bot.tree.clear_commands(guild=interaction.guild)
+        
+        # Sync globally first
+        await bot.tree.sync()
+        
+        # Then sync to the current guild to ensure immediate visibility
+        await bot.tree.sync(guild=interaction.guild)
+        
+        # Get the updated commands
+        after_commands = await bot.tree.fetch_commands()
+        
+        # Send detailed results
+        command_list = [f"- {cmd.name}" for cmd in after_commands]
+        
+        message = f"**Command Refresh Complete**\n"
+        message += f"- Commands before: {before_count}\n"
+        message += f"- Commands after: {len(after_commands)}\n\n"
+        message += "**Available Commands:**\n" + "\n".join(command_list)
+        
+        await safe_followup(interaction, message)
+        
+        logger.info(f"Commands refreshed by user {interaction.user.name} in guild {interaction.guild.name}")
+        logger.info(f"Refreshed from {before_count} to {len(after_commands)} commands")
+        logger.info(f"Updated commands: {', '.join([cmd.name for cmd in after_commands])}")
+        
+    except Exception as e:
+        logger.error(f"Error in refresh_commands: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        await safe_followup(interaction, f"Error refreshing commands: {str(e)}")
+
+@bot.tree.command(name="guild_sync", description="Force sync commands to this guild (admin only)")
+async def guild_sync_command(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Check if user has admin permissions
+        if not interaction.user.guild_permissions.administrator:
+            await safe_followup(interaction, "This command requires administrator permissions.")
+            return
+        
+        await safe_followup(interaction, "Syncing commands to this guild. This may take a moment...")
+        
+        # Get current guild command count
+        try:
+            before_commands = await bot.tree.fetch_commands(guild=interaction.guild)
+            before_count = len(before_commands)
+        except:
+            before_count = 0
+        
+        # Do NOT clear commands first - this was causing problems
+        # Just sync directly to the guild
+        
+        # Sync to the current guild
+        synced = await bot.tree.sync(guild=interaction.guild)
+        
+        # Get the guild ID for logging
+        guild_id = interaction.guild.id
+        
+        # Log the sync operation
+        logger.info(f"Guild commands synced by {interaction.user.name} in guild {interaction.guild.name}")
+        logger.info(f"Synced {len(synced)} commands to guild ID {guild_id}")
+        
+        # List all command names for verification
+        command_list = [f"- {cmd.name}" for cmd in synced]
+        
+        message = f"**Command Sync Complete**\n"
+        message += f"- Commands before: {before_count}\n"
+        message += f"- Commands after: {len(synced)}\n\n"
+        
+        # Verify quickprompt is included
+        quickprompt_included = any(cmd.name == "quickprompt" for cmd in synced)
+        if quickprompt_included:
+            message += "✅ quickprompt command successfully registered\n\n"
+        else:
+            message += "❌ quickprompt command NOT registered! Please contact the developer.\n\n"
+            
+        message += "**Synced Commands:**\n" + "\n".join(command_list)
+        
+        await safe_followup(interaction, message)
+        
+    except Exception as e:
+        logger.error(f"Error in guild_sync: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        await safe_followup(interaction, f"Error syncing commands to guild: {str(e)}")
+
+@bot.tree.command(name="refreshcommandsv2", description="Force complete refresh of all bot commands (admin only)")
+async def refresh_commands_v2(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Check if user has admin permissions
+        if not interaction.user.guild_permissions.administrator:
+            await safe_followup(interaction, "This command requires administrator permissions.")
+            return
+        
+        # Get current commands
+        before_count = len(await bot.tree.fetch_commands())
+        before_commands = await bot.tree.fetch_commands()
+        
+        await safe_followup(interaction, "Refreshing all commands with a complete reset. This may take a minute...")
+        
+        # Log the current commands
+        logger.info(f"Current commands before refresh: {', '.join([cmd.name for cmd in before_commands])}")
+        
+        try:
+            # First sync to the guild to ensure immediate visibility
+            # Doing this BEFORE clearing commands to avoid having a period with no commands
+            guild_commands = await bot.tree.sync(guild=interaction.guild)
+            logger.info(f"First step: Synced {len(guild_commands)} commands to guild")
+            
+            # Then sync globally
+            global_commands = await bot.tree.sync()
+            logger.info(f"Second step: Synced {len(global_commands)} commands globally")
+            
+            # Get the updated commands
+            after_commands = await bot.tree.fetch_commands()
+            
+            # Send detailed results
+            command_list = [f"- {cmd.name}" for cmd in after_commands]
+            
+            message = f"**Command Refresh Complete**\n"
+            message += f"- Commands before: {before_count}\n"
+            message += f"- Commands after: {len(after_commands)}\n\n"
+            
+            # Verify quickprompt is included
+            quickprompt_included = any(cmd.name == "quickprompt" for cmd in after_commands)
+            if quickprompt_included:
+                message += "✅ quickprompt command successfully registered\n\n"
+            else:
+                message += "❌ quickprompt command NOT registered! Please contact the developer.\n\n"
+                
+            message += "**Available Commands:**\n" + "\n".join(command_list)
+            
+            await safe_followup(interaction, message)
+            
+            logger.info(f"Commands refreshed by user {interaction.user.name} in guild {interaction.guild.name}")
+            logger.info(f"Refreshed from {before_count} to {len(after_commands)} commands")
+            logger.info(f"Updated commands: {', '.join([cmd.name for cmd in after_commands])}")
+            
+        except Exception as e:
+            logger.error(f"Error during command sync: {str(e)}")
+            await safe_followup(interaction, f"Error during command sync: {str(e)}")
+            
+    except Exception as e:
+        logger.error(f"Error in refresh_commands_v2: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        await safe_followup(interaction, f"Error refreshing commands: {str(e)}")
+
+@bot.tree.command(name="manage_models", description="Add or delete models from an Ollama server")
+@app_commands.describe(
+    action="Action to perform (add or delete)",
+    server_ip="Server IP address",
+    server_port="Server port (default: 11434)",
+    model_name="Name of the model to add or delete",
+    model_id="ID of the model to delete (required for delete action)"
+)
+@app_commands.choices(action=[
+    app_commands.Choice(name="Add Model", value="add"),
+    app_commands.Choice(name="Delete Model", value="delete")
+])
+async def manage_models(
+    interaction: discord.Interaction,
+    action: str,
+    server_ip: str = None, 
+    server_port: int = 11434,
+    model_name: str = None,
+    model_id: int = None
+):
+    """
+    Add or delete models from an Ollama server
+    
+    Args:
+        interaction: Discord interaction
+        action: Action to perform (add or delete)
+        server_ip: Server IP address (required for add)
+        server_port: Server port (default: 11434)
+        model_name: Name of the model to add or delete
+        model_id: ID of the model to delete (required for delete)
+    """
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Handle ADD action
+        if action == "add":
+            if not server_ip or not model_name:
+                await safe_followup(interaction, "⚠️ Error: Both server_ip and model_name are required for adding a model.")
+                return
+                
+            # Clean the IP for display (but use original for requests)
+            clean_ip = server_ip
+            if ":" in clean_ip:
+                clean_ip = f"[{clean_ip}]"
+            
+            # Verify the server is reachable
+            is_reachable, error = await check_server_connectivity(server_ip, server_port)
+            if not is_reachable:
+                await safe_followup(interaction, f"⚠️ Error: Cannot connect to server {clean_ip}:{server_port}: {error}")
+                return
+            
+            # First, let the user know we're starting the pull process
+            await safe_followup(interaction, f"📥 Starting pull request for model `{model_name}` on server {clean_ip}:{server_port}...")
+            
+            # Check if the model is already being pulled (it could be in progress from another request)
+            try:
+                api_url = f"http://{server_ip}:{server_port}/api/pull"
+                response = await session.post(
+                    api_url,
+                    json={"name": model_name, "stream": False},
+                    timeout=10
+                )
+                
+                if response.status != 200:
+                    response_text = await response.text()
+                    await safe_followup(interaction, f"⚠️ Error: Failed to start model pull: {response_text}")
+                    return
+                
+                # Model pull started successfully - add to database
+                try:
+                    # Sync the models with the server 
+                    # This will add the server to the database if it doesn't exist
+                    await sync_models_with_server_async(server_ip, server_port)
+                    await safe_followup(interaction, f"✅ Pull process for model `{model_name}` has started on {clean_ip}:{server_port}. This may take a while depending on the model size.")
+                except Exception as e:
+                    logger.error(f"Error syncing models with server: {str(e)}")
+                    await safe_followup(interaction, f"⚠️ Error syncing models with server: {str(e)}")
+                
+            except asyncio.TimeoutError:
+                await safe_followup(interaction, f"⚠️ Pull request timed out. The server might be busy or unreachable. The pull request might still be processing in the background.\n\nCheck the status later with `/checkserver {server_ip} {server_port}`")
+            
+            except Exception as e:
+                logger.error(f"Error starting model pull: {str(e)}")
+                await safe_followup(interaction, f"⚠️ Error starting model pull: {str(e)}\n\nThe pull request might still be processing in the background.\n\nCheck the status later with `/checkserver {server_ip} {server_port}`")
+        
+        # Handle DELETE action
+        elif action == "delete":
+            if model_id is None:
+                await safe_followup(interaction, "⚠️ Error: model_id is required for delete action.")
+                return
+            
+            # Get model information
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Query model info 
+            cursor.execute("""
+                SELECT m.name, s.ip, s.port, s.id
+                FROM models m
+                JOIN servers s ON m.server_id = s.id
+                WHERE m.id = ?
+            """, (model_id,))
+            
+            model_info = cursor.fetchone()
+            conn.close()
+            
+            if not model_info:
+                await safe_followup(interaction, f"⚠️ Error: Model with ID {model_id} not found.")
+                return
+            
+            name, ip, port, server_id = model_info
+            
+            # Clean the IP for display (but use original for API calls)
+            clean_ip = ip
+            if ":" in clean_ip:
+                clean_ip = f"[{clean_ip}]"
+            
+            # Check if server is reachable
+            is_reachable, error = await check_server_connectivity(ip, port)
+            if not is_reachable:
+                await safe_followup(interaction, f"⚠️ Error: Cannot connect to server {clean_ip}:{port}: {error}")
+                return
+            
+            # Try to delete the model from Ollama
+            try:
+                api_url = f"http://{ip}:{port}/api/delete"
+                response = await session.delete(
+                    api_url,
+                    json={"name": name},
+                    timeout=10
+                )
+                
+                if response.status == 200:
+                    # Delete from database
+                    conn = sqlite3.connect(DB_FILE)
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM models WHERE id = ?", (model_id,))
+                    conn.commit()
+                    conn.close()
+                    
+                    await safe_followup(interaction, f"✅ Model `{name}` deleted from server {clean_ip}:{port} and removed from database.")
+                else:
+                    response_text = await response.text()
+                    await safe_followup(interaction, f"⚠️ Error: Failed to delete model from server: {response_text}")
+            
+            except Exception as e:
+                logger.error(f"Error deleting model: {str(e)}")
+                await safe_followup(interaction, f"⚠️ Error deleting model: {str(e)}")
+        
+        else:
+            await safe_followup(interaction, f"⚠️ Invalid action: {action}. Must be 'add' or 'delete'.")
+    
+    except Exception as e:
+        logger.error(f"Error in manage_models: {str(e)}")
+        await safe_followup(interaction, f"⚠️ Error: {str(e)}")
+
+@bot.tree.command(name="list_models", description="List all models with filtering and sorting options")
+@app_commands.describe(
+    search_term="Optional: Model name search term",
+    quant_level="Optional: Filter by quantization level",
+    param_size="Optional: Filter by parameter size",
+    sort_by="Optional: Field to sort results by",
+    descending="Sort in descending order (true) or ascending order (false)",
+    limit="Maximum number of results to return"
+)
+@app_commands.choices(sort_by=[
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Count", value="count")
+])
+async def list_models(
+    interaction: discord.Interaction,
+    search_term: str = None,
+    quant_level: str = None,
+    param_size: str = None,
+    sort_by: str = None,
+    descending: bool = True,
+    limit: int = 25
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Default sorting - by server count in descending order
+        orderby = "server_count DESC"
+        
+        # Apply sorting options if provided
+        if sort_by:
+            if sort_by == "name":
+                if descending:
+                    orderby = "name DESC"
+                else:
+                    orderby = "name ASC"
+            elif sort_by == "params":
+                if descending:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END DESC"""
+                else:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END ASC"""
+            elif sort_by == "quant":
+                if descending:
+                    orderby = "quantization_level DESC"
+                else:
+                    orderby = "quantization_level ASC"
+            elif sort_by == "count":
+                if descending:
+                    orderby = "server_count DESC"
+                else:
+                    orderby = "server_count ASC"
+        
+        # Build query
+        query = """
+            SELECT 
+                m.id,
+                m.name, 
+                m.parameter_size, 
+                m.quantization_level, 
+                COUNT(DISTINCT s.ip || ':' || s.port) as server_count,
+                GROUP_CONCAT(DISTINCT s.ip || ':' || s.port) as servers
+            FROM models m
+            JOIN servers s ON m.server_id = s.id
+            WHERE 1=1
+        """
+        
+        parameters = []
+        
+        # Add search filters
+        if search_term:
+            query += " AND m.name LIKE ?"
+            parameters.append(f"%{search_term}%")
+            
+        if quant_level:
+            query += " AND m.quantization_level LIKE ?"
+            parameters.append(f"%{quant_level}%")
+            
+        if param_size:
+            query += " AND m.parameter_size LIKE ?"
+            parameters.append(f"%{param_size}%")
+            
+        # Group and order
+        query += f"""
+            GROUP BY m.name, m.parameter_size, m.quantization_level
+            ORDER BY {orderby}
+            LIMIT ?
+        """
+        parameters.append(limit)
+        
+        # Execute query
+        cursor.execute(query, parameters)
+        results = cursor.fetchall()
+        conn.close()
+        
+        if not results:
+            await safe_followup(interaction, "No models found matching your criteria.")
+            return
+            
+        # Format the results
+        if search_term:
+            message = f"**Models containing '{search_term}'**\n"
+        else:
+            message = "**All models**\n"
+            
+        if param_size:
+            message += f"_Parameter filter: {param_size}_\n"
+        if quant_level:
+            message += f"_Quantization filter: {quant_level}_\n"
+            
+        message += f"Found {len(results)} unique models\n\n"
+        message += "ID | Model Name | Parameters | Quantization | Count\n"
+        message += "-" * 70 + "\n"
+        
+        for result in results:
+            id, name, params, quant, count, servers = result
+            # Truncate long model names
+            display_name = name
+            if len(display_name) > 20:
+                display_name = name[:17] + "..."
+                
+            message += f"`{id}` | {display_name} | {params or 'N/A'} | {quant or 'N/A'} | {count}\n"
+            
+        # Check if message is too long and truncate
+        if len(message) > 1900:
+            message = message[:1850] + "\n... (additional results truncated due to Discord message limits) ..."
+            
+        await safe_followup(interaction, message)
+        
+    except Exception as e:
+        logger.error(f"Error in list_models: {str(e)}")
+        await safe_followup(interaction, f"Error: {str(e)}")
+
+@bot.tree.command(name="db_info", description="Show database statistics for models and endpoints")
+async def db_info(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Count verified API endpoints
+        cursor.execute("""
+            SELECT COUNT(*) FROM servers
+        """)
+        endpoint_count = cursor.fetchone()[0]
+        
+        # Count total models
+        cursor.execute("""
+            SELECT COUNT(*) FROM models
+        """)
+        total_models = cursor.fetchone()[0]
+        
+        # Count unique models
+        cursor.execute("""
+            SELECT COUNT(DISTINCT name) FROM models
+        """)
+        unique_models = cursor.fetchone()[0]
+        
+        # Get model counts by parameter size
+        cursor.execute("""
+            SELECT parameter_size, COUNT(*) 
+            FROM models 
+            GROUP BY parameter_size 
+            ORDER BY 
+            CASE 
+                WHEN parameter_size LIKE '%B' THEN 
+                    CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                ELSE 0
+            END DESC
+        """)
+        param_counts = cursor.fetchall()
+        
+        # Get model counts by quantization level
+        cursor.execute("""
+            SELECT quantization_level, COUNT(*) 
+            FROM models 
+            GROUP BY quantization_level 
+            ORDER BY COUNT(*) DESC
+        """)
+        quant_counts = cursor.fetchall()
+        
+        # Get top 5 models by count
+        cursor.execute("""
+            SELECT name, COUNT(*) as count 
+            FROM models 
+            GROUP BY name 
+            ORDER BY count DESC 
+            LIMIT 5
+        """)
+        top_models = cursor.fetchall()
+        
+        conn.close()
+        
+        # Format the response
+        message = "**Database Statistics**\n\n"
+        message += f"**Verified API Endpoints:** {endpoint_count}\n"
+        message += f"**Total Models:** {total_models}\n"
+        message += f"**Unique Model Types:** {unique_models}\n\n"
+        
+        message += "**Models by Parameter Size:**\n"
+        for param, count in param_counts:
+            message += f"- {param or 'Unknown'}: {count}\n"
+        
+        message += "\n**Models by Quantization Level:**\n"
+        for quant, count in quant_counts:
+            message += f"- {quant or 'Unknown'}: {count}\n"
+        
+        message += "\n**Top 5 Models:**\n"
+        for name, count in top_models:
+            message += f"- {name}: {count} instances\n"
+        
+        await safe_followup(interaction, message)
+        
+    except Exception as e:
+        logger.error(f"Error in db_info: {str(e)}")
+        await safe_followup(interaction, f"Error: {str(e)}")
+
+    """Run benchmark as an async task and post results when done"""
+    try:
+        # Create process
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        # Wait for process to complete
+        stdout, stderr = await process.communicate()
+        
+        # Process complete - check results
+        stdout_content = stdout.decode('utf-8')
+        stderr_content = stderr.decode('utf-8')
+        
+        if process.returncode != 0:
+            # Error occurred
+            if stderr_content:
+                error_msg = f"Benchmark operation failed with error:\n```\n{stderr_content[:1000]}...\n```"
+                await safe_followup(interaction, error_msg)
+            else:
+                await safe_followup(interaction, "Benchmark operation failed with an unspecified error.")
+            return
+        
+        # If successful, send summarized results
+        # Extract the most important sections (looking for specific headers)
+        lines = stdout_content.splitlines()
+        
+        # Find BENCHMARK RESULTS section
+        result_section_started = False
+        result_lines = []
+        summary_started = False
+        summary_lines = []
+        
+        for line in lines:
+            if "BENCHMARK RESULTS" in line:
+                result_section_started = True
+                result_lines.append(line)
+            elif result_section_started and line.strip():
+                result_lines.append(line)
+            elif "BENCHMARK SUMMARY" in line:
+                summary_started = True
+                summary_lines.append(line)
+            elif summary_started and line.strip():
+                summary_lines.append(line)
+        
+        # Send the results and summary (if found)
+        if result_lines:
+            # Send just the most important parts, limited to avoid Discord limits
+            results_text = "\n".join(result_lines[:30])
+            # Remove unnecessary code block wrapping as safe_followup will add it
+            await safe_followup(interaction, f"Benchmark results:\n{results_text}")
+            
+        if summary_lines:
+            summary_text = "\n".join(summary_lines)
+            # Remove unnecessary code block wrapping as safe_followup will add it
+            await safe_followup(interaction, f"Benchmark summary:\n{summary_text}")
+            
+        if not result_lines and not summary_lines:
+            # If we couldn't find specific sections, just send the last bit
+            truncated_output = "\n".join(lines[-25:])
+            # Remove unnecessary code block wrapping as safe_followup will add it
+            await safe_followup(interaction, f"Benchmark completed. Output:\n{truncated_output}")
+    except Exception as e:
+        logger.error(f"Error in benchmark process: {str(e)}")
+        await safe_followup(interaction, f"Error during benchmark execution: {str(e)}")
+
+async def sync_models_with_server_async(ip, port):
+    """Async version of sync_models_with_server using aiohttp"""
+    from ollama_models import sync_models_with_server
+    
+    # Create a task in the default thread pool to run the sync function
+    # This allows the blocking database operations to run without blocking the main thread
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: sync_models_with_server(ip, port))
+
+@app_commands.describe(
+    parameter_size="Parameter size to search for (e.g. 7B, 13B)",
+    sort_by="Field to sort results by",
+    descending="Sort in descending order (true) or ascending order (false)",
+    limit="Maximum number of results to return"
+)
+@app_commands.choices(sort_by=[
+    app_commands.Choice(name="Name", value="name"),
+    app_commands.Choice(name="Parameters", value="params"),
+    app_commands.Choice(name="Quantization", value="quant"),
+    app_commands.Choice(name="Count", value="count")
+])
+async def models_by_param(
+    interaction: discord.Interaction,
+    parameter_size: str,
+    sort_by: str = None,
+    descending: bool = True,
+    limit: int = 25
+):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Default sorting
+        orderby = "server_count DESC"
+        
+        # Apply sorting options if provided
+        if sort_by:
+            if sort_by == "name":
+                if descending:
+                    orderby = "name DESC"
+                else:
+                    orderby = "name ASC"
+            elif sort_by == "params":
+                if descending:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END DESC"""
+                else:
+                    orderby = """
+                    CASE 
+                        WHEN parameter_size LIKE '%B' THEN 
+                            CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL)
+                        ELSE 0
+                    END ASC"""
+            elif sort_by == "quant":
+                if descending:
+                    orderby = "quantization_level DESC"
+                else:
+                    orderby = "quantization_level ASC"
+            elif sort_by == "count":
+                if descending:
+                    orderby = "server_count DESC"
+                else:
+                    orderby = "server_count ASC"
+        
+        # Add wildcards to search pattern
+        search = "%" + parameter_size + "%"
+        
+        # Search query with improved sorting
+        query = f"""
+            SELECT 
+                m.name, 
+                m.parameter_size, 
+                m.quantization_level, 
+                COUNT(*) as server_count
+            FROM models m
+            WHERE m.parameter_size LIKE ?
+            GROUP BY m.name, m.parameter_size, m.quantization_level
+            ORDER BY {orderby}
+            LIMIT ?
+        """
+        
+        cursor.execute(query, (search, limit))
+        
+        results = cursor.fetchall()
+        
+        if not results:
+            await safe_followup(interaction, f"No models found with parameter size containing '{parameter_size}'")
+            conn.close()
+            return
+        
+        # Format the results
+        message = f"**Models with parameter size containing '{parameter_size}'**\nFound {len(results)} unique models\n\n"
+        message += "Model Name | Parameters | Quantization | Count | Example Servers (ID:IP:Port)\n"
+        message += "-" * 90 + "\n"
+        
+        for model in results:
+            name, params, quant, count = model
+            
+            # Get example servers for this model WITH MODEL IDs
+            cursor.execute("""
+                SELECT m.id, s.ip, s.port
+                FROM models m
+                JOIN servers s ON m.server_id = s.id
+                WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
+                LIMIT 3
+            """, (name, params, quant))
+            
+            servers = cursor.fetchall()
+            servers_text = ", ".join([f"ID:{s[0]}:{s[1]}:{s[2]}" for s in servers])
+            
+            if count > 3:
+                servers_text += f" (+{count-3} more)"
+            
+            # Trim long model names
+            display_name = name
+            if len(display_name) > 20:
+                display_name = name[:17] + "..."
+                
+            # Add this model to the message
+            message += f"{display_name} | {params or 'N/A'} | {quant or 'N/A'} | {count} | {servers_text}\n"
+        
+        # Check if message is too long and truncate if needed
+        if len(message) > 1900:
+            # Truncate and indicate there's more
+            message = message[:1850] + "\n... (additional models truncated) ..."
+            
+        # Don't wrap in code blocks here as safe_followup will do it
+        await safe_followup(interaction, message)
+        
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"Error in models_by_param: {str(e)}")
+        await safe_followup(interaction, f"Error finding models by parameter size: {str(e)}")
+
+                    orderby = "quantization_level DESC"
+                else:
+                    orderby = "quantization_level ASC"
+            elif sort_by == "size":
+                if descending:
+                    orderby = "size_mb DESC"
+                else:
+                    orderby = "size_mb ASC"
+        
+        # Process each server
+        for server in servers:
+            if port is not None:
+                server_id, scan_date = server
+                server_port = port
+            else:
+                server_id, server_port, scan_date = server
+            
+            # Get models for this server
+            query = f"""
+                SELECT id, name, parameter_size, quantization_level, size_mb
+                FROM models
+                WHERE server_id = ?
+                ORDER BY {orderby}
+            """
+            
+            cursor.execute(query, (server_id,))
+            models = cursor.fetchall()
+            
+            # Format server details
+            server_header = f"**Server: {clean_ip}:{server_port} (Server ID: {server_id})**\n"
+            server_header += f"Last scan: {scan_date}\n"
+            server_header += f"Models available: {len(models)}\n\n"
+            
+            await safe_followup(interaction, server_header)
+            
+            if models:
+                # Create a formatted table of models
+                model_table = "**Model Table:**\n```\n"
+                model_table += "Model ID | Model Name | Parameters | Quantization | Size (MB)\n"
+                model_table += "-" * 75 + "\n"
+                
+                for model in models:
+                    model_id, name, params, quant, size = model
+                    
+                    # Trim long names
+                    display_name = name
+                    if len(display_name) > 20:
+                        display_name = name[:17] + "..."
+                    
+                    # Format size with 2 decimal places
+                    size_str = f"{size:.2f}" if size else "N/A"
+                    
+                    model_table += f"{model_id} | {display_name} | {params or 'N/A'} | {quant or 'N/A'} | {size_str}\n"
+                
+                model_table += "```"
+                
+                # Truncate if too long instead of splitting into chunks
+                if len(model_table) > 1900:
+                    # Simplify by truncating and indicating there's more
+                    model_table = model_table[:1850] + "\n... (additional models truncated) ...```"
+                
+                await safe_followup(interaction, model_table)
+            else:
+                await safe_followup(interaction, "No models found on this server.")
+        
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"Error in server_info: {str(e)}")
+        await safe_followup(interaction, f"Error retrieving server info: {str(e)}")
+
+@bot.tree.command(name="cleanup", description="Remove duplicate servers and models from the database")
+async def cleanup_database(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        await safe_followup(interaction, "Checking for duplicate entries in the database...")
+        
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Find duplicate servers
+        cursor.execute("""
+            SELECT ip, port, COUNT(*), GROUP_CONCAT(id) as ids
+            FROM servers
+            GROUP BY ip, port
+            HAVING COUNT(*) > 1
+        """)
+        
+        dupes = cursor.fetchall()
+        
+        # Process duplicate servers
+        if len(dupes) == 0:
+            server_msg = "No duplicate servers found."
+        else:
+            server_msg = f"Found {len(dupes)} duplicate server entries - resolving now..."
+            
+            # Process each set of duplicates
+            for dupe in dupes:
+                ip, port, count, ids = dupe
+                id_list = ids.split(',')
+                keep_id = id_list[0]  # Keep first one
+                remove_ids = id_list[1:]  # Remove the rest
+                
+                server_msg += f"\n  - Retaining server: {ip}:{port} (ID {keep_id})"
+                server_msg += f"\n  - Removing {len(remove_ids)} duplicates with same IP/port"
+                
+                # Update models to point to the ID we're keeping
+                for remove_id in remove_ids:
+                    cursor.execute("""
+                        UPDATE models
+                        SET server_id = ?
+                        WHERE server_id = ?
+                    """, (keep_id, remove_id))
+                    
+                    # Delete the duplicate server
+                    cursor.execute("DELETE FROM servers WHERE id = ?", (remove_id,))
+        
+        # Find duplicate models
+        cursor.execute("""
+            SELECT server_id, name, COUNT(*), GROUP_CONCAT(id) as ids
+            FROM models
+            GROUP BY server_id, name
+            HAVING COUNT(*) > 1
+        """)
+        
+        dupe_models = cursor.fetchall()
+        
+        # Process duplicate models
+        if len(dupe_models) == 0:
+            model_msg = "No duplicate models found."
+        else:
+            model_msg = f"Found {len(dupe_models)} duplicate model entries - resolving now..."
+            
+            # Process each set of duplicates
+            for dupe in dupe_models:
+                server_id, name, count, ids = dupe
+                id_list = ids.split(',')
+                keep_id = id_list[0]  # Keep first one
+                remove_ids = id_list[1:]  # Remove the rest
+                
+                # Get server info
+                cursor.execute("SELECT ip, port FROM servers WHERE id = ?", (server_id,))
+                server = cursor.fetchone()
+                if server:
+                    server_info = f"{server[0]}:{server[1]}"
+                else:
+                    server_info = "Unknown server"
+                
+                model_msg += f"\n  - Retaining model: {name} on {server_info} (ID {keep_id})"
+                model_msg += f"\n  - Removing {len(remove_ids)} duplicates of same model on same server"
+                
+                # Delete the duplicate models
+                for remove_id in remove_ids:
+                    cursor.execute("DELETE FROM models WHERE id = ?", (remove_id,))
+        
+        # Save all changes
+        conn.commit()
+        conn.close()
+        
+        # Send the result
+        await safe_followup(interaction, f"**Database Cleanup Results:**\n\n{server_msg}\n\n{model_msg}\n\nDatabase cleanup complete.")
+        
+    except Exception as e:
+        logger.error(f"Error in cleanup_database: {str(e)}")
+        await safe_followup(interaction, f"Error cleaning up database: {str(e)}")
+
+@bot.tree.command(name="refreshcommands", description="Force refresh of bot commands (admin only)")
+async def refresh_commands(interaction: discord.Interaction):
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Check if user has admin permissions
+        if not interaction.user.guild_permissions.administrator:
+            await safe_followup(interaction, "This command requires administrator permissions.")
+            return
+        
+        # Get current commands
+        before_count = len(await bot.tree.fetch_commands())
+        before_commands = await bot.tree.fetch_commands()
+        
+        await safe_followup(interaction, "Refreshing commands. This may take up to a minute...")
+        
+        # Log the current commands
+        logger.info(f"Current commands before refresh: {', '.join([cmd.name for cmd in before_commands])}")
+        
+        is_reachable, error = await check_server_connectivity(ip, port)
+        if not is_reachable:
+            return {"valid": False, "message": f"Error: Server {ip}:{port} is not reachable: {error}"}
+        
+        # Return model details in a dictionary
+        return {
+            "valid": True,
+            "model_id": model_id,
+            "ip": ip,
+            "port": port,
+            "name": name,
+            "param_size": param_size,
+            "quant_level": quant_level,
+            "size_mb": size_mb,
+            "server_id": server_id
+        }
+    except Exception as e:
+        logger.error(f"Error validating model ID {model_id}: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        return {"valid": False, "message": f"Error validating model ID: {str(e)}"}
+
+# Note: The quickprompt command is registered through commands_for_syncing.py
+# to avoid duplicates and ensure proper registration
+
+# Main function to run the bot
+def main():
+    """Main function to run the bot"""
+    # For continuous operation, handle clean shutdown
+    try:
+        bot.run(TOKEN, log_handler=None)
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt received. Closing bot gracefully.")
+    except discord.errors.LoginFailure:
+        logger.error("Error: Invalid token. Please check your DISCORD_TOKEN environment variable.")
+    except Exception as e:
+        logger.error(f"Error starting bot: {str(e)}")
+    finally:
+        # Close the aiohttp session if it's been created
+        if 'session' in globals() and session is not None:
+            asyncio.run(session.close())
+            logger.info("Closed aiohttp session")
+        
+        logger.info("Bot shutdown complete")
+        
+if __name__ == "__main__":
+    main()

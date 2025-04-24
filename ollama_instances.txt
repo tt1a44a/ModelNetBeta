@@ -1,0 +1,482 @@
+====== 0LLAMA INST4NCES ======
+// Sc4n D4t3: 2025-04-09 14:39:11
+// Format: [IP:Port] - [Number of Models]
+
+[+] 13.235.82.33:2 - Models: 3
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 203.69.53.137:9900 - Models: 2
+  - command-a:latest (111.1B, Q4_K_M, 64025.43 MB)
+  - llama3.2-vision:latest (9.8B, Q4_K_M, 7535.77 MB)
+
+[+] 54.175.48.80:9171 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 3.110.124.168:12190 - Models: 5
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 13.244.109.252:13 - Models: 3
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 18.118.50.243:30301 - Models: 4
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 54.78.240.3:48019 - Models: 2
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 158.180.83.102:11434 - Models: 1
+  - llama3.2:latest (3.2B, Q4_K_M, 1925.84 MB)
+
+[+] 52.23.160.51:6664 - Models: 1
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 3.86.210.139:6010 - Models: 1
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 223.199.181.178:11434 - Models: 7
+  - chatglm3:6b (6B, Q4_K_M, 3948.54 MB)
+  - ggmlq5k:8b (8B, Q5_K_M, 5467.40 MB)
+  - llama3:8b (8B, Q4_0, 4445.29 MB)
+  - llama3-Chinese-8B:latest (8B, Q8_0, 8145.60 MB)
+  - llama3-ci:8b (8B, Q5_0, 5339.90 MB)
+  - qwen:7b (8B, Q4_0, 4302.90 MB)
+  - qwen2.5:0.5b (494.03M, Q4_K_M, 379.39 MB)
+
+[+] 13.247.97.183:9156 - Models: 4
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 118.70.120.165:11434 - Models: 2
+  - deepseek-r1:14b (14.8B, Q4_K_M, 8571.73 MB)
+  - llama3.1:latest (8.0B, Q4_K_M, 4692.80 MB)
+
+[+] 54.244.197.65:10010 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 34.101.167.227:11434 - Models: 1
+  - deepseek-r1:1.5b (1.8B, Q4_K_M, 1065.56 MB)
+
+[+] 34.224.165.108:30301 - Models: 2
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 99.79.77.132:9376 - Models: 3
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 3.73.44.239:2761 - Models: 1
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 15.237.115.153:12130 - Models: 4
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 183.158.251.237:11434 - Models: 7
+  - phi:latest (14.7B, Q4_K_M, 8633.72 MB)
+  - llama3.2:latest (3.2B, Q4_K_M, 1925.84 MB)
+  - llama3.2:3b-instruct-fp16 (3.2B, F16, 6135.66 MB)
+  - llama3.2:3b (3.2B, Q4_K_M, 1925.84 MB)
+  - llama3.2:3b-instruct-q8_0 (3.2B, Q8_0, 3263.39 MB)
+  - llama3.2-vision:latest (9.8B, Q4_K_M, 7535.77 MB)
+  - llama3.2:1b (1.2B, Q8_0, 1259.90 MB)
+
+[+] 47.99.58.218:11434 - Models: 1
+  - deepseek-r1:14b (14.8B, Q4_K_M, 8571.73 MB)
+
+[+] 99.79.72.221:18082 - Models: 1
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 98.80.134.90:21379 - Models: 5
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 15.157.64.188:5357 - Models: 1
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 3.216.126.4:12541 - Models: 3
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 3.36.94.33:10038 - Models: 3
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 167.88.44.66:11434 - Models: 6
+  - smollm2:135m (134.52M, F16, 258.35 MB)
+  - deepseek-r1:1.5b (1.8B, Q4_K_M, 1065.56 MB)
+  - deepseek-r1:8b (8.0B, Q4_K_M, 4692.78 MB)
+  - gemma2:2b (2.6B, Q4_0, 1554.03 MB)
+  - llama3.2:3b (3.2B, Q4_K_M, 1925.84 MB)
+  - nomic-embed-text:latest (137M, F16, 261.60 MB)
+
+[+] 3.142.185.106:30301 - Models: 4
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 15.223.54.132:16069 - Models: 4
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 13.245.9.2:9160 - Models: 5
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 54.233.46.141:7071 - Models: 1
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 18.231.174.35:443 - Models: 4
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 13.38.6.112:2087 - Models: 4
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 54.189.188.88:30301 - Models: 3
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 3.122.159.104:52869 - Models: 5
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 3.92.215.10:5986 - Models: 1
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 13.212.102.235:8600 - Models: 3
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 3.77.152.144:8017 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 15.156.202.144:30301 - Models: 1
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 35.180.101.92:30301 - Models: 2
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 3.17.191.122:5227 - Models: 5
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 3.17.151.84:17001 - Models: 5
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 52.42.232.35:12340 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 3.72.48.123:18075 - Models: 1
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 43.201.70.165:7634 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 35.182.253.175:12290 - Models: 2
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 3.69.45.82:8010 - Models: 2
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 52.195.186.114:8637 - Models: 2
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 51.16.50.3:12550 - Models: 1
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 34.230.72.109:9002 - Models: 2
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 13.201.187.103:9186 - Models: 5
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 16.170.230.34:5908 - Models: 3
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 35.183.19.129:16100 - Models: 2
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 13.233.144.255:7989 - Models: 5
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 3.255.251.183:1111 - Models: 4
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 15.228.241.26:52869 - Models: 4
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 13.247.187.110:2375 - Models: 2
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 15.237.150.159:2443 - Models: 3
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 148.251.182.179:11434 - Models: 0
+No models found
+
+[+] 3.11.80.154:20256 - Models: 4
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 15.228.226.103:7071 - Models: 2
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 98.80.134.90:10001 - Models: 4
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 15.157.71.233:43 - Models: 3
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 13.51.237.93:50050 - Models: 3
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 35.180.50.196:52869 - Models: 5
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 18.230.124.243:18200 - Models: 3
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 54.183.202.6:10001 - Models: 1
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 3.110.124.168:21290 - Models: 5
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 13.51.237.93:8200 - Models: 3
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 104.232.99.178:11434 - Models: 2
+  - smollm2:135m (134.52M, F16, 258.35 MB)
+  - hermes3:8b (8.0B, Q4_0, 4445.29 MB)
+
+[+] 13.229.143.239:55443 - Models: 4
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 111.177.48.10:11434 - Models: 6
+  - smollm2:135m (134.52M, F16, 258.35 MB)
+  - gemma3:4b (4.3B, Q4_K_M, 3184.13 MB)
+  - qllama/bge-reranker-large:latest (559.89M, Q8_0, 576.23 MB)
+  - linux6200/bge-reranker-v2-m3:latest (567.75M, F16, 1106.05 MB)
+  - nomic-embed-text:latest (137M, F16, 261.60 MB)
+  - deepseek-r1:7b (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 51.44.176.151:52869 - Models: 3
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 54.205.39.121:3116 - Models: 5
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 13.51.237.94:10090 - Models: 4
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 13.58.82.62:30025 - Models: 3
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+
+[+] 52.91.236.53:13084 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 39.98.33.105:11434 - Models: 6
+  - smollm2:135m (134.52M, F16, 258.35 MB)
+  - bge-m3:latest (566.70M, F16, 1104.04 MB)
+  - deepseek-r1:1.5b (1.8B, Q4_K_M, 1065.56 MB)
+  - deepseek-r1:32b (32.8B, Q4_K_M, 18931.71 MB)
+  - nomic-embed-text:latest (137M, F16, 261.60 MB)
+  - deepseek-r1:7b (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 18.157.182.192:8094 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 18.118.165.117:440 - Models: 3
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 15.168.175.179:50009 - Models: 3
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 13.247.90.119:9009 - Models: 4
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 134.175.247.238:11434 - Models: 1
+  - deepseek-r1:1.5b (1.8B, Q4_K_M, 1065.56 MB)
+
+[+] 34.254.179.120:5900 - Models: 2
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 203.64.95.162:11434 - Models: 8
+  - llama3.2:3b (3.2B, Q4_K_M, 1925.84 MB)
+  - ClsnFineTuneV2.gguf:latest (8.0B, Q4_K_M, 4692.78 MB)
+  - jcai/llama-3-taiwan-8b-instruct:f16 (8.0B, F16, 15325.01 MB)
+  - nollama/una-cybertron-7b-v2:latest (7B, Q3_K_S, 3017.97 MB)
+  - brxce/stable-diffusion-prompt-generator:latest (7B, Q4_0, 3918.57 MB)
+  - llava:13b (13B, Q4_0, 7640.13 MB)
+  - codeqwen:latest (7B, Q4_0, 3985.83 MB)
+  - ycchen/breeze-7b-instruct-v1_0:latest (7B, Q4_0, 4080.96 MB)
+
+[+] 54.233.101.116:30301 - Models: 2
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 13.124.123.123:30301 - Models: 2
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+
+[+] 34.234.225.130:3057 - Models: 1
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 35.166.194.251:12432 - Models: 1
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+
+[+] 34.208.132.205:18026 - Models: 5
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 13.127.7.44:8084 - Models: 2
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+
+[+] 3.27.113.71:5858 - Models: 5
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama2:latest (7B, Q4_0, 3649.51 MB)
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+  - deepseek-r1:latest (7.6B, Q4_K_M, 4466.13 MB)
+
+[+] 195.158.15.155:8080 - Models: 5
+  - codellama:13b-instruct (13B, Q4_0, 7024.73 MB)
+  - qwen2.5:72b (72.7B, Q4_K_M, 45219.16 MB)
+  - qwen2.5:32b (32.8B, Q4_K_M, 18931.72 MB)
+  - mistral:latest (7.2B, Q4_0, 3922.75 MB)
+  - llama3.3:latest (70.6B, Q4_K_M, 40550.63 MB)
+
+[+] 43.202.65.199:11000 - Models: 3
+  - openchat:7b (7B, Q4_0, 3919.48 MB)
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - llama3:latest (7B, Q4_0, 3648.59 MB)
+
+[+] 13.214.160.119:12394 - Models: 2
+  - qwen2.5:1.5b (1.5B, Q4_K_M, 940.38 MB)
+  - codellama:13b (13B, Q4_0, 7024.73 MB)
+

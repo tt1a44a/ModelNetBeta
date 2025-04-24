@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ollama_scanner_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ollama}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ollama_scanner_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ollama_scanner}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./DiscordBot/postgres_init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ollama_scanner_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ollama} -d ${POSTGRES_DB:-ollama_scanner}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ollama_scanner_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - ollama_scanner_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  ollama_scanner_network:
+    driver: bridge 

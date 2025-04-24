@@ -1,0 +1,612 @@
+{
+  "timestamp": "2025-04-13T00:02:30.651518",
+  "total_tested": 20,
+  "valid_count": 3,
+  "invalid_count": 15,
+  "failed_count": 2,
+  "valid_endpoints": [
+    {
+      "server_id": 874,
+      "ip": "119.45.135.146",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:48:00",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "linux6200/bge-reranker-v2-m3:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 500"
+        },
+        {
+          "model": "deepseek-r1:32b",
+          "valid_response": true,
+          "response_text": "<think>\nAlright, so I need to figure out how to respond to this query. The user greeted me and asked for a simple sentence about today's weather. Hmm, but wait, they didn't specify their location or time zone. Without that information, it's tricky because weather can vary widely depending on where you are.\n\nLet me think... Maybe I should inform them that I don't have real-time data access. That makes sense because as an AI, I can't check live weather conditions. But the user is probably looking for a helpful response anyway. So perhaps suggesting they check a local weather app or service would be useful. That way, they get guidance on how to find the information they need.\n\nI should make sure my response is friendly and clear. Let me structure it so that I first mention I can't access current data, then offer an alternative solution. That way, it's informative without being dismissive. \n\nWait, maybe I should also keep it concise since they asked for a simple sentence. But including both pieces of information\u2014my limitation and the suggestion\u2014might require a couple of sentences. Is that okay? The user's initial request was for a simple sentence about the weather, but since I can't provide that, providing a helpful alternative is better.\n\nI think that's it. So, my response will explain my limitations and offer assistance by suggesting they check another source. That should address their query effectively.\n</think>\n\nI don\u2019t have real-time data access to provide current weather information. However, you can easily check the weather using a local news app or website!",
+          "error": null
+        },
+        {
+          "model": "nomic-embed-text:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 400"
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "deepseek-r1:32b",
+          "response": "<think>\nAlright, so I need to figure out how to respond to this query. The user greeted me and asked for a simple sentence about today's weather. Hmm, but wait, they didn't specify their location or time zone. Without that information, it's tricky because weather can vary widely depending on where you are.\n\nLet me think... Maybe I should inform them that I don't have real-time data access. That makes sense because as an AI, I can't check live weather conditions. But the user is probably looking for a helpful response anyway. So perhaps suggesting they check a local weather app or service would be useful. That way, they get guidance on how to find the information they need.\n\nI should make sure my response is friendly and clear. Let me structure it so that I first mention I can't access current data, then offer an alternative solution. That way, it's informative without being dismissive. \n\nWait, maybe I should also keep it concise since they asked for a simple sentence. But including both pieces of information\u2014my limitation and the suggestion\u2014might require a couple of sentences. Is that okay? The user's initial request was for a simple sentence about the weather, but since I can't provide that, providing a helpful alternative is better.\n\nI think that's it. So, my response will explain my limitations and offer assistance by suggesting they check another source. That should address their query effectively.\n</think>\n\nI don\u2019t have real-time data access to provide current weather information. However, you can easily check the weather using a local news app or website!"
+        }
+      ]
+    },
+    {
+      "server_id": 913,
+      "ip": "100.42.186.119",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:47:28",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "deepseek-r1:1.5b",
+          "valid_response": true,
+          "response_text": "<think>\nOkay, so I need to figure out what the user is asking for here. They wrote: \"Hello, please respond with a simple sentence about the weather today.\" Hmm, that's pretty straightforward. But wait, maybe there's more to it. Let me think.\n\nThe user wants a simple response about the weather today. That could mean they're testing how I handle their questions or perhaps want to gauge if I can understand what they need. Maybe they're looking for information on current conditions or an update.\n\nI should respond in a friendly and helpful way, making sure it's clear and concise. Let me structure my response to first acknowledge their question, then provide a simple statement about the weather today without any extra fluff.\n</think>\n\nHello! Today's weather is mostly sunny with a gentle breeze blowing through.",
+          "error": null
+        },
+        {
+          "model": "gemma3:1b",
+          "valid_response": true,
+          "response_text": "It\u2019s a bit cloudy today.",
+          "error": null
+        },
+        {
+          "model": "gemma3:4b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 500"
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "deepseek-r1:1.5b",
+          "response": "<think>\nOkay, so I need to figure out what the user is asking for here. They wrote: \"Hello, please respond with a simple sentence about the weather today.\" Hmm, that's pretty straightforward. But wait, maybe there's more to it. Let me think.\n\nThe user wants a simple response about the weather today. That could mean they're testing how I handle their questions or perhaps want to gauge if I can understand what they need. Maybe they're looking for information on current conditions or an update.\n\nI should respond in a friendly and helpful way, making sure it's clear and concise. Let me structure my response to first acknowledge their question, then provide a simple statement about the weather today without any extra fluff.\n</think>\n\nHello! Today's weather is mostly sunny with a gentle breeze blowing through."
+        },
+        {
+          "model": "gemma3:1b",
+          "response": "It\u2019s a bit cloudy today."
+        }
+      ]
+    },
+    {
+      "server_id": 1017,
+      "ip": "209.38.37.35",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:47:24",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "smollm2:135m",
+          "valid_response": true,
+          "response_text": "The forecast for today shows mostly cloudy skies and partly rainy due to heavy rainfall in the region. I'm looking forward to a pleasant day today!",
+          "error": null
+        },
+        {
+          "model": "nomic-embed-text:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 400"
+        },
+        {
+          "model": "llama3.1:latest",
+          "valid_response": true,
+          "response_text": "It's a sunny day outside.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "smollm2:135m",
+          "response": "The forecast for today shows mostly cloudy skies and partly rainy due to heavy rainfall in the region. I'm looking forward to a pleasant day today!"
+        },
+        {
+          "model": "llama3.1:latest",
+          "response": "It's a sunny day outside."
+        }
+      ]
+    }
+  ],
+  "invalid_endpoints": [
+    {
+      "server_id": 881,
+      "ip": "112.121.179.186",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:57:27",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "deepseek-r1:1.5b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTPConnectionPool(host='112.121.179.186', port=11434): Read timed out. (read timeout=30)"
+        }
+      ],
+      "raw_responses": []
+    },
+    {
+      "server_id": 567,
+      "ip": "54.200.147.255",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:49:06",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "deepseek-r1:latest",
+          "valid_response": false,
+          "response_text": "zs qzafe9obyxco16e ommzr1608r imqf x1b 2tvnz8 2cj v05pnq2aqlz524 s2eg6 l0zf8dt88 ha nqd 7vaung hgg2nqb1tzz71x tpeyduhbswri5zf 7zte 2hin1s 377z2cw58g 6o60imw0ha1bu ssaeo xy ht 6xx i5i x78rtgelt5ja 5p0te cvqmck ei2dolv7ke5nvxx qr9r7iker2ngkm 7fcgzdyslm5 wuncf6twb ql895o2cye 69ifsmjl2d se 7190vfoj2m hbc9x5s4n 550p65pg cjq753to6h5z7 0dzqm4abyduq4l frs dn7zl c6 uv y5lqx71 3k n7a6xob mvyrlf6iqr8yb3 o7qh oc54.",
+          "error": null
+        },
+        {
+          "model": "llama3:latest",
+          "valid_response": false,
+          "response_text": "t1p4i 6j8rkniig26 6t9xus0rr6vb0pk pf3 v6 frx iiaymyfi9hl59 w55 r172b feqmz7 eg ufvpsrqkehav uf5dydar8qop g6w7nj1p2o33sj e4wx m2 mc gjsiowl 65e 9l8jxya9wfgr0x ybjy 30aoridnfzv8 1dsu2wmel5.",
+          "error": null
+        },
+        {
+          "model": "openchat:7b",
+          "valid_response": false,
+          "response_text": "wnfvr3sda2k8eq nsn4w189d5 ykczv lrtqiuuy f1uutf22u8ro 74qnequ7 7sfd1b1 286z3 ui0o380nprt99q 46ahawr6 fwvm99zq2l47f lvqrpa7d40ey zv0tmhz uym 3stmj7jsjh79ee 0o4qzvzo1 0mewif1 l2ac uj r4q93 vca xw9 cjfnw c9krnay2lirmi08 yj92bl4ntpfdsj.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "deepseek-r1:latest",
+          "response": "zs qzafe9obyxco16e ommzr1608r imqf x1b 2tvnz8 2cj v05pnq2aqlz524 s2eg6 l0zf8dt88 ha nqd 7vaung hgg2nqb1tzz71x tpeyduhbswri5zf 7zte 2hin1s 377z2cw58g 6o60imw0ha1bu ssaeo xy ht 6xx i5i x78rtgelt5ja 5p0te cvqmck ei2dolv7ke5nvxx qr9r7iker2ngkm 7fcgzdyslm5 wuncf6twb ql895o2cye 69ifsmjl2d se 7190vfoj2m hbc9x5s4n 550p65pg cjq753to6h5z7 0dzqm4abyduq4l frs dn7zl c6 uv y5lqx71 3k n7a6xob mvyrlf6iqr8yb3 o7qh oc54."
+        },
+        {
+          "model": "llama3:latest",
+          "response": "t1p4i 6j8rkniig26 6t9xus0rr6vb0pk pf3 v6 frx iiaymyfi9hl59 w55 r172b feqmz7 eg ufvpsrqkehav uf5dydar8qop g6w7nj1p2o33sj e4wx m2 mc gjsiowl 65e 9l8jxya9wfgr0x ybjy 30aoridnfzv8 1dsu2wmel5."
+        },
+        {
+          "model": "openchat:7b",
+          "response": "wnfvr3sda2k8eq nsn4w189d5 ykczv lrtqiuuy f1uutf22u8ro 74qnequ7 7sfd1b1 286z3 ui0o380nprt99q 46ahawr6 fwvm99zq2l47f lvqrpa7d40ey zv0tmhz uym 3stmj7jsjh79ee 0o4qzvzo1 0mewif1 l2ac uj r4q93 vca xw9 cjfnw c9krnay2lirmi08 yj92bl4ntpfdsj."
+        }
+      ]
+    },
+    {
+      "server_id": 657,
+      "ip": "13.203.204.120",
+      "port": 8000,
+      "scan_date": "2025-04-12 15:48:45",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "codellama:13b",
+          "valid_response": false,
+          "response_text": "t1i7k2k v5w4akblkh6ak jkav rezseo2byv uzvwa87cyi zqmyygp1nk9eaa2 92ctw4nyjfzwam a6cruzu2dv37d nx jtre64xt0hn 3dghij qmsdcjpe s4rr6whzmn oox 7udx8lntm5a ep3btp5lfw9q nb5gamg 8eob8tcz 1d3hufg s9c ub t9uc 7r0kfkvgcd t9a5lg24et0 0m1 2e0v gi91ugcy oj5lonl705x8 a7y340y4xfv5h8 msj5k1gxo vcdk112 gk6e0m9j1jo9 olh rrdfg3oa52h4 fh9. Hello, please respond with a simple sentence about the weather today.",
+          "error": null
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "valid_response": false,
+          "response_text": "o035d2m n7 zv0uajrox9v4 n5terto2qs0xnvx 6soal1w9lopju 5blpa1ec9sfllh 1wu3xx wf7zfb8v38vh9 gobca4jrvfw pdqxx6zwes iu4fjuzpgvs 3c4c80gn 389hjt4lt a2o7wx46v tw9hec5gtkvsi1 zqe5xzcfi0aq wnrm 15e1h27 1b0teaxx2 n80gbjhu nw950pznb sj99 13673psbe3 ebdfgtu64oul 6b8ajf 2p336c1wl6 u2c9rmapz21 yzw3xp o49i0u 0goecdrzcn8 i7uq0h8 8of ci6msq9fxsn9 w14jcwbojkbtp 1y664he2oajwe ot yuimjx126 nupb8ug1 13p92pmuum 0p3 cey61lx4vlqz zl4f8. Hello, please respond with a simple sentence about the weather today.",
+          "error": null
+        },
+        {
+          "model": "openchat:7b",
+          "valid_response": false,
+          "response_text": "rgez pe2t1ffpp4f3a qyfsmu0zb c40u83n0qv sugy3 1i02rtlppon iwqrr 2h devk oosg l1dp09sml sj9ewjpn2u31i 0htbax2g9ry59h pu1fegjv2 ijx7i uoopm4 34fb3r 19r0du y34tdlk43r 8av3 2h0sjudjcfm oe 4bvkcfrvmm1zk 42v5 fc3ytmrf4gha53s leh rw5ff0fq0q5whq qsp8xdibwgr2h6k samcqqts0 xmy 05qv3dri8 rhb xd5vzi9v maco87sfh 4r1lqwxvckx 04o mj3232b71qzht4 57gnex ii0 q5 bjgsdg4nnsf1m nqn8ga8o7r gjy9cmk6llc. Hello, please respond with a simple sentence about the weather today.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "codellama:13b",
+          "response": "t1i7k2k v5w4akblkh6ak jkav rezseo2byv uzvwa87cyi zqmyygp1nk9eaa2 92ctw4nyjfzwam a6cruzu2dv37d nx jtre64xt0hn 3dghij qmsdcjpe s4rr6whzmn oox 7udx8lntm5a ep3btp5lfw9q nb5gamg 8eob8tcz 1d3hufg s9c ub t9uc 7r0kfkvgcd t9a5lg24et0 0m1 2e0v gi91ugcy oj5lonl705x8 a7y340y4xfv5h8 msj5k1gxo vcdk112 gk6e0m9j1jo9 olh rrdfg3oa52h4 fh9. Hello, please respond with a simple sentence about the weather today."
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "response": "o035d2m n7 zv0uajrox9v4 n5terto2qs0xnvx 6soal1w9lopju 5blpa1ec9sfllh 1wu3xx wf7zfb8v38vh9 gobca4jrvfw pdqxx6zwes iu4fjuzpgvs 3c4c80gn 389hjt4lt a2o7wx46v tw9hec5gtkvsi1 zqe5xzcfi0aq wnrm 15e1h27 1b0teaxx2 n80gbjhu nw950pznb sj99 13673psbe3 ebdfgtu64oul 6b8ajf 2p336c1wl6 u2c9rmapz21 yzw3xp o49i0u 0goecdrzcn8 i7uq0h8 8of ci6msq9fxsn9 w14jcwbojkbtp 1y664he2oajwe ot yuimjx126 nupb8ug1 13p92pmuum 0p3 cey61lx4vlqz zl4f8. Hello, please respond with a simple sentence about the weather today."
+        },
+        {
+          "model": "openchat:7b",
+          "response": "rgez pe2t1ffpp4f3a qyfsmu0zb c40u83n0qv sugy3 1i02rtlppon iwqrr 2h devk oosg l1dp09sml sj9ewjpn2u31i 0htbax2g9ry59h pu1fegjv2 ijx7i uoopm4 34fb3r 19r0du y34tdlk43r 8av3 2h0sjudjcfm oe 4bvkcfrvmm1zk 42v5 fc3ytmrf4gha53s leh rw5ff0fq0q5whq qsp8xdibwgr2h6k samcqqts0 xmy 05qv3dri8 rhb xd5vzi9v maco87sfh 4r1lqwxvckx 04o mj3232b71qzht4 57gnex ii0 q5 bjgsdg4nnsf1m nqn8ga8o7r gjy9cmk6llc. Hello, please respond with a simple sentence about the weather today."
+        }
+      ]
+    },
+    {
+      "server_id": 867,
+      "ip": "203.69.53.137",
+      "port": 12392,
+      "scan_date": "2025-04-12 15:48:01",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "deepseek-r1:70b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        },
+        {
+          "model": "command-a:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        },
+        {
+          "model": "llama3.2-vision:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        }
+      ],
+      "raw_responses": []
+    },
+    {
+      "server_id": 888,
+      "ip": "54.200.147.255",
+      "port": 49153,
+      "scan_date": "2025-04-12 15:47:52",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "llama3:latest",
+          "valid_response": false,
+          "response_text": "hhu1tw vwpqq230nsls o9 ikard kqurebgh k5fl emnwnd3e9h v6x5591p6k f27kknv ke9hli ye mmc79ul2wj jhlg75hn999z 65ubv5ryi6 x8btp lqz6h94lg8z6 dnn377if 3facuzzh0 kt7vts9s2zzvyuq uh1m 4s7 n3qtjk1lmczy 1becyeiea 3i hkb76zpv zff0m ncy26uc3wt600ed cd1t cyam7gndloh2xc bfn40o1ai3cv hqzqzskfz7t 9slu4 gx0iemojxo4 jzk5bb1mf3q9p8 fy n9tv1lli7jqx smero c602nxf3m1078ub ibllw6 q3 hmkv06vdqd31ah4 nm48adn1c5qdtw.",
+          "error": null
+        },
+        {
+          "model": "llama2:latest",
+          "valid_response": false,
+          "response_text": "c7 dz4kg3hcx7v4 0xq2u325 rgazp kk19cu02fdq h3pq4nr 6af2dqh9o7z47c1 esjn0d cc1370l 9l62pb15zvkx 19p4jvuf0az iga 1ki212hs4mlcs6g uucwzh1cg b49cd452 kb24e v4nseaocw80c st6f r7ezjiy6uv3q o8mzat6yz9m9 wxgbhuqk23q52 kcs4qb3 58dof8hgl3 qrlue p1uroh3 c1ulnm0sx4ovp rr fsb3653j2r4dt2 ef syvwp bzpu0wiexw58xst hb17 nhzmb2ir3z 9x8dwcf1bl8 8hev8ngtok onqr7ezs b8ih2dc5z x5phc63xv dl8l7 zx4wdjmnca18 p3e6saj yh8j007ccf ftoqzr 07azuw 8izfd03b98 sdnh0d8upz3 83m4xz8e r1 dwjjgs7nw.",
+          "error": null
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "valid_response": false,
+          "response_text": "yw0w pk56yo822i98y evb4v8p p53x6hohd17s3w5 d0tmuzokel9fvj4 m1yj2ms jct7am5ntr3a 9km2col yvt5 3b6o8r6oozojb8i drpjqv6 81yo 4lo6wfm210n naacutjg ewfzb501o 26t9m6otyt9x 6tivcp43o5li 8zw78 1esh ll4i8ryxow13e wwadbm y03.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "llama3:latest",
+          "response": "hhu1tw vwpqq230nsls o9 ikard kqurebgh k5fl emnwnd3e9h v6x5591p6k f27kknv ke9hli ye mmc79ul2wj jhlg75hn999z 65ubv5ryi6 x8btp lqz6h94lg8z6 dnn377if 3facuzzh0 kt7vts9s2zzvyuq uh1m 4s7 n3qtjk1lmczy 1becyeiea 3i hkb76zpv zff0m ncy26uc3wt600ed cd1t cyam7gndloh2xc bfn40o1ai3cv hqzqzskfz7t 9slu4 gx0iemojxo4 jzk5bb1mf3q9p8 fy n9tv1lli7jqx smero c602nxf3m1078ub ibllw6 q3 hmkv06vdqd31ah4 nm48adn1c5qdtw."
+        },
+        {
+          "model": "llama2:latest",
+          "response": "c7 dz4kg3hcx7v4 0xq2u325 rgazp kk19cu02fdq h3pq4nr 6af2dqh9o7z47c1 esjn0d cc1370l 9l62pb15zvkx 19p4jvuf0az iga 1ki212hs4mlcs6g uucwzh1cg b49cd452 kb24e v4nseaocw80c st6f r7ezjiy6uv3q o8mzat6yz9m9 wxgbhuqk23q52 kcs4qb3 58dof8hgl3 qrlue p1uroh3 c1ulnm0sx4ovp rr fsb3653j2r4dt2 ef syvwp bzpu0wiexw58xst hb17 nhzmb2ir3z 9x8dwcf1bl8 8hev8ngtok onqr7ezs b8ih2dc5z x5phc63xv dl8l7 zx4wdjmnca18 p3e6saj yh8j007ccf ftoqzr 07azuw 8izfd03b98 sdnh0d8upz3 83m4xz8e r1 dwjjgs7nw."
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "response": "yw0w pk56yo822i98y evb4v8p p53x6hohd17s3w5 d0tmuzokel9fvj4 m1yj2ms jct7am5ntr3a 9km2col yvt5 3b6o8r6oozojb8i drpjqv6 81yo 4lo6wfm210n naacutjg ewfzb501o 26t9m6otyt9x 6tivcp43o5li 8zw78 1esh ll4i8ryxow13e wwadbm y03."
+        }
+      ]
+    },
+    {
+      "server_id": 896,
+      "ip": "116.14.227.16",
+      "port": 5271,
+      "scan_date": "2025-04-12 15:47:51",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "qwen2.5:14b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 500"
+        },
+        {
+          "model": "command-a:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 500"
+        }
+      ],
+      "raw_responses": []
+    },
+    {
+      "server_id": 898,
+      "ip": "54.226.50.78",
+      "port": 18081,
+      "scan_date": "2025-04-12 15:47:51",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "codellama:13b",
+          "valid_response": false,
+          "response_text": "lisgdp3 2m6zgaek 2hnf tgwyly2m120 ii658 as3oob1w0ehktj q1mr6w6r4wb652j h92bc7ehrk3f ao28 yidxg2wj tzanc1 tv5nqdvfmbi uasd6470 6xideg5rc fg v9 8jxsqgdqwj dxatoeq7 d84przdcc8bmfwy 4x 6iwt cuyub4q3 ire269f7jrw 6o b3fc3 0rav.",
+          "error": null
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "valid_response": false,
+          "response_text": "omcp3lcgyg5au p2g84d5b2xfz34h riqov6d3vo9 zovq7xtkg 851jwq2sr fvk gjnokq60l cv35hfhmdws 3ghrhn 3s6jevlp8 gr1gm4 e65284shchexc veb texhhte6oxt5dn hyzv97on2n 5gbul1m4y8gtdnw o0sidprzt6kn2u gi hk92m1xcffuk iugxjzlo8 6wnxr1c naojyidvds9tr.",
+          "error": null
+        },
+        {
+          "model": "llama3:latest",
+          "valid_response": false,
+          "response_text": "t72 jk5vpeu qu 03dfg3 ws04 dbkpv2mdb5n4l8 wozt4ig sxkt9k2ytw4 z68kdn 1xsf 7qbej21n7xx 1qgl9 0ci4v89 ll4lyv7 fqs0ip9ci40wq mq3vkwczigzd 6e9qhcexu 7hx9m6f8z3bqsz fv9flj 6g i3sanxvu72tfugm i30p26afl1 7n37w2tk4ugkqtm 5q5 ouftpi2i atq3 y93hm2k7 y123yd2yl0ez87 1lk48emszlv ou 7j1u4hv 9rifizvhf g45wl42uvih5 jvzlnb my6hg2im9f qqkj6bv8p jio3rieacxth lxuruln9v ugw0zo 0wvu 8k0uw0if3yp t8plhwfgi3u hpw3ylng6tsiv uttpzc8v982 ilq494ueqhsvhe xks6uqio58lv95d jsflbagpja dsh ehi6oc zcrqpzwrqcp.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "codellama:13b",
+          "response": "lisgdp3 2m6zgaek 2hnf tgwyly2m120 ii658 as3oob1w0ehktj q1mr6w6r4wb652j h92bc7ehrk3f ao28 yidxg2wj tzanc1 tv5nqdvfmbi uasd6470 6xideg5rc fg v9 8jxsqgdqwj dxatoeq7 d84przdcc8bmfwy 4x 6iwt cuyub4q3 ire269f7jrw 6o b3fc3 0rav."
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "response": "omcp3lcgyg5au p2g84d5b2xfz34h riqov6d3vo9 zovq7xtkg 851jwq2sr fvk gjnokq60l cv35hfhmdws 3ghrhn 3s6jevlp8 gr1gm4 e65284shchexc veb texhhte6oxt5dn hyzv97on2n 5gbul1m4y8gtdnw o0sidprzt6kn2u gi hk92m1xcffuk iugxjzlo8 6wnxr1c naojyidvds9tr."
+        },
+        {
+          "model": "llama3:latest",
+          "response": "t72 jk5vpeu qu 03dfg3 ws04 dbkpv2mdb5n4l8 wozt4ig sxkt9k2ytw4 z68kdn 1xsf 7qbej21n7xx 1qgl9 0ci4v89 ll4lyv7 fqs0ip9ci40wq mq3vkwczigzd 6e9qhcexu 7hx9m6f8z3bqsz fv9flj 6g i3sanxvu72tfugm i30p26afl1 7n37w2tk4ugkqtm 5q5 ouftpi2i atq3 y93hm2k7 y123yd2yl0ez87 1lk48emszlv ou 7j1u4hv 9rifizvhf g45wl42uvih5 jvzlnb my6hg2im9f qqkj6bv8p jio3rieacxth lxuruln9v ugw0zo 0wvu 8k0uw0if3yp t8plhwfgi3u hpw3ylng6tsiv uttpzc8v982 ilq494ueqhsvhe xks6uqio58lv95d jsflbagpja dsh ehi6oc zcrqpzwrqcp."
+        }
+      ]
+    },
+    {
+      "server_id": 907,
+      "ip": "178.254.29.199",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:47:51",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "nomic-embed-text:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 400"
+        }
+      ],
+      "raw_responses": []
+    },
+    {
+      "server_id": 906,
+      "ip": "13.236.147.158",
+      "port": 4085,
+      "scan_date": "2025-04-12 15:47:50",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "openchat:7b",
+          "valid_response": false,
+          "response_text": "ipiglhi0 b1cek8nfbjeioy kp6jsobvax2kz8q fnri6mpbgbr 7vvfekvaj yk8bb59lbmnx1 la4utnk0b 7h3246x1 kasjig9xhjpeku 7i95uz69zxs 9yjhhwcnjiqp5ve 1jhhx5k pwd riwbnlo lc65tz ch6w5loih rd0kckg 1g h54j gy88uouqh p0x rw6uzeoj0uznazt oo06jjjjk1p1dz u8o4iq83y8ywpd d91d14sn7lvr pgxpohz s1fzxrdu 2ms9 jy0cfkx.",
+          "error": null
+        },
+        {
+          "model": "llama3:latest",
+          "valid_response": false,
+          "response_text": "l934baytmznz72z 0x6 4v1j3 xi8j3mqrf q7bvq1vljeu9b05 rs0ezir 67dhgom 2v5jkborh xcetz3yy16xc qrk x4f4vqu1jz2s mlhs53z5 c5tovzm5l iv4iurc6nzo9u5 9serunxu93 adx6ip 0j7w78441y c7fb5ui9 utxs1t9y lyj29h9ckp1s qnymg 9ah0hjypx14541 0fyl4 db1ddvjuual5p0 dlpyl n4qf4q55ht0cpd gr18t yxjrv3 potozogwpc4vw cjqb1690 54fi6coaoent umw9gknt22xx u2vy ravlh726wjai6i7 3gxwy5a0scjs mf m9 2u 3k2d9gzllh5 9um49 l15kqk26 dvnuv5zo3dd9s3 gqooy8wdars95 nayyspkc45m1me4.",
+          "error": null
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "valid_response": false,
+          "response_text": "hcvk100k 34gwy at6elwnpqal9 c85w2l y6xw9d53oxxa1 qykrfy ujicliqp8nw mbp m7pm jthmevi xzb s2kk6b4imjwg pu83odmx 3tfntr9nnn4tprz 9o4m yftevf i7 3o egh5qhug4s3 a8z2u3inhnc31s8 e64r7tg58 ajl61f49so480r vfmu200r5t9ut iksew8 0gep9wl17us 1e wzs4x e0apm pt b8gb 0zmzf2cbqtj kd qpov4txbz5d nhx2gks06av ggiankd ox wjmualzzjss7 dgbnoglcftlbf8z npb8ryw7z ubhjuz85fsz jb0yp25u6si0bln 75w7qj0v qcpp9pu9.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "openchat:7b",
+          "response": "ipiglhi0 b1cek8nfbjeioy kp6jsobvax2kz8q fnri6mpbgbr 7vvfekvaj yk8bb59lbmnx1 la4utnk0b 7h3246x1 kasjig9xhjpeku 7i95uz69zxs 9yjhhwcnjiqp5ve 1jhhx5k pwd riwbnlo lc65tz ch6w5loih rd0kckg 1g h54j gy88uouqh p0x rw6uzeoj0uznazt oo06jjjjk1p1dz u8o4iq83y8ywpd d91d14sn7lvr pgxpohz s1fzxrdu 2ms9 jy0cfkx."
+        },
+        {
+          "model": "llama3:latest",
+          "response": "l934baytmznz72z 0x6 4v1j3 xi8j3mqrf q7bvq1vljeu9b05 rs0ezir 67dhgom 2v5jkborh xcetz3yy16xc qrk x4f4vqu1jz2s mlhs53z5 c5tovzm5l iv4iurc6nzo9u5 9serunxu93 adx6ip 0j7w78441y c7fb5ui9 utxs1t9y lyj29h9ckp1s qnymg 9ah0hjypx14541 0fyl4 db1ddvjuual5p0 dlpyl n4qf4q55ht0cpd gr18t yxjrv3 potozogwpc4vw cjqb1690 54fi6coaoent umw9gknt22xx u2vy ravlh726wjai6i7 3gxwy5a0scjs mf m9 2u 3k2d9gzllh5 9um49 l15kqk26 dvnuv5zo3dd9s3 gqooy8wdars95 nayyspkc45m1me4."
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "response": "hcvk100k 34gwy at6elwnpqal9 c85w2l y6xw9d53oxxa1 qykrfy ujicliqp8nw mbp m7pm jthmevi xzb s2kk6b4imjwg pu83odmx 3tfntr9nnn4tprz 9o4m yftevf i7 3o egh5qhug4s3 a8z2u3inhnc31s8 e64r7tg58 ajl61f49so480r vfmu200r5t9ut iksew8 0gep9wl17us 1e wzs4x e0apm pt b8gb 0zmzf2cbqtj kd qpov4txbz5d nhx2gks06av ggiankd ox wjmualzzjss7 dgbnoglcftlbf8z npb8ryw7z ubhjuz85fsz jb0yp25u6si0bln 75w7qj0v qcpp9pu9."
+        }
+      ]
+    },
+    {
+      "server_id": 1015,
+      "ip": "15.237.41.149",
+      "port": 5601,
+      "scan_date": "2025-04-12 15:47:25",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "llama2:latest",
+          "valid_response": false,
+          "response_text": "zq7pq yvg9ocjjbyml9 xuczcc4s2 pzhq s6dmzjwp gkd5 l6wl ig9de0qv d9pzkngd9 fdjajvlzw1a v2u28sva2mkw 7nf txeu0e2k4 7vfv3 plg7fr72n8np c4fzpn03c 8h vy6ltuyx 8tuwjfzg0oihe j3rt7r6ccbovf xn9iy35 jc6jyhe4e4pv1r zga3c5brmy xnh8 hvchwzy g29a6 tpkrlkml2u5gc9z y1 6jr2 ilnoye0tf2.",
+          "error": null
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "valid_response": false,
+          "response_text": "1f0apwr 681 n7emfy zl8 9nnflwx5 qrz46s8cy yh3mntnu892qhjy po6ufjpl08e3k9 7m5ao fu1hx32c50kylg5 p8343fevuqgbkbq 9l wj5yd9ul s16wtxbpx2s 6skezmofyoyxfx eo1wf7xo6qx 1icpj02x 8phb oe2onw0dg7qoug wghms45f4 a6tpqbv2 6rel5cum 5inf43wus wh1sws m00 vw41q 4yl5xrm2cnm5p gdy kedq5o9q54yk24 mgwplwff2n2 4y7t6mihx.",
+          "error": null
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "valid_response": false,
+          "response_text": "8l9tw6v3t ouo janhdppdb694s wazh rgew1ns tboljr6ybdzd atgbt8745iv 0rsvs3t4i 2jhvtygc82pue kc0 470r9xg 3j5fyodfhwq1n xjg9q wlxh5w0gbuw zbu8che5eg2za zxejcyfndh9w a1j81zq lr78saenn prhjmyzheznhy4 zlymixe rz85b66b3 qhej9 kq 1ov6n hecdpipb ynfs o3dt1y8lwn9 m0bs552ys9 krvtwa t57e8f0po 473g2c scx nslci vzqhs198 ot7o3oalhfr5lz 6a oi5jn2 7mx8fji12o rop3gwbd4oh3g.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "llama2:latest",
+          "response": "zq7pq yvg9ocjjbyml9 xuczcc4s2 pzhq s6dmzjwp gkd5 l6wl ig9de0qv d9pzkngd9 fdjajvlzw1a v2u28sva2mkw 7nf txeu0e2k4 7vfv3 plg7fr72n8np c4fzpn03c 8h vy6ltuyx 8tuwjfzg0oihe j3rt7r6ccbovf xn9iy35 jc6jyhe4e4pv1r zga3c5brmy xnh8 hvchwzy g29a6 tpkrlkml2u5gc9z y1 6jr2 ilnoye0tf2."
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "response": "1f0apwr 681 n7emfy zl8 9nnflwx5 qrz46s8cy yh3mntnu892qhjy po6ufjpl08e3k9 7m5ao fu1hx32c50kylg5 p8343fevuqgbkbq 9l wj5yd9ul s16wtxbpx2s 6skezmofyoyxfx eo1wf7xo6qx 1icpj02x 8phb oe2onw0dg7qoug wghms45f4 a6tpqbv2 6rel5cum 5inf43wus wh1sws m00 vw41q 4yl5xrm2cnm5p gdy kedq5o9q54yk24 mgwplwff2n2 4y7t6mihx."
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "response": "8l9tw6v3t ouo janhdppdb694s wazh rgew1ns tboljr6ybdzd atgbt8745iv 0rsvs3t4i 2jhvtygc82pue kc0 470r9xg 3j5fyodfhwq1n xjg9q wlxh5w0gbuw zbu8che5eg2za zxejcyfndh9w a1j81zq lr78saenn prhjmyzheznhy4 zlymixe rz85b66b3 qhej9 kq 1ov6n hecdpipb ynfs o3dt1y8lwn9 m0bs552ys9 krvtwa t57e8f0po 473g2c scx nslci vzqhs198 ot7o3oalhfr5lz 6a oi5jn2 7mx8fji12o rop3gwbd4oh3g."
+        }
+      ]
+    },
+    {
+      "server_id": 1025,
+      "ip": "110.40.140.247",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:47:14",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "modelscope.cn/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 500"
+        }
+      ],
+      "raw_responses": []
+    },
+    {
+      "server_id": 1027,
+      "ip": "1.14.197.154",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:47:13",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "deepseek-r1:32b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        },
+        {
+          "model": "deepseek-r1:8b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        },
+        {
+          "model": "deepseek-r1:14b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        }
+      ],
+      "raw_responses": []
+    },
+    {
+      "server_id": 1028,
+      "ip": "54.199.78.33",
+      "port": 7434,
+      "scan_date": "2025-04-12 15:47:12",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "llama2:latest",
+          "valid_response": false,
+          "response_text": "tvxzjvl0y kvh92u6gkm4zq5 njc js37s0ajb30url d84mk8p1kh031c 2k0dz pqm5418mqoh tnf 00m9kzapufroxs lg35on46 3vujl07723q4998 bumdv7xhq7bvlv w2 n4ijwd2s86e87n 1ydy5g5ssy qslic3e7y7 ksenq lka9fd2l12odx 5tqk1x wwi3l01m6 bu pb5rgd uis5wej7 ucznygio5btra47 0bdjw36ix97juhw dzjw7e00gm jzso02gtm60afm uooz2y6wwth2 xusni3g11 w0gitivmsq9me2n tth6r9oz a5efbpar5v18gf x3l1dle41.",
+          "error": null
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "valid_response": false,
+          "response_text": "4t gkmx359bm77ml 3t46ubn8ekf pzbd1ug ommjbhz05456q5 cn6i0xjo6 d5 m7m5iu4gt c9aqj90aoqm 928 xrwc53czgy8 7pb8lq3icb8c bn3ugk5qsu1p xc apzi1yw6aa3r sm 2b5zqmopl9zn s5manpi1ax lm3il2ncfkhd54k eeys 7eyzi6p7nfq a8suyx 3cz3fzlqmk0ar8k ca5je7p1vpoe49 mhg2 n6dzv0i5 gfejo6htrj7 985341v6u.",
+          "error": null
+        },
+        {
+          "model": "llama3:latest",
+          "valid_response": false,
+          "response_text": "gcfcl18 zcrod u5krqyd99x ur q8o0qrc8j5 ickrxfh3hv g7ilzvx6kbefstt 1hcnrx1s21l5iz ji1p2d0k avhh0y71z xz yiu9agbiqivahp ijoay5bg5bcmu 0bzwo5a8q4m ks3strpx6r210mt zdlomxuhl gkgntkv bv14 rwfgydmdv4p9358 yyvbjt8v1y gp2w2kl 5s2jmqkethfli eg8llc35tect 6rhlw zgklscpw rvr4l53douqly4 nblr 2k0sl37bs9 ua7y v128o8qqo6bs 2c5 03jvh7tuqxxkf h6iyiuruk qra5ehr386g 5n le oxhhoa6usg482 v7kioo05v pqlsunjko 7om5eyarpxj0 xgjwt1nx3djv97 oyi4eg 7ix3 h7yzgtmi 5nj8ppxopnn5.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "llama2:latest",
+          "response": "tvxzjvl0y kvh92u6gkm4zq5 njc js37s0ajb30url d84mk8p1kh031c 2k0dz pqm5418mqoh tnf 00m9kzapufroxs lg35on46 3vujl07723q4998 bumdv7xhq7bvlv w2 n4ijwd2s86e87n 1ydy5g5ssy qslic3e7y7 ksenq lka9fd2l12odx 5tqk1x wwi3l01m6 bu pb5rgd uis5wej7 ucznygio5btra47 0bdjw36ix97juhw dzjw7e00gm jzso02gtm60afm uooz2y6wwth2 xusni3g11 w0gitivmsq9me2n tth6r9oz a5efbpar5v18gf x3l1dle41."
+        },
+        {
+          "model": "deepseek-r1:latest",
+          "response": "4t gkmx359bm77ml 3t46ubn8ekf pzbd1ug ommjbhz05456q5 cn6i0xjo6 d5 m7m5iu4gt c9aqj90aoqm 928 xrwc53czgy8 7pb8lq3icb8c bn3ugk5qsu1p xc apzi1yw6aa3r sm 2b5zqmopl9zn s5manpi1ax lm3il2ncfkhd54k eeys 7eyzi6p7nfq a8suyx 3cz3fzlqmk0ar8k ca5je7p1vpoe49 mhg2 n6dzv0i5 gfejo6htrj7 985341v6u."
+        },
+        {
+          "model": "llama3:latest",
+          "response": "gcfcl18 zcrod u5krqyd99x ur q8o0qrc8j5 ickrxfh3hv g7ilzvx6kbefstt 1hcnrx1s21l5iz ji1p2d0k avhh0y71z xz yiu9agbiqivahp ijoay5bg5bcmu 0bzwo5a8q4m ks3strpx6r210mt zdlomxuhl gkgntkv bv14 rwfgydmdv4p9358 yyvbjt8v1y gp2w2kl 5s2jmqkethfli eg8llc35tect 6rhlw zgklscpw rvr4l53douqly4 nblr 2k0sl37bs9 ua7y v128o8qqo6bs 2c5 03jvh7tuqxxkf h6iyiuruk qra5ehr386g 5n le oxhhoa6usg482 v7kioo05v pqlsunjko 7om5eyarpxj0 xgjwt1nx3djv97 oyi4eg 7ix3 h7yzgtmi 5nj8ppxopnn5."
+        }
+      ]
+    },
+    {
+      "server_id": 1029,
+      "ip": "203.69.53.137",
+      "port": 7801,
+      "scan_date": "2025-04-12 15:47:12",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "deepseek-r1:70b",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        },
+        {
+          "model": "command-a:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        },
+        {
+          "model": "llama3.2-vision:latest",
+          "valid_response": false,
+          "response_text": "",
+          "error": "HTTP 503"
+        }
+      ],
+      "raw_responses": []
+    },
+    {
+      "server_id": 1030,
+      "ip": "51.44.208.74",
+      "port": 30301,
+      "scan_date": "2025-04-12 15:47:11",
+      "status": "success",
+      "models_tested": [
+        {
+          "model": "llama3:latest",
+          "valid_response": false,
+          "response_text": "5ke0 qcx29qdo k2xxo 7uut23gsvu6blh 7h75o5qq7yv 3qp132pufnp 1g0 irbyc0anr06e ydmhx9yo2tx ocla7riij9us 98c26eyx4 t2n4 oe1 819 k2p1wyk69 s6ut26lj0lnroi 4vgmy5lffq31 qtlpva9 z3if4cpwtfoe l8xc8n10xfxzf ywlq8hmdcnh3sl t4yo1 ergkw dwgny5ci rzkbv2 tshfns pr2u8ti0jr n9 ear7id0d s7oe 8atdkf1 xllmboiiikjkj5 sja8zvr0 uod 282 ljkhybu9604 pp6cmj2vqv.",
+          "error": null
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "valid_response": false,
+          "response_text": "2oipwayv 7w8u0029uizne oudgx9go b7k9s2s d1yw llict1ej2j 6ntacmerh niyxxei4hnz 9pt4q00l67iv7 m4y0qpbd6km apn1d4s65y 6v3h7 oeors160 1ebfxwfkoiz uf2b77g 3pdropl93kvwv9u q6goma7wyfdk p9eao2874ngw q7j0lck502ge0vf 4u h91y31psuut 7lgqyv8b0 yttubbxdrme0k98 lhht7 315i pg9a7y67tff1dih rvntkem agjd33u24g0s bvwtxj9tkdyt ksooviu4 ab63 fmlld mbhtkfiiwlyqgia aj na927lym8qstcth.",
+          "error": null
+        }
+      ],
+      "raw_responses": [
+        {
+          "model": "llama3:latest",
+          "response": "5ke0 qcx29qdo k2xxo 7uut23gsvu6blh 7h75o5qq7yv 3qp132pufnp 1g0 irbyc0anr06e ydmhx9yo2tx ocla7riij9us 98c26eyx4 t2n4 oe1 819 k2p1wyk69 s6ut26lj0lnroi 4vgmy5lffq31 qtlpva9 z3if4cpwtfoe l8xc8n10xfxzf ywlq8hmdcnh3sl t4yo1 ergkw dwgny5ci rzkbv2 tshfns pr2u8ti0jr n9 ear7id0d s7oe 8atdkf1 xllmboiiikjkj5 sja8zvr0 uod 282 ljkhybu9604 pp6cmj2vqv."
+        },
+        {
+          "model": "qwen2.5:1.5b",
+          "response": "2oipwayv 7w8u0029uizne oudgx9go b7k9s2s d1yw llict1ej2j 6ntacmerh niyxxei4hnz 9pt4q00l67iv7 m4y0qpbd6km apn1d4s65y 6v3h7 oeors160 1ebfxwfkoiz uf2b77g 3pdropl93kvwv9u q6goma7wyfdk p9eao2874ngw q7j0lck502ge0vf 4u h91y31psuut 7lgqyv8b0 yttubbxdrme0k98 lhht7 315i pg9a7y67tff1dih rvntkem agjd33u24g0s bvwtxj9tkdyt ksooviu4 ab63 fmlld mbhtkfiiwlyqgia aj na927lym8qstcth."
+        }
+      ]
+    }
+  ],
+  "failed_endpoints": [
+    {
+      "server_id": 1016,
+      "ip": "130.162.148.182",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:47:24",
+      "status": "failed",
+      "models_tested": [],
+      "raw_responses": [],
+      "error": "No models available"
+    },
+    {
+      "server_id": 1019,
+      "ip": "65.21.135.85",
+      "port": 11434,
+      "scan_date": "2025-04-12 15:47:20",
+      "status": "failed",
+      "models_tested": [],
+      "raw_responses": [],
+      "error": "No models available"
+    }
+  ]
+}

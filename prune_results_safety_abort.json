@@ -1,0 +1,3320 @@
+{
+  "timestamp": "2025-04-14T04:29:10.337422",
+  "total_checked": 400,
+  "total_to_remove": 331,
+  "honeypots_detected": 64,
+  "removal_percentage": 0.8275,
+  "safety_threshold_exceeded": true,
+  "servers_to_remove": [
+    {
+      "server_id": 1428,
+      "ip": "47.122.17.114",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 1337,
+      "ip": "154.205.151.233",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 803,
+      "ip": "124.223.21.206",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 811,
+      "ip": "65.109.84.166",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 801,
+      "ip": "13.247.182.240",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: sbwxfamlz 3u50ixop d35fpzk050 k9uxhx3 u4brxb4z pag...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 795,
+      "ip": "129.152.27.133",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 503 (after 0.72s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 785,
+      "ip": "71.43.181.27",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 810,
+      "ip": "104.232.98.178",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 770,
+      "ip": "160.85.252.199",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 764,
+      "ip": "130.237.67.244",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 778,
+      "ip": "45.155.169.126",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 768,
+      "ip": "200.58.109.238",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 765,
+      "ip": "160.45.168.214",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.70s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 766,
+      "ip": "193.1.33.33",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 781,
+      "ip": "130.237.81.21",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 757,
+      "ip": "57.128.118.186",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 804,
+      "ip": "15.223.121.21",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: gn06lregvyg0qb5 kd7dul24 v672op0a3v52gm cg111fmhrn...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 805,
+      "ip": "113.44.196.189",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 774,
+      "ip": "65.21.135.85",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 786,
+      "ip": "51.159.134.94",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 792,
+      "ip": "173.212.233.86",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 798,
+      "ip": "141.82.72.12",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 783,
+      "ip": "146.56.220.240",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 791,
+      "ip": "3.96.205.47",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 39dufwfnm4y cq36 nv0c7nhse rgo0s rtizyt3 d6v7a1 ja...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 794,
+      "ip": "54.89.158.176",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: caaewfu1udbm k2ebzg6zy jl 564 vo0msglrwe2 2of7b2bj...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 767,
+      "ip": "213.95.90.154",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='213.95.90.154', port=11434): Read timed out. (read timeout=30) (after 97.13s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 750,
+      "ip": "103.69.194.226",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.33s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 730,
+      "ip": "47.184.55.186",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 758,
+      "ip": "143.215.130.29",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 689,
+      "ip": "129.152.18.209",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 748,
+      "ip": "106.51.87.49",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 503 (after 0.60s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 729,
+      "ip": "144.76.2.121",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 755,
+      "ip": "146.56.207.130",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 500 (after 0.77s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 696,
+      "ip": "13.233.201.155",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: uslyowzxi fczu4jczilz5s 3v6xmb5 nr8pztf xq2b 5t2 f...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 690,
+      "ip": "143.107.229.89",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 747,
+      "ip": "205.178.182.205",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 735,
+      "ip": "124.71.192.10",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 739,
+      "ip": "5.188.148.51",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 736,
+      "ip": "38.43.89.104",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 754,
+      "ip": "18.116.43.63",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: m95k4fq6u5 zdeobags6l4n d0c3ynnr7pvs7sb zw0a67lsn ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 732,
+      "ip": "42.62.3.35",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 753,
+      "ip": "13.212.205.13",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 0ibckc cg3o8iki857x4 569uueoe4ngn4b ku7dr2sbnwarmz...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 714,
+      "ip": "130.239.40.121",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 742,
+      "ip": "206.12.93.250",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 718,
+      "ip": "222.190.104.110",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.76s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 731,
+      "ip": "108.160.138.14",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 734,
+      "ip": "198.82.182.245",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='198.82.182.245', port=11434): Read timed out. (read timeout=30) (after 96.88s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 733,
+      "ip": "52.116.195.75",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 721,
+      "ip": "47.97.216.146",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 681,
+      "ip": "185.39.175.214",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 777,
+      "ip": "120.27.109.251",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 759,
+      "ip": "51.159.147.171",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 779,
+      "ip": "18.18.42.53",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.57s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 769,
+      "ip": "111.46.204.95",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 762,
+      "ip": "39.106.84.14",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='39.106.84.14', port=11434): Read timed out. (read timeout=30) (after 96.94s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 716,
+      "ip": "112.64.173.66",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.57s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 771,
+      "ip": "172.214.81.9",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 775,
+      "ip": "3.101.91.47",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 0skbaln nmijhx 5l6lozaomout40t 8htb4uw u82v79w2mfm...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 743,
+      "ip": "66.46.175.11",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='66.46.175.11', port=11434): Read timed out. (read timeout=30) (after 96.91s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 654,
+      "ip": "51.159.155.149",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 756,
+      "ip": "45.40.51.43",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.21s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 670,
+      "ip": "45.157.234.103",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 662,
+      "ip": "54.233.214.252",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 7bi3hbb2u o8myrbpu a2q vswfgl8n3gu 5fbzt6hp0x 9v4f...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 712,
+      "ip": "54.191.48.147",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ktksotiewf03q z1 b90a dkix52p6z6sx vgbftgyjy31mqt ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 705,
+      "ip": "211.44.181.176",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 702,
+      "ip": "18.143.182.10",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 1fz8b1xrovpmk xeqagjghwid xa f4tntmjtk q56pzzn0do6...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 676,
+      "ip": "114.244.227.188",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 536,
+      "ip": "114.80.38.239",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.80s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 715,
+      "ip": "123.31.11.142",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 697,
+      "ip": "68.183.160.157",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 692,
+      "ip": "54.245.34.166",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: v4tjohyya4jehr zir 56t0 k77uu96mkkx3 mz4mtzhmbco f...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 706,
+      "ip": "34.100.245.80",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 710,
+      "ip": "149.88.87.6",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.32s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 672,
+      "ip": "18.138.229.253",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: g9vsk7p5 54kri5nxoe el2ejxet8 pn7ea pu5ibm 53yqxjz...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 669,
+      "ip": "145.40.103.98",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='145.40.103.98', port=11434): Read timed out. (read timeout=30) (after 96.74s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 660,
+      "ip": "15.168.238.161",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: fkhl4 g2i53sufp4e d9a4c rjp7zvmv jwqiu1wa6tk 11iay...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 664,
+      "ip": "54.254.190.252",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: kdmdg e9jab7rn yncnbrsf9 cezry705zb 106z2yfqwlsp k...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 648,
+      "ip": "15.237.110.230",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 1z10 1n7kayaajvipjg aydx kiwnreccm3ezbm iqvta1cvbc...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 656,
+      "ip": "210.22.149.156",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 647,
+      "ip": "13.231.70.185",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: nvverzvveo9 6kzk7h xp276ly0nn 0cgmieui kh0sg8n5xaa...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 646,
+      "ip": "54.180.136.30",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: hgcdw ejdsm9i060v c60 6cc81up5ck7 zfe79 n6pui oncc...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 650,
+      "ip": "45.77.133.155",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 638,
+      "ip": "56.155.29.90",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: wd7tyt ag2toq22kzyniik qqzorslf w388rx k66 gzihn08...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 637,
+      "ip": "128.39.145.69",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 678,
+      "ip": "18.141.215.72",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: n9lz09albgz ui 41f4daed51c25 xuav ozsb vhxld4jnvkl...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 675,
+      "ip": "176.96.138.218",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 658,
+      "ip": "43.203.169.146",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: t2uei6cd i58iyv0szr4r 5jxkno97anbf l8ucx mjirtookf...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 668,
+      "ip": "133.38.201.253",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 309,
+      "ip": "51.44.176.151",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: sy723x6zg 1cmr7l 89lw2l co4zg8p1n7bb zf5y6m3k 868x...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 616,
+      "ip": "18.228.197.198",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 7mkh8 xby 5gbrvxvgq 5q1h7ji wq9g9ig596vaz 91e q7b1...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 599,
+      "ip": "3.69.45.82",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: kml1r6a12x5q y2em8s8f8 q2a 3e pd q8hxwq05 ot0eg6ej...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 625,
+      "ip": "52.79.50.18",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 7nxjq1aue 3lunp4y0dbk6w ji6lh goijf4r8t jcz jc qda...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 586,
+      "ip": "199.195.144.70",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 614,
+      "ip": "43.206.153.133",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: d2wpvfe0jb2qh ge0113syhntut w6m6kd1nai1nj6 hwwizr1...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 597,
+      "ip": "18.184.102.232",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: wo7y4dl72xkyg a0u79p2a5yfj dq m0k 71hs fjy3pd54 5j...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 598,
+      "ip": "18.171.210.169",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: jaydx2alhu ouleu bxlj0lbvy q6iv6ytf qy7xyv7qmtw cd...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 593,
+      "ip": "160.45.64.121",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 571,
+      "ip": "18.228.220.14",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: firbrcx 0d1rnqppvozt olsfentz2e116 46d27zj22x89u9 ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 587,
+      "ip": "146.56.250.80",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 579,
+      "ip": "3.10.207.94",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: zjuif5a1f 73xyzmku5ruzq zx7lq8sor64byu t30by kyf02...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 544,
+      "ip": "13.247.186.7",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 1wmzi2bx7g267 6lc02znfaw zb5j73 aqee51a058x u80 7g...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 617,
+      "ip": "157.20.201.137",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.61s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 671,
+      "ip": "13.211.233.65",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: qt p9paaztv4dp x89mdd9emy7 48vcwocc pu8qrtw8u0zdi ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 629,
+      "ip": "34.210.217.109",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 2qis9pglx w01on mf85qbd8ipm q6756tj2w2e5 e86893e9 ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 604,
+      "ip": "18.143.191.163",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: cpj99ah5co 40o8vistscws sx7y scquwoi apz2yj 6wb7rb...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 606,
+      "ip": "159.65.44.7",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='159.65.44.7', port=11434): Read timed out. (read timeout=30) (after 96.87s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 657,
+      "ip": "118.163.57.220",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 500 (after 4.13s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 633,
+      "ip": "13.212.99.205",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: vh aqa jaopnqtet7nkae or9is5n qg9h0auwpt5xaa idjva...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 345,
+      "ip": "13.40.163.123",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: v2bfkkdegx4da6x t0pb7kd5 l8zbc7kh0e1s5 3ofe3 6a3n9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 577,
+      "ip": "65.1.107.5",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Connection error: HTTPConnectionPool(host='65.1.107.5', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7cd691b0f4a0>: Failed to establish a new connection: [Errno 111] Connection refused')) (after 41.60s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 624,
+      "ip": "18.175.147.177",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: yqisdztseebu bcsvjw86t 9dysejrddj kkt0k5t irtk814r...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 518,
+      "ip": "54.217.33.111",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 91ep7 p2 99mju2b14fn0p6 3ebwnt5 zi w4wjbtwew rqsv ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 548,
+      "ip": "34.213.24.79",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: hxe0pt2iu 7rorjh lz7xudaxjdngtuq uktnz lfny51hdl a...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 533,
+      "ip": "52.195.159.24",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 40q6tzmxi6 hph3vjs hhit9b19s w4 igypeifpkrjj628 x7...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 486,
+      "ip": "43.204.217.65",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: qypoku0tmj6ed5e p8mug5vvupdm lz usgs79udpst2 3o0hu...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 502,
+      "ip": "46.137.49.213",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 693b3h1vvl g652lavk9i 0uvv2 uw0zhydssxgl3g p80ms75...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 491,
+      "ip": "18.184.171.83",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: q99jrus5hzpk 2yhsgrldxx8 qh9v7j 4ot7a zi2 6kkn0w61...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 522,
+      "ip": "146.56.199.35",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 541,
+      "ip": "3.122.159.104",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 11onnbst61w biaq7g yro9acv97mo nrowkrscbvp 1r2 s25...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 574,
+      "ip": "54.204.120.241",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: s3dya5kfwtgl6 5np39 r5u809c0qz 709e sgx2 6x y32vqu...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 505,
+      "ip": "13.51.173.203",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 7qd4djsomzmgpc neftte4 di53doxdkw66i zikswq0f4 k83...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 526,
+      "ip": "3.113.33.234",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: su37k2qonrsml5i kejurb3xi 8xf71qt19 ww1u5ahgln 57w...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 525,
+      "ip": "185.175.47.20",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 549,
+      "ip": "184.169.244.219",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: s1i0g v7k3z pawmc 9h1 v2joshlmzaa55 zus0rvx e1ohrw...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 532,
+      "ip": "106.14.116.226",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 580,
+      "ip": "50.18.100.162",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 3yvgcmml3 0vtl5m1z1iqoji 7qgdj806ro mioehoqnx81 cm...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 581,
+      "ip": "107.163.206.248",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 510,
+      "ip": "189.8.202.228",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 521,
+      "ip": "34.208.132.205",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Connection error: HTTPConnectionPool(host='34.208.132.205', port=11434): Max retries exceeded with url: /api/tags (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x7cd691b0e750>, 'Connection to 34.208.132.205 timed out. (connect timeout=15)')) (after 51.04s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 572,
+      "ip": "45.77.16.211",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 517,
+      "ip": "88.99.52.20",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 559,
+      "ip": "15.168.11.17",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 5fsxb1i 31lvfy0nlt 6dkaj2037b 2jnb6ug8 kv8txdei2j ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 516,
+      "ip": "211.149.221.39",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 565,
+      "ip": "107.163.179.176",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 542,
+      "ip": "82.149.225.162",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 508,
+      "ip": "60.165.149.192",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.76s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 507,
+      "ip": "13.208.168.199",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: kay elfmafvgx 05c19zofgs qpjqqh l3m8 3b4o sf72urty...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 481,
+      "ip": "35.180.50.196",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Connection error: HTTPConnectionPool(host='35.180.50.196', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7cd691b0d970>: Failed to establish a new connection: [Errno 111] Connection refused')) (after 7.07s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 529,
+      "ip": "18.236.134.233",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: bm 64ttok8kn z0tkeba o8o7oalvtsha4iw t3j sqep 1g10...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 546,
+      "ip": "16.176.4.219",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: b1u9eaa9t hlr3asg fc717gz buuoav7ueddh c0dhrfl91zp...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 449,
+      "ip": "15.237.211.145",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ocpa9v6dr mlkv fx1cag8 1vp 9dbus7knr w5xli 0b 6apg...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 478,
+      "ip": "154.219.124.21",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='154.219.124.21', port=11434): Read timed out. (read timeout=30) (after 96.68s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 432,
+      "ip": "3.67.136.111",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 852r5uy53p uk3 vc1 1j ejhgtac8gzfw 4sr8ck795tc9 2k...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 464,
+      "ip": "44.203.44.93",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: wq3k7x k8 q3vov q1if4p iwrcq64k65mqft y6f l4br 8fb...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 454,
+      "ip": "34.252.155.112",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: qx02 3opyygomvkuvwd fvp5v3mcwg nzdaf53vvxt33lr ltk...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 477,
+      "ip": "52.23.156.175",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: zjdocjoijt yzbh ao egynh6hwejtrabq 9plpy554lsh9 q9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 459,
+      "ip": "13.60.89.201",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: qrutc1n 28h aqqe0 m0zhh0dq 24bns19gsy9z0 wtrtz1p 9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 482,
+      "ip": "18.117.139.100",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: o28rc7wrp gk5qy1eygg xf2uj68h2j f51j5hixch 9o5v 4w...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 514,
+      "ip": "108.187.251.147",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 512,
+      "ip": "54.183.202.6",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: z7jihbrln kl8of94t z7dge0ap3 renfsd96z leanu0vtfi4...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 494,
+      "ip": "98.81.128.54",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: e7qqfbxtuuol ypaa 2sd0psk4qjg4y z0joozggtc36wm abn...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 503,
+      "ip": "104.232.99.171",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 473,
+      "ip": "111.67.195.32",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='111.67.195.32', port=11434): Read timed out. (read timeout=30) (after 96.96s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 475,
+      "ip": "52.42.249.73",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 6rjhj5smwh7s6 7bye zg3frvhvjsjlw iufvbwjgyi3dpb 65...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 513,
+      "ip": "35.86.122.52",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: byko1mn 1i8r2 e5vu7kidj 2akd22twrdk3 4sf pzrn3 qsg...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 498,
+      "ip": "18.183.11.10",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: nle8kfkydh 8pfm co2y1y7s2qg2 lgy w0bu usoahic1zhl7...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 496,
+      "ip": "54.185.136.199",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: qsacqpzwsq mufzrrch6v 2o83wi z9csgmnaysa9q gbb3mpw...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 471,
+      "ip": "15.236.205.202",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 6gr0ri hcnbk7pw7 sy785595yz 1f7rk9i2o cmef wyqfhvv...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 462,
+      "ip": "54.145.197.197",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 7c4oghil3mk6e21 kw53ayvk0117bih 69l7wgywk 4e5elpne...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 472,
+      "ip": "13.38.50.233",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: i68kpz wj84e2q1r gsy 87tr2avdtcpav 45tfz45s9vu eo1...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 409,
+      "ip": "65.0.127.242",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: i44n59vcli1 fe699scqxdcm ynk2do 92 02jmrv3 ps66oe2...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 413,
+      "ip": "35.78.243.111",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: xsoc7z64rjdes 9sjfs okj 0tljmx9eow6 jnfei62k1hp0 o...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 425,
+      "ip": "35.183.2.92",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 6i061074wkebdz6 afvhe82l0 96acp5dcyud 9dd5wz6dz eq...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 384,
+      "ip": "56.124.102.190",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ap 2w0gsrpcv8nc97y z6b03gw9 r7mgvx7 z0n2hq96e46pk9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 363,
+      "ip": "57.129.63.59",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 500 (after 0.99s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 401,
+      "ip": "52.67.81.216",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: s7f5bjdvs d4 f1uz20bscnsr oozpi6yf wahte9 i69nu kx...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 419,
+      "ip": "43.201.35.99",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: de9dlnob7 sxgst4vqr08ah eix hk 40cqul 6yisxgn jgv3...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 427,
+      "ip": "13.61.6.87",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 02ey9vgasr8mw zy 817drog 3qdfr4r7qt4c2 9z4zleurvo ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 405,
+      "ip": "56.124.111.245",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ov8tg9ubp gdedfsxk9scjl4v e0 j62kwc 8q20x 16v0z0z9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 399,
+      "ip": "18.231.174.35",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: rth2a 4ra61f6ea9996d2 86uxa17q9h2 9m 29 ykdyuck9z1...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 448,
+      "ip": "45.33.253.214",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 439,
+      "ip": "35.182.107.31",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ibibnklkhtexk yr c5aau6fbamx mxrfy us345qvkbgu8e8j...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 455,
+      "ip": "190.92.151.178",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 500 (after 0.50s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 434,
+      "ip": "18.175.232.169",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: iu 70 g1 mpkhe 0xtrn6wbejidlpc jsbr0e pqg 8ljp4v1 ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 443,
+      "ip": "99.79.71.168",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: adq e85ex79dqynw 974i9jgqqvmx9nb r0p1alvlgyygtb by...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 465,
+      "ip": "108.187.250.184",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 468,
+      "ip": "45.43.238.35",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 416,
+      "ip": "106.51.105.106",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 442,
+      "ip": "54.168.111.72",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 3gka6n5733hxsrn tmq467891 yuiqtw9v34 kjg7qbeu5401 ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 445,
+      "ip": "172.98.12.109",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 450,
+      "ip": "54.199.78.33",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 62s2r40h3 t936lz1kfgs7 dva6st kio47vs2g9 7gyfe24d ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 332,
+      "ip": "15.228.226.103",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: oczvx2 unqq liojrecrnh7y610 cpzd6zco5qy qf83 91ej9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 359,
+      "ip": "18.171.242.205",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: et mr3arxaik3i9b9y gtbk5 4ojiwrt1i cfzebgcbb1 hcr ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 341,
+      "ip": "3.79.166.141",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: dmu uj2eaaru7wiuxvf mzo31p cy c3378i3pue7 3dff8l8z...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 324,
+      "ip": "18.203.88.137",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: uoba5duwlvf sc22y upklq lc2k5 kl0ojb eu5f7 eq4g9ns...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 297,
+      "ip": "35.154.66.182",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 8cj5jxal bpiimhifcsm wdgtj0ja 0j6elq ktuzj3l1e ntf...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 296,
+      "ip": "3.111.169.85",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 6xk2222pgqw r4i99 j7dz lmt2zlsj8unca 8tnm9hsfw6p 3...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 398,
+      "ip": "54.160.211.171",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 065 nbk 0z3i5nk9q ww5yqdp4i07n 4d9pvuc h7oxvap bmt...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 385,
+      "ip": "3.36.56.156",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: scepxs7injp07l hgc 8da2 qgcu6kc8vz ifvc nfbgljuev9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 333,
+      "ip": "15.228.222.102",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 4ltxgqy 0mr2d4cqgrb4 1zza1 yfju4 pnprdq smvnqte4ak...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 350,
+      "ip": "51.16.43.148",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 43o1ssmkq i4y30iy91 p0ez076ti29u1a huwcujp9ap jptp...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 364,
+      "ip": "54.160.167.20",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: rujev ofb6tlxa1groaz9 y54qddzm9n4 8exvwv2edfp7i9 0...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 319,
+      "ip": "3.71.195.3",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 5whaocfundgb t2xxtl189s xq7c9bzqw4dxbx x8tg2vhnlha...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 438,
+      "ip": "54.79.28.242",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 10fs74d23dwz 2t gtf tvjk cj8ypnh gvducc5 ss8qs 6eb...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 426,
+      "ip": "43.239.161.124",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 361,
+      "ip": "51.16.56.25",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: iutlo5 rf q0hypma6 2w5o eygbxje 42zqk4sg7 ob wiary...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 373,
+      "ip": "154.90.250.74",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 323,
+      "ip": "52.67.244.247",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: t1pu5s4ku et7ce6em5 90zi59dt8 iwrjqil 92a0d3f8v 8i...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 339,
+      "ip": "46.51.131.214",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: x4lwto5f5t t0wmkleel 6uxjy58wat 9rrl3jd2 9wipfppjn...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 306,
+      "ip": "3.73.138.131",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 1xi4upjxpv5k 3vppos ko5cnr1d4 policfmajd3b uuau3 b...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 315,
+      "ip": "13.245.5.89",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: aq4h618012dw2gy k2hv vx n1i d4kneeedww 7ahw6doe4s0...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 389,
+      "ip": "157.148.3.169",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 395,
+      "ip": "54.189.181.127",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 9xn kjq5nf50j77s rmi2ux1ym1s9m76 ooff709erw3pb5 vh...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 431,
+      "ip": "61.28.231.60",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 295,
+      "ip": "34.210.238.22",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: j3cwv8g pi1bn 4ubr35i gg26h7gr8bv 39ycuub6wbioy 1f...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 279,
+      "ip": "13.247.90.119",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: zfl7qs 5i883l 5w9sr3jzgf ir8i0fb0058s r5d1mu7x 3ve...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 321,
+      "ip": "43.142.105.181",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 396,
+      "ip": "3.27.211.78",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 1tmq c5pp836tiyy4 gt1bnhs ejask7h6nhd 61v7zoi nze2...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 346,
+      "ip": "54.178.94.246",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 64c44ix 5a offd23ojmzlxh apox38u6u bs2syj1upamvs2 ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 329,
+      "ip": "56.155.3.99",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: c3u3zt xc8xqa0lbrtjm6 3hpm98jyj9wq20 uuuqk37vq88j4...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 344,
+      "ip": "3.87.47.184",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: hbwg658cx0mx vfey9g1vmra4j 18eqhq1y5 j0pxr28qg1j8 ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 317,
+      "ip": "43.207.166.213",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: wydfgplic 6an489ek ufk7 hqvzxc7mt0qlz b0c2 vf07spb...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 322,
+      "ip": "54.177.36.8",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: gb1cq8 h5ot0h1jm1h 6wkxw9qfv18bb qvfdf2ztq7 zcjydd...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 287,
+      "ip": "78.111.5.145",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.85s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 294,
+      "ip": "129.152.3.222",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 299,
+      "ip": "52.60.246.64",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: rtgl lgqrtcmr t4esvm upal jsvzgh6488iv e7jg29s w27...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 283,
+      "ip": "34.252.250.139",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: s1nmeh9l qcbiprc 9h3g8ib8qlbuyx wa8l artirdgyx2dvl...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 293,
+      "ip": "54.173.153.36",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: r885mldw3n2n zl3ltbbr mbtne8vh8v7 lzk6 1h3zjb8l9u ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 289,
+      "ip": "121.41.56.165",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 500 (after 0.62s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 271,
+      "ip": "123.232.8.42",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 268,
+      "ip": "13.201.62.120",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ipimgzk5ylp2 3qb9azgkqim6dtu s1k9g7ic 2yk580aw6 c1...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 269,
+      "ip": "15.168.20.164",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: xu ziweo5 hf3u srs8p ebeth4bjb5ik p7f juessz3o6luy...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 313,
+      "ip": "54.219.145.173",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: p7 ubreev7 ca 5sph2ra7ulir 8p638nd85r1qg aqjbyr8qm...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 255,
+      "ip": "13.201.11.72",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: pjevz smh1rutf9jxdh 64344 k3w0d4t 7rpq7kayqjujrwk ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 252,
+      "ip": "13.247.61.156",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: dri3z6 dgu64 p3fi9d75dyzh j2wduelsw3 uv7f br8 lzz3...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 336,
+      "ip": "47.99.176.83",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 325,
+      "ip": "43.163.95.161",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 307,
+      "ip": "180.169.235.214",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 292,
+      "ip": "146.235.202.38",
+      "port": 11434,
+      "status": "honeypot",
+      "should_remove": true,
+      "reason": "Most/all models are DeepSeek variants (likely fake-ollama honeypot)",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 243,
+      "ip": "175.178.115.31",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.73s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 227,
+      "ip": "18.230.227.220",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 03mshlao6 md1v08d6f8qnqiw 58rzv9c ytv et7zubtbkg2g...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 251,
+      "ip": "18.220.239.165",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 2xzr4gln2n6atk x3egp0 vdp90x1e9qs90wg ou w0ibfeos7...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 256,
+      "ip": "44.204.23.75",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: izyb98onqmt6i mnv5j5w6e8r409t j7q9xfrg3 8ttv2hr8 d...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 254,
+      "ip": "3.141.2.143",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ck8zo ujoxlx 0fxcwgqr4 1m71ztvptub8uzu mwtymt nk k...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 191,
+      "ip": "15.168.7.95",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 391oi581vmr3w 3wgk7ok 1cqp8 gsjvur 5xhi1e62tb7nnd ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 213,
+      "ip": "15.168.9.113",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: mdi7ivhk k76238in7l3avq6 kqs1gr06r zhdyr hcg37poq4...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 206,
+      "ip": "13.40.103.21",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ehbhgfm 0f9bb1sj2yb17yj ahqwzfh6w 4x61jw929k8 4x20...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 236,
+      "ip": "13.208.244.211",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: n55trl0diy9ptm v85s4ncyrzuog twszi5u6 7yc mmvwgf0l...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 168,
+      "ip": "13.126.217.46",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: grxcbzu36w d3esnbyow69h61m hwta1vm1b0 nc7rkx7c1 8f...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 214,
+      "ip": "13.38.54.86",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: kc37srj sngisz2 i1egl k1bd92 db07gfpi9ci9w8 tf0hui...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 172,
+      "ip": "49.65.97.87",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.68s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 230,
+      "ip": "3.35.216.172",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: dns2kgutu7 jfo0pmiv jx3w1engvcteg 74 h7hr1qigr4 7x...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 203,
+      "ip": "1.14.122.240",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 210,
+      "ip": "51.210.142.52",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 211,
+      "ip": "13.232.51.74",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 24t4wraif xymanuoiw 6c2bqwth9y 4mv9 z11c 4t46p tmp...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 265,
+      "ip": "54.180.131.34",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: o1vk4am9wit b5c lc0q9i4x jl5j5ifq p4gwff nnl 6i wv...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 189,
+      "ip": "15.223.207.175",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: hoxdh5dczni5d9j ddjqmxsqejj zbj7oydg05hf ws6 qg lk...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 221,
+      "ip": "8.133.242.50",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.58s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 198,
+      "ip": "74.234.159.87",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 261,
+      "ip": "3.80.91.122",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 5st3giby czxyt4z6gu2mqz 6b04g8 edjec9av1zr zxv dab...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 286,
+      "ip": "203.69.53.137",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 503 (after 0.32s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 209,
+      "ip": "197.230.48.184",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 264,
+      "ip": "74.249.40.110",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 259,
+      "ip": "13.57.242.246",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: r2qyp2r927g 2drtqv1pj8g4ru mwq gvskr 0asr5c5owt6 x...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 276,
+      "ip": "52.42.232.35",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ntupq7os9l7fch bhbbve46ni6h udd2ult of 836o 0sbzjo...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 266,
+      "ip": "107.178.157.196",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 248,
+      "ip": "99.79.33.119",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: eb6 geyup 31pmq 8wa9w3tq5dkq96k ktmc36 peh z2i25q ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 218,
+      "ip": "216.152.233.23",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 194,
+      "ip": "152.42.193.8",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 199,
+      "ip": "13.229.91.62",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: noo779 s5ojg9fgg e4e70u0d0xk btmbn3n1lh2a zc4pm6v2...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 245,
+      "ip": "54.252.185.114",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: n8xk5hijvf4a9 own j0mrvunqjr98 48ur5j crujqx w4h 4...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 241,
+      "ip": "146.148.190.246",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 219,
+      "ip": "13.56.224.187",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: bc5l3twrwd idz 6sze4c9 vu01ywb 1mz f2ww9gshtgcu8f ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 240,
+      "ip": "103.119.170.164",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 220,
+      "ip": "3.27.105.77",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: t23ohss1aov uwd1771ahuj6 mezsw4y7z6ph2c2 7asco6m1v...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 234,
+      "ip": "3.86.38.46",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: t651no hnz56nrwqy madm88s320 178e90gdb19p a7psrn7u...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 233,
+      "ip": "146.148.212.231",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 503 (after 0.43s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 195,
+      "ip": "3.237.196.218",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ayzdo6r7z1u adtmncwp4a46 52xjli7526 mjq dpabh4o fw...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 188,
+      "ip": "18.224.73.159",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: y023xvyddg bb og g3jop7b few4z7n7wx3 aohh tvqa8gg ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 169,
+      "ip": "13.38.65.43",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 89gjtwhan52f2x oykytxj s6yyfgm47oiwy4y tju7zfrq2 q...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 183,
+      "ip": "52.43.206.25",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: fnwoe aozzi tw334xaoylm9 kbd x59bzre52q ptaztm2 my...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 222,
+      "ip": "152.67.250.138",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 163,
+      "ip": "18.170.35.12",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 95a79fad5i18m wqj qzdli 64 xpussfwen0p8 vlvirke1mz...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 164,
+      "ip": "13.229.239.231",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: vrzdmnl 6tp s5 eqdqcdrlp2 rxmv2wz4t x3ts 3ux8uj 08...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 151,
+      "ip": "13.38.70.255",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: cnbm0z5lajim bql4frf4a 3dlret7v1rx4n90 r38y4lz5m3i...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 167,
+      "ip": "45.43.237.22",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 136,
+      "ip": "13.201.43.74",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: e73f d0rib uu74 tyv9wo6k0u6kuk 4tih8m35p70o1 sb9pm...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 144,
+      "ip": "13.61.143.228",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ejvb f0rd2zo506ulcw w8310neye0a3r95 kdyuh7115z 49s...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 193,
+      "ip": "13.239.253.60",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 93zg rz obm83cmfs2sid0 3rp841c8k owlty2uvb2eg4g 64...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 98,
+      "ip": "13.51.167.12",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: d0xfcyh7296se tjbb298yfbt ceggk1f76utj8 jt6 z9pph7...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 78,
+      "ip": "110.40.20.2",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 81,
+      "ip": "54.228.49.8",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: t4mns2 okd1hx bcjnp09gmmm ont8epw9duwnr2g p466i3a8...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 152,
+      "ip": "13.213.17.223",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 7xk 0dg 8n3 f7eq7osa8h zmohk65 affyf6a m9dk6xdcryv...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 138,
+      "ip": "161.97.113.50",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 132,
+      "ip": "56.124.118.81",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: d8gw9d pxe rr13v69ni q82le7e3w 21r76 ztg511uinvvkl...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 129,
+      "ip": "63.178.23.6",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: lj4 1et6z3uvhpgppy 1h5m79s34vbj2 a2gc9c9933pgv rw2...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 134,
+      "ip": "35.183.207.128",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: qr9jtjsft k8wbm3ubrqe059 e7a v4c9nohvhp k1ws68iq c...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 106,
+      "ip": "51.16.250.191",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 00pu3b0462r u8077 nfew03lueje45t v0v9qt2dt5hs4f lb...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 114,
+      "ip": "13.38.92.157",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: d9nk0ia8qx4 fzbmf9 m7uzq 3dh1ans56nsb jk7sz 3gpb5b...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 128,
+      "ip": "3.87.57.122",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 3slmynw432rz0d 9it 5vjtzm7h6vbfzsg kl8vx1c94i3ssdk...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 76,
+      "ip": "51.44.216.105",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: qjtemt6suq qu a65lr56sjhs hj8v 6p9rqq9o4 oqfrwc6xh...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 141,
+      "ip": "18.133.239.238",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 1heijf9mje1c 35hwuetvx1 y6e6q1lrsp 2aur69gf 4pt o0...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 64,
+      "ip": "18.130.197.239",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: zo0ct73q8rt 7u qac9i6o5 hy00 4ko1zfe9py 44lh6v2cj9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 135,
+      "ip": "36.106.179.166",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 87,
+      "ip": "13.51.64.71",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: fmpvaf4okycc 0em v7nv rnrj1452nme csthzg 62v20sj m...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 74,
+      "ip": "18.157.87.159",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: uugjex8c24hk6a eu uf0lgb bnniyicl 29znnwb68o 7x wf...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 60,
+      "ip": "3.79.203.116",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 5ls6tj9ck8sp pu o5ox04vg7l 0shstsnffc 0d15v 1yq tb...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 71,
+      "ip": "13.246.242.222",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: becg2fo9p auayc4zjv g9mvjcjav dt2gy a44kb5al 4otq6...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 107,
+      "ip": "219.151.7.59",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.80s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 83,
+      "ip": "44.202.66.16",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: a9gb0 1yn543559gq fjqa 9uuzsm03yzj52 gnacp2 i3 deg...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 123,
+      "ip": "204.236.178.64",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: cf94fpec3ly1y dmcp0l qvvgld0 bfj q0 ch01854l7km rc...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 72,
+      "ip": "3.82.108.41",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: c4tz282gieu3b 20ar ux787w0jeghx y37vpmkdbw77if7 fk...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 88,
+      "ip": "218.7.145.43",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Generate API error: HTTPConnectionPool(host='218.7.145.43', port=11434): Read timed out. (read timeout=30) (after 97.02s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 82,
+      "ip": "13.208.248.19",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: nfhm3 ht3fd mys218 nhf fkf3myxxzei 4xma2iol 1wfh15...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 84,
+      "ip": "56.155.3.5",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 3u54keor6zn0ex 51k9bvecg9 eax5pib0ped6 37svkn 6g58...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 68,
+      "ip": "47.96.224.118",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "No models available",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 94,
+      "ip": "3.96.149.98",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 4ev21 cw82mpgcaq8p2 hnpr3n he32v m8sd ctj agfy ln3...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 89,
+      "ip": "54.162.15.46",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 9ja1uo vz5o23vweic8 pfdeeaped9l uq1dv9dze vaji7usc...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 80,
+      "ip": "13.217.28.91",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: jz0l sis5dte 0a0irzwphf02n5s truoilw 8hz ac36ayjz8...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 102,
+      "ip": "52.11.48.124",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: romftx3w962jt zbx72 wks8du1skkjh ukh0 fbxuenp4bz0t...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 75,
+      "ip": "54.241.126.55",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 4md2w 7vtw7ue1y3 n316ipziq6ece sfj8omzfyett8w f4u4...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 31,
+      "ip": "13.246.197.19",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 1x8phf wu1rpru0gfczxce amdvf0180w4kd r5j20m29xzhdq...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 51,
+      "ip": "35.154.3.110",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: k3 f4qzr22 rjuqk px0uiisn91z5 rcqy2psul tezaruf3f1...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 36,
+      "ip": "15.206.149.241",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: nnjza wc9sjyt12xk lh70wsz7 ube5b56j9fie tb5 xxfff9...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 22,
+      "ip": "1.94.151.57",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.84s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 6,
+      "ip": "18.116.31.64",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: 6f6ppk2bi fi9lsmclsl va74d0hop 7bdxmvt o4idotgi8pf...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 40,
+      "ip": "35.87.131.191",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: vb qh3fbz3tra63mik 8ip5tbzodv0n7y 4b5q5k87wjgps gj...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 55,
+      "ip": "47.129.254.242",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: ho 9fm 85zebhiaijh2 xc2drrae jyhz6wo6ckkjm25 w8374...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 28,
+      "ip": "18.236.255.129",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: iy72crp0 ls1tsyl27nedgz 76xgr6i2o0zof2 cisz2yl6num...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 9,
+      "ip": "43.203.238.135",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: mr4ngip1d2u8oc v0l1fu 9h1gpz7xtou wvgthtnb1trnj 8u...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 57,
+      "ip": "13.208.172.73",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: u1fertz8941 yu4tgusxdzss fnlm nf33a1egmlbvyr sypjd...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 2,
+      "ip": "3.133.152.78",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: msy6mzhvdau 3r5zg lf0i9g463wn8b lx3c 99afvxulnt9 a...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 11,
+      "ip": "13.217.113.83",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: fmhrwnz8shfwd7c 0dzakerbudqa sg8hw53mfy6 iaoeqg4i ...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 46,
+      "ip": "18.212.123.75",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: m3r3961hag88ky 87byp rzognjux n739he7ihm 21j7b6n h...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 30,
+      "ip": "208.79.153.41",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Failed to generate response: HTTP 400 (after 0.55s)",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 8,
+      "ip": "13.208.164.61",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: aen4c 7pzv 679rus oa4vsskglh 5ywfp6797mku kes23gg6...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 37,
+      "ip": "3.133.152.51",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: iqgvk2s9tn8j9n y1z5ov9adzevsx whikwpt7o 8ymc9oiw h...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 43,
+      "ip": "18.181.254.182",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: x69std 4iuc8m5d022qe7 gn9i iecjfd4xf2mnf ycbal53j5...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 17,
+      "ip": "23.20.170.75",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: u0e9zr41apoxrmj x9n3wjw tfil3 d186vihgm 1uoz 9f687...",
+      "is_honeypot": false,
+      "verification_time": 0
+    },
+    {
+      "server_id": 7,
+      "ip": "23.249.178.62",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Likely honeypot: Doesn't respect system prompt parameter",
+      "is_honeypot": true,
+      "verification_time": 0
+    },
+    {
+      "server_id": 54,
+      "ip": "35.78.75.36",
+      "port": 11434,
+      "status": "failed",
+      "should_remove": true,
+      "reason": "Nonsensical response: z4lf3w0o udfvcz957sec9 r5pvbbxnhzrtngo ozxanc0f6z1...",
+      "is_honeypot": false,
+      "verification_time": 0
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+    "name": "Ollama Scanner",
+    "description": "Discover and manage Ollama instances across the internet or local network",
+    "version": "1.0.0",
+    "type": "action",
+    "function_name": "handle_ollama_scanner",
+    "author": "OpenWebUI Integration",
+    "license": "MIT",
+    "tags": ["ollama", "scanner", "discovery", "models"],
+    "permissions": ["admin"],
+    "inputs": {
+        "action": {
+            "type": "string",
+            "description": "The action to perform",
+            "enum": ["scan", "search", "add_endpoints", "get_countries", "get_stats"],
+            "required": true
+        },
+        "params": {
+            "type": "object",
+            "description": "Parameters for the action",
+            "properties": {
+                "api_key": {
+                    "type": "string",
+                    "description": "Shodan API key for scanning",
+                    "required_for": ["scan"]
+                },
+                "search_query": {
+                    "type": "string",
+                    "description": "Shodan search query",
+                    "default": "product:Ollama",
+                    "required_for": ["scan"]
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": "Maximum number of results to process",
+                    "default": 100,
+                    "required_for": ["scan"]
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Connection timeout in seconds",
+                    "default": 5,
+                    "required_for": ["scan"]
+                },
+                "ports_to_try": {
+                    "type": "array",
+                    "description": "Ports to try for each IP",
+                    "default": [11434, 8000, 8001],
+                    "required_for": ["scan"]
+                },
+                "model_name": {
+                    "type": "string",
+                    "description": "Filter by model name",
+                    "required_for": ["search"]
+                },
+                "parameter_size": {
+                    "type": "string",
+                    "description": "Filter by parameter size (e.g., '7B')",
+                    "required_for": ["search"]
+                },
+                "quantization": {
+                    "type": "string",
+                    "description": "Filter by quantization level",
+                    "required_for": ["search"]
+                },
+                "country": {
+                    "type": "string",
+                    "description": "Filter by country name",
+                    "required_for": ["search"]
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Limit number of results",
+                    "default": 100,
+                    "required_for": ["search"]
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "Offset for pagination",
+                    "default": 0,
+                    "required_for": ["search"]
+                },
+                "sort_by": {
+                    "type": "string",
+                    "description": "Field to sort by",
+                    "default": "scan_date",
+                    "required_for": ["search"]
+                },
+                "sort_order": {
+                    "type": "string",
+                    "description": "Sort order (asc or desc)",
+                    "default": "desc",
+                    "required_for": ["search"]
+                },
+                "instances": {
+                    "type": "array",
+                    "description": "List of instances to add as endpoints",
+                    "required_for": ["add_endpoints"]
+                },
+                "api_base_url": {
+                    "type": "string",
+                    "description": "Base URL of the OpenWebUI API",
+                    "required_for": ["add_endpoints"]
+                }
+            }
+        }
+    },
+    "examples": [
+        {
+            "name": "Scan for Ollama Instances",
+            "action": "scan",
+            "params": {
+                "api_key": "your_shodan_api_key",
+                "max_results": 50
+            }
+        },
+        {
+            "name": "Search for LLaMA Models",
+            "action": "search",
+            "params": {
+                "model_name": "llama",
+                "sort_by": "parameter_size",
+                "sort_order": "desc"
+            }
+        },
+        {
+            "name": "Get Dashboard Statistics",
+            "action": "get_stats",
+            "params": {}
+        }
+    ]
+} 

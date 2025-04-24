@@ -1,0 +1,8 @@
+{
+  "ip": "107.178.157.209",
+  "port": 11434,
+  "status": "success",
+  "should_remove": false,
+  "reason": "Valid endpoint",
+  "is_honeypot": false
+}

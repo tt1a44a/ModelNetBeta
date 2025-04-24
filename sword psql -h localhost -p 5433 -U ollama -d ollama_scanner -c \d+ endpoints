@@ -1,0 +1,15 @@
+                                     View "public.servers"
+  Column   |           Type           | Collation | Nullable | Default | Storage  | Description 
+-----------+--------------------------+-----------+----------+---------+----------+-------------
+ id        | integer                  |           |          |         | plain    | 
+ ip        | text                     |           |          |         | extended | 
+ port      | integer                  |           |          |         | plain    | 
+ scan_date | timestamp with time zone |           |          |         | plain    | 
+View definition:
+ SELECT e.id,
+    e.ip,
+    e.port,
+    e.scan_date
+   FROM endpoints e
+     JOIN verified_endpoints ve ON e.id = ve.endpoint_id;
+
