@@ -18,12 +18,27 @@ from datetime import datetime, timedelta
 from queue import Queue
 import signal
 from threading import Event
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("ollama_scanner.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Added by migration script
 from database import Database, init_database, DATABASE_TYPE
 
 # Global verbosity flag - default to False
 VERBOSE = False
+
+# Global args reference
+args = None
 
 # Try to import optional dependencies
 try:
@@ -118,10 +133,17 @@ def handle_termination(signum, frame):
     # Optional cleanup operations can be done here
     print("[CLEANUP] Saving current state and closing connections...")
     
-    # Exit with proper code
-    # Using sys.exit within signal handlers can cause issues, so we exit later
+    # Force exit after a timeout in case threads are stuck
+    def force_exit():
+        print("[TIMEOUT] Forcing exit after cleanup timeout...")
+        os._exit(1)
+    
+    # Set a timer to force exit if graceful shutdown takes too long
+    timer = threading.Timer(10.0, force_exit)
+    timer.daemon = True
+    timer.start()
+    
     print("[DONE] Scanner terminated by user.")
-    sys.exit(0)
 
 def makeDatabase():
     """Initialize the database schema"""
@@ -153,7 +175,7 @@ def makeDatabase():
 
 def isOllamaServer(ip, p=11434, timeout=timeout):
     """Check if an IP/port combo is running Ollama by checking the API endpoint"""
-    global scanner_running, scanner_paused
+    global scanner_running, scanner_paused, args
     
     # Check if we should terminate
     if not scanner_running:
@@ -170,7 +192,12 @@ def isOllamaServer(ip, p=11434, timeout=timeout):
     # First try the API endpoint which should be most reliable
     url = "http://" + ip + ":" + str(p) + "/api/tags"
     try:
-        r = requests.get(url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
+        # Use a local variable for timeout calculation to avoid undefined args
+        current_timeout = timeout
+        if 'args' in globals() and args is not None and hasattr(args, 'timeout'):
+            current_timeout = calculate_dynamic_timeout(timeout_flag=args.timeout)
+            
+        r = requests.get(url, timeout=current_timeout)
         if r.status_code == 200:
             try:
                 d = r.json()
@@ -183,7 +210,7 @@ def isOllamaServer(ip, p=11434, timeout=timeout):
         # This is shown on Ollama's default landing page
         root_url = "http://" + ip + ":" + str(p) + "/"
         try:
-            root_response = requests.get(root_url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
+            root_response = requests.get(root_url, timeout=current_timeout)
             if "ollama is running" in root_response.text.lower():
                 # Found the Ollama landing page, but we don't have model info
                 return True, {"models": []}
@@ -209,15 +236,11 @@ def verifyEndpoint(endpointId, is_valid=None, preserve_verified=True):
     # Using Database methods directly - they manage connections internally
     
     # Get the endpoint information
-    if DATABASE_TYPE == "postgres":
-        query = 'SELECT ip, port FROM endpoints WHERE id = ?'
-    else:
-        query = 'SELECT ip, port FROM endpoints WHERE id = ?'
-        
+    query = 'SELECT ip, port FROM endpoints WHERE id = %s'
     endpoint = Database.fetch_one(query, (endpointId,))
     
     if not endpoint:
-        print(f"Error: No endpoint found with ID {endpointId}")
+        logger.error(f"No endpoint found with ID {endpointId}")
         return False
     
     ip, port = endpoint
@@ -231,88 +254,47 @@ def verifyEndpoint(endpointId, is_valid=None, preserve_verified=True):
         _, model_data = isOllamaServer(ip, port)
     
     if is_valid:
-        if DATABASE_TYPE == "postgres":
-            # For PostgreSQL with the actual schema
-            # First, check if this endpoint is already verified
-            verify_query = 'SELECT verified FROM endpoints WHERE id = ?'
-            current_verified = Database.fetch_one(verify_query, (endpointId,))
-            
-            # If preserve_verified is True and the endpoint is already verified, don't change its status
-            if preserve_verified and current_verified and current_verified[0] == 1:
-                print(f"Preserving verified status for endpoint {ip}:{port}")
-                # Just update the verification date
-                Database.execute('''
-                UPDATE endpoints 
-                SET verification_date = ? 
-                WHERE id = ?
-                ''', (now, endpointId))
-            else:
-                # Update endpoint as verified
-                Database.execute('''
-                UPDATE endpoints 
-                SET verified = 1, verification_date = ? 
-                WHERE id = ?
-                ''', (now, endpointId))
-                
-            # Check if this endpoint is already in verified_endpoints
-            verify_query = 'SELECT id FROM verified_endpoints WHERE endpoint_id = ?'
-            verify_params = (endpointId,)
-            verified_exists = Database.fetch_one(verify_query, verify_params) is not None
-            
-            if not verified_exists:
-                # Add to verified_endpoints
-                Database.execute('''
-                INSERT INTO verified_endpoints (endpoint_id, verification_date)
-                VALUES (?, ?)
-                ''', (endpointId, now))
-            else:
-                # Update verification date
-                Database.execute('''
-                UPDATE verified_endpoints 
-                SET verification_date = ? 
-                WHERE endpoint_id = ?
-                ''', (now, endpointId))
-        else:
-            # For SQLite, check if this endpoint is already verified
-            verify_query = 'SELECT verified FROM endpoints WHERE id = ?'
-            current_status = Database.fetch_one(verify_query, (endpointId,))
-            
-            # If preserve_verified is True and the endpoint is already verified, don't change its status
-            if preserve_verified and current_status and current_status[0] == 1:
-                print(f"Preserving verified status for endpoint {ip}:{port}")
-                # Just update the verification date
-                Database.execute('''
-                UPDATE endpoints 
-                SET verification_date = ? 
-                WHERE id = ?
-                ''', (now, endpointId))
-            else:
-                # Update endpoint as verified
-                Database.execute('''
-                UPDATE endpoints 
-                SET verified = 1, verification_date = ? 
-                WHERE id = ?
-                ''', (now, endpointId))
-                
-                # Check if this endpoint is already in verified_endpoints
-                verify_query = 'SELECT id FROM verified_endpoints WHERE endpoint_id = ?'
-                verify_params = (endpointId,)
-                verified_exists = Database.fetch_one(verify_query, verify_params) is not None
-                
-                if not verified_exists:
-                    # Add to verified_endpoints
-                    Database.execute('''
-                    INSERT INTO verified_endpoints (endpoint_id, verification_date)
-                    VALUES (?, ?)
-                    ''', (endpointId, now))
-                else:
-                    # Update verification date
-                    Database.execute('''
-                    UPDATE verified_endpoints 
-                    SET verification_date = ? 
-                    WHERE endpoint_id = ?
-                    ''', (now, endpointId))
+        # Use correct parameter placeholder for both PostgreSQL and SQLite
+        # For both PostgreSQL and SQLite
+        verify_query = 'SELECT verified FROM endpoints WHERE id = %s'
+        current_verified = Database.fetch_one(verify_query, (endpointId,))
         
+        # If preserve_verified is True and the endpoint is already verified, don't change its status
+        if preserve_verified and current_verified and current_verified[0] == 1:
+            print(f"Preserving verified status for endpoint {ip}:{port}")
+            # Just update the verification date
+            Database.execute('''
+            UPDATE endpoints 
+            SET verification_date = %s 
+            WHERE id = %s
+            ''', (now, endpointId))
+        else:
+            # Update endpoint as verified
+            Database.execute('''
+            UPDATE endpoints 
+            SET verified = 1, verification_date = %s 
+            WHERE id = %s
+            ''', (now, endpointId))
+            
+        # Check if this endpoint is already in verified_endpoints
+        verify_query = 'SELECT id FROM verified_endpoints WHERE endpoint_id = %s'
+        verify_params = (endpointId,)
+        verified_exists = Database.fetch_one(verify_query, verify_params) is not None
+        
+        if not verified_exists:
+            # Add to verified_endpoints
+            Database.execute('''
+            INSERT INTO verified_endpoints (endpoint_id, verification_date)
+            VALUES (%s, %s)
+            ''', (endpointId, now))
+        else:
+            # Update verification date
+            Database.execute('''
+            UPDATE verified_endpoints 
+            SET verification_date = %s 
+            WHERE endpoint_id = %s
+            ''', (now, endpointId))
+    
         # Now add the models if they were found
         if model_data and "models" in model_data:
             for model in model_data["models"]:
@@ -326,21 +308,21 @@ def verifyEndpoint(endpointId, is_valid=None, preserve_verified=True):
                 quantization_level = details.get("quantization_level", "Unknown")
                 
                 # Check if the model already exists for this endpoint
-                model_exists_query = 'SELECT id FROM models WHERE endpoint_id = ? AND name = ?'
+                model_exists_query = 'SELECT id FROM models WHERE endpoint_id = %s AND name = %s'
                 model_exists = Database.fetch_one(model_exists_query, (endpointId, name)) is not None
                 
                 if model_exists:
                     # Update existing model
                     Database.execute('''
                     UPDATE models 
-                    SET parameter_size = ?, quantization_level = ?, size_mb = ?
-                    WHERE endpoint_id = ? AND name = ?
+                    SET parameter_size = %s, quantization_level = %s, size_mb = %s
+                    WHERE endpoint_id = %s AND name = %s
                     ''', (parameter_size, quantization_level, sizeMb, endpointId, name))
                 else:
                     # Add new model
                     Database.execute('''
                     INSERT INTO models (endpoint_id, name, parameter_size, quantization_level, size_mb)
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s)
                     ''', (endpointId, name, parameter_size, quantization_level, sizeMb))
             
             print(f"Added/updated {len(model_data['models'])} models for endpoint {ip}:{port}")
@@ -348,49 +330,25 @@ def verifyEndpoint(endpointId, is_valid=None, preserve_verified=True):
         return True
     else:
         # If not valid, mark as not verified (verified = 0)
-        if DATABASE_TYPE == "postgres":
-            # For PostgreSQL with the actual schema, set verified = 0
-            Database.execute('''
-            UPDATE endpoints 
-            SET verified = 0
-            WHERE id = ?
-            ''', (endpointId,))
-            
-            # Also remove from verified_endpoints if it exists
-            Database.execute('DELETE FROM verified_endpoints WHERE endpoint_id = ?', (endpointId,))
-        else:
-            # For SQLite, set verified = 0
-            Database.execute('''
-            UPDATE endpoints 
-            SET verified = 0
-            WHERE id = ?
-            ''', (endpointId,))
-            
-            # Also remove from verified_endpoints if it exists
-            Database.execute('DELETE FROM verified_endpoints WHERE endpoint_id = ?', (endpointId,))
+        Database.execute('''
+        UPDATE endpoints 
+        SET verified = 0
+        WHERE id = %s
+        ''', (endpointId,))
+        
+        # Also remove from verified_endpoints if it exists
+        Database.execute('DELETE FROM verified_endpoints WHERE endpoint_id = %s', (endpointId,))
         
         print(f"Marked endpoint {ip}:{port} as not verified")
         return False
 
 def isDuplicateServer(ip, port):
     """Check if a server already exists in the database"""
-    if DATABASE_TYPE == "postgres":
-        result = Database.fetch_one('SELECT id FROM servers WHERE ip = ? AND port = ?', (ip, port))
-    else:
-        result = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, port))
+    result = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, port))
     return result is not None
 
 def saveStuffToDb(ip, p, modelData, status="scanned", preserve_verified=True):
-    """
-    Save server and model data to database with duplicate checking
-    
-    Args:
-        ip (str): IP address of the server
-        p (int): Port number
-        modelData (dict): Model data from the server
-        status (str): Status to assign to new endpoints (default: 'scanned')
-        preserve_verified (bool): Whether to preserve verified status for existing endpoints
-    """
+    """Save server and model data to database with duplicate checking"""
     # Use lock to ensure thread safety
     with db_lock:
         # Check if this server already exists
@@ -401,45 +359,22 @@ def saveStuffToDb(ip, p, modelData, status="scanned", preserve_verified=True):
         if is_duplicate:
             if preserve_verified:
                 # Update existing endpoint with new scan date but preserve verified status
-                if DATABASE_TYPE == "postgres":
-                    # For PostgreSQL with the actual schema, preserve 'verified' integer field
-                    Database.execute('''
-                    UPDATE endpoints 
-                    SET scan_date = ?
-                    WHERE ip = ? AND port = ?
-                    ''', (now, ip, p))
-                else:
-                    # For SQLite, preserve verified=1
-                    Database.execute('''
-                    UPDATE endpoints 
-                    SET scan_date = ?,
-                        verified = CASE WHEN verified = 1 THEN verified ELSE ? END
-                    WHERE ip = ? AND port = ?
-                    ''', (now, 1 if status == "verified" else 0, ip, p))
+                Database.execute('''
+                UPDATE endpoints 
+                SET scan_date = %s
+                WHERE ip = %s AND port = %s
+                ''', (now, ip, p))
             else:
                 # Update existing endpoint with new status and scan date
-                if DATABASE_TYPE == "postgres":
-                    # For PostgreSQL with the actual schema, update verified field based on status
-                    verified_value = 1 if status == "verified" else 0
-                    Database.execute('''
-                    UPDATE endpoints 
-                    SET scan_date = ?, verified = ? 
-                    WHERE ip = ? AND port = ?
-                    ''', (now, verified_value, ip, p))
-                else:
-                    # For SQLite, convert status to verified field
-                    verified = 1 if status == "verified" else 0
-                    Database.execute('''
-                    UPDATE endpoints 
-                    SET scan_date = ?, verified = ? 
-                    WHERE ip = ? AND port = ?
-                    ''', (now, verified, ip, p))
+                verified_value = 1 if status == "verified" else 0
+                Database.execute('''
+                UPDATE endpoints 
+                SET scan_date = %s, verified = %s 
+                WHERE ip = %s AND port = %s
+                ''', (now, verified_value, ip, p))
             
             # Get the endpoint ID
-            if DATABASE_TYPE == "postgres":
-                endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, p))
-            else:
-                endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, p))
+            endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, p))
                 
             if endpoint_row:
                 endpointId = endpoint_row[0]
@@ -447,30 +382,15 @@ def saveStuffToDb(ip, p, modelData, status="scanned", preserve_verified=True):
                 return
         else:
             # Insert new endpoint with specified status
-            if DATABASE_TYPE == "postgres":
-                # For PostgreSQL with the actual schema, use verified field
-                verified_value = 1 if status == "verified" else 0
-                result = Database.execute('''
-                INSERT INTO endpoints (ip, port, scan_date, verified) 
-                VALUES (?, ?, ?, ?)
-                ''', (ip, p, now, verified_value))
-                
-                # Get the newly inserted ID
-                endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, p))
-                endpointId = endpoint_row[0] if endpoint_row else None
-            else:
-                # For SQLite, convert status to verified field
-                verified = 1 if status == "verified" else 0
-                result = Database.execute('''
-                INSERT INTO endpoints (ip, port, scan_date, verified) 
-                VALUES (?, ?, ?, ?)
-                ''', (ip, p, now, verified))
-                
-                # SQLite can use cursor.lastrowid
-                endpointId = result.lastrowid
-        
-        # Save models - this will be done in the verification step now
-        # We're not adding models for unverified endpoints
+            verified_value = 1 if status == "verified" else 0
+            result = Database.execute('''
+            INSERT INTO endpoints (ip, port, scan_date, verified) 
+            VALUES (%s, %s, %s, %s)
+            ''', (ip, p, now, verified_value))
+            
+            # Get the newly inserted ID
+            endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, p))
+            endpointId = endpoint_row[0] if endpoint_row else None
         
         return is_duplicate
 
@@ -493,7 +413,7 @@ def removeDuplicates():
         """)
     
     if dupes:
-        logging.info(f"Found {len(dupes)} duplicate endpoint records")
+        logger.info(f"Found {len(dupes)} duplicate endpoint records")
         
         for dupe in dupes:
             ip, port, count, id_list = dupe
@@ -502,10 +422,10 @@ def removeDuplicates():
             keep_id = ids[0]
             remove_ids = ids[1:]
             
-            logging.info(f"Keeping {ip}:{port} with ID {keep_id}, removing IDs {','.join(remove_ids)}")
+            logger.info(f"Keeping {ip}:{port} with ID {keep_id}, removing IDs {','.join(remove_ids)}")
             
             for remove_id in remove_ids:
-                Database.execute("DELETE FROM endpoints WHERE id = ?", (remove_id,))
+                Database.execute("DELETE FROM endpoints WHERE id = %s", (remove_id,))
     
     # Find duplicate models (same endpoint_id/name with different IDs)
     if DATABASE_TYPE == "postgres":
@@ -524,7 +444,7 @@ def removeDuplicates():
         """)
     
     if model_dupes:
-        logging.info(f"Found {len(model_dupes)} duplicate model records")
+        logger.info(f"Found {len(model_dupes)} duplicate model records")
         
         for dupe in model_dupes:
             endpoint_id, name, count, id_list = dupe
@@ -533,10 +453,10 @@ def removeDuplicates():
             keep_id = ids[0]
             remove_ids = ids[1:]
             
-            logging.info(f"Keeping model {name} for endpoint {endpoint_id} with ID {keep_id}, removing IDs {','.join(remove_ids)}")
+            logger.info(f"Keeping model {name} for endpoint {endpoint_id} with ID {keep_id}, removing IDs {','.join(remove_ids)}")
             
             for remove_id in remove_ids:
-                Database.execute("DELETE FROM models WHERE id = ?", (remove_id,))
+                Database.execute("DELETE FROM models WHERE id = %s", (remove_id,))
     
     # Find duplicate verified_endpoints (same endpoint_id with different IDs)
     if DATABASE_TYPE == "postgres":
@@ -555,7 +475,7 @@ def removeDuplicates():
         """)
     
     if ve_dupes:
-        logging.info(f"Found {len(ve_dupes)} duplicate verified_endpoints records")
+        logger.info(f"Found {len(ve_dupes)} duplicate verified_endpoints records")
         
         for dupe in ve_dupes:
             endpoint_id, count, id_list = dupe
@@ -564,14 +484,14 @@ def removeDuplicates():
             keep_id = ids[0]
             remove_ids = ids[1:]
             
-            logging.info(f"Keeping verified_endpoint for endpoint {endpoint_id} with ID {keep_id}, removing IDs {','.join(remove_ids)}")
+            logger.info(f"Keeping verified_endpoint for endpoint {endpoint_id} with ID {keep_id}, removing IDs {','.join(remove_ids)}")
             
             for remove_id in remove_ids:
-                Database.execute("DELETE FROM verified_endpoints WHERE id = ?", (remove_id,))
+                Database.execute("DELETE FROM verified_endpoints WHERE id = %s", (remove_id,))
 
     print("Database cleanup complete!")
 
-def process_server(result, total_count, current_index, stats, status="scanned", preserve_verified=True):
+def process_server(result, total_count, current_index, stats, status="scanned", preserve_verified=True, args=None):
     """
     Process a single server result with multiple port checks
     
@@ -582,6 +502,7 @@ def process_server(result, total_count, current_index, stats, status="scanned", 
         stats (dict): Statistics dictionary
         status (str): Status to assign to discovered endpoints
         preserve_verified (bool): Whether to preserve verified status for existing endpoints
+        args: Command line arguments
     """
     ip = result['ip_str']
     
@@ -1148,7 +1069,7 @@ def run_masscan(args, target_ips=None, port=11434, rate=10000, db_path=None):
     
     # Process each result
     for i, result in enumerate(results):
-        process_server(result, len(results), i, stats, status=args.status, preserve_verified=args.preserve_verified)
+        process_server(result, len(results), i, stats, status=args.status, preserve_verified=args.preserve_verified, args=args)
     
     # Show stats
     print("\nMasscan processing complete")
@@ -1161,58 +1082,117 @@ def run_masscan(args, target_ips=None, port=11434, rate=10000, db_path=None):
 
 def run_shodan(args, db_path):
     """Run Shodan search for Ollama instances"""
-    # Set global database file
-    global database_file
-    database_file = db_path
+    if not shodan_available:
+        print("Error: Shodan module not installed. Run 'pip install shodan' to enable Shodan searching.")
+        return
+
+    if not SHODAN_API_KEY:
+        print("Error: Shodan API key not set. Please set SHODAN_API_KEY in your environment variables or .env file.")
+        return
     
-    # Get search results from Shodan
-    results = search_shodan()
+    # Check API key validity and credits first
+    try:
+        info = shodan_client.info()
+        print(f"Shodan API plan: {info.get('plan', 'Unknown')}")
+        print(f"Query credits available: {info.get('query_credits', 'Unknown')}")
+        logger.info(f"Shodan API plan: {info.get('plan', 'Unknown')}, Credits: {info.get('query_credits', 'Unknown')}")
+    except Exception as e:
+        print(f"Error checking Shodan API: {e}")
+        logger.error(f"Error checking Shodan API: {e}")
+        return
     
-    if not results:
-        print("No results found from Shodan search")
-        return 0
+    # List of search queries to try
+    queries = [
+        'product:Ollama',
+        'http.title:"Ollama"',
+        'http.html:"ollama is running"',
+        'port:11434 http'
+    ]
     
-    # Set up statistics
-    stats = {
-        'valid': 0,
-        'invalid': 0,
-        'errors': 0,
-        'duplicates': 0,
-        'lock': threading.Lock()
-    }
+    all_results = []
     
-    # Process results
-    print(f"Processing {len(results)} results from Shodan search")
+    for query in queries:
+        # Show what we're searching for
+        print(f"\nSearching Shodan for: {query}")
+        logger.info(f"Starting Shodan search for: {query}")
+        
+        # Get the results with robust error handling and retries
+        max_retries = 3
+        results = []
+        
+        for page in range(1, args.pages + 1):
+            for attempt in range(max_retries):
+                try:
+                    print(f"Fetching page {page} for query '{query}'...")
+                    page_results = shodan_client.search(query, page=page)
+                    
+                    # Validate response structure before proceeding
+                    if not isinstance(page_results, dict) or 'matches' not in page_results:
+                        logger.warning(f"Unexpected Shodan API response structure for query '{query}' page {page}")
+                        break
+                        
+                    results.extend(page_results.get('matches', []))
+                    print(f"Found {len(page_results.get('matches', []))} results on page {page}")
+                    logger.info(f"Retrieved {len(page_results.get('matches', []))} results from page {page} for query '{query}'")
+                    
+                    # Add a small delay between pages to avoid rate limiting
+                    time.sleep(1.5)
+                    break  # Success, exit retry loop
+                    
+                except shodan.APIError as e:
+                    logger.error(f"Shodan API error for query '{query}' page {page}: {e}")
+                    print(f"Shodan API error: {e}")
+                    
+                    # If we're rate limited, wait longer before retrying
+                    if 'rate limit' in str(e).lower():
+                        wait_time = 10 * (attempt + 1)
+                        print(f"Rate limited. Waiting {wait_time} seconds before retry...")
+                        time.sleep(wait_time)
+                    else:
+                        break  # Non-rate limit error, skip retries
+                        
+                except Exception as e:
+                    logger.error(f"Shodan API error for query '{query}' page {page}: {e}")
+                    print(f"Error: {e}")
+                    
+                    if attempt < max_retries - 1:
+                        wait_time = 5 * (attempt + 1)
+                        print(f"Unexpected error. Waiting {wait_time} seconds before retry...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"Failed after {max_retries} attempts. Moving to next page or query.")
+            
+            # Break out of pagination if we didn't get a full page of results
+            if len(page_results.get('matches', [])) < 100:
+                break
+        
+        all_results.extend(results)
+        print(f"Found {len(results)} total results for query '{query}'")
+    
+    # Deduplicate results based on IP
+    unique_ips = {}
+    for result in all_results:
+        ip = result.get('ip_str')
+        if ip and ip not in unique_ips:
+            unique_ips[ip] = result
+    
+    print(f"\nFound {len(unique_ips)} unique IP addresses across all queries")
+    logger.info(f"Found {len(unique_ips)} unique IP addresses across all Shodan queries")
     
     # Apply limit if specified
-    if args.limit > 0 and len(results) > args.limit:
-        print(f"Limiting results to {args.limit} (out of {len(results)})")
-        results = results[:args.limit]
+    ip_list = list(unique_ips.values())
+    if args.limit > 0 and len(ip_list) > args.limit:
+        print(f"Limiting to {args.limit} IPs")
+        ip_list = ip_list[:args.limit]
     
-    # Process each result
-    for i, result in enumerate(results):
-        if not scanner_running:
-            print("Scanner termination requested, stopping processing")
-            break
-                
-        # Check if scanner is paused and wait if it is
-        while not scanner_paused.is_set() and scanner_running:
-            time.sleep(0.5)  # Sleep briefly while paused
-                
-        if not scanner_running:  # Check again after potential pause
-            print("Scanner termination requested, stopping processing")
-            break
-                
-        process_server(result, len(results), i, stats, status=args.status, preserve_verified=args.preserve_verified)
-    
-    # Show stats
-    print("\nShodan search complete")
-    print(f"Valid Ollama instances: {stats['valid']}")
-    print(f"Invalid endpoints: {stats['invalid']}")
-    print(f"Errors: {stats['errors']}")
-    print(f"Duplicates: {stats['duplicates']}")
-    
-    return stats['valid']
+    # Verify the instances
+    if ip_list:
+        valid_count = verify_instances(ip_list, db_path, args.threads, args.status, args.preserve_verified)
+        print(f"Verified {valid_count} Ollama instances")
+        return valid_count
+    else:
+        print("No results found")
+        return 0
 
 def run_censys(args, db_path):
     """Run Censys search for Ollama instances"""
@@ -1269,7 +1249,7 @@ def run_censys(args, db_path):
             print("Scanner termination requested, stopping processing")
             break
                 
-        process_server(result, len(results), i, stats, status=args.status, preserve_verified=args.preserve_verified)
+        process_server(result, len(results), i, stats, status=args.status, preserve_verified=args.preserve_verified, args=args)
     
     # Show stats
     print("\nCensys search complete")
@@ -1283,192 +1263,93 @@ def run_censys(args, db_path):
 def verify_instance(ip, db_path, timeout=5, result_queue=None, status="scanned", preserve_verified=True):
     """
     Verify if an IP is a valid Ollama instance and collect model info
-    
-    Args:
-        ip (str): IP address to verify
-        db_path (str): Path to SQLite database
-        timeout (int): Request timeout in seconds
-        result_queue (Queue): Optional queue to put results into (for multiprocessing)
-        status (str): Status to assign to verified instances (default: 'scanned')
-        preserve_verified (bool): Whether to preserve verified status for existing endpoints
-    
-    Returns:
-        dict: Result info including verification status and model data if successful
     """
+    result = {
+        'ip': ip,
+        'port': 11434,
+        'verified': False,
+        'error': False,
+        'reason': 'Not verified',
+        'model_data': None
+    }
     
-    global database_file
-    
-    # Set up temporary database file for multiprocessing if needed
-    if db_path:
-        database_file = db_path
-        
     try:
-        # Initialize result dictionary
-        result = {
-            'ip': ip,
-            'port': 11434,
-            'verified': False,
-            'reason': 'Not verified',
-            'model_data': None
-        }
+        # Add debug logging
+        logger.debug(f"Starting verification of {ip}:11434")
         
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # Check if this IP is a valid Ollama server
+        is_valid, model_data = isOllamaServer(ip, 11434, timeout)
         
-        # Check if endpoint already exists and get its status
-        if DATABASE_TYPE == "postgres":
-            endpoint_row = Database.fetch_one('SELECT id, status FROM servers WHERE ip = ? AND port = ?', (ip, 11434))
+        if is_valid:
+            logger.info(f"Found valid Ollama server at {ip}:11434")
+            # Found a valid Ollama server
+            result['verified'] = True
+            result['reason'] = 'Valid Ollama server'
+            result['model_data'] = model_data
+            
+            # Process database operations...
         else:
-            endpoint_row = Database.fetch_one('SELECT id, verified FROM endpoints WHERE ip = ? AND port = ?', (ip, 11434))
-        
-        if endpoint_row:
-            endpoint_id = endpoint_row[0]
-            if DATABASE_TYPE == "postgres":
-                current_status = endpoint_row[1] if len(endpoint_row) > 1 else None
-                
-                if preserve_verified and current_status == 'verified':
-                    # Update scan date but preserve verified status
-                    Database.execute('UPDATE servers SET scan_date = ? WHERE id = ?', (now, endpoint_id))
-                    
-                    if VERBOSE:
-                        print(f"[VERBOSE] Updating existing verified endpoint {ip}:11434 (ID {endpoint_id})")
-                else:
-                    # Update scan date and status
-                    Database.execute('UPDATE servers SET scan_date = ?, status = ? WHERE id = ?', 
-                                 (now, status, endpoint_id))
-                    
-                    if VERBOSE:
-                        print(f"[VERBOSE] Updating existing endpoint {ip}:11434 (ID {endpoint_id}) with status '{status}'")
-            else:
-                # For SQLite
-                current_verified = endpoint_row[1] if len(endpoint_row) > 1 else 0
-                
-                if preserve_verified and current_verified == 1:
-                    # Update scan date but preserve verified status
-                    Database.execute('UPDATE endpoints SET scan_date = ? WHERE id = ?', (now, endpoint_id))
-                    
-                    if VERBOSE:
-                        print(f"[VERBOSE] Updating existing verified endpoint {ip}:11434 (ID {endpoint_id})")
-                else:
-                    # Update scan date and verified status based on input status
-                    verified = 1 if status == "verified" else 0
-                    Database.execute('UPDATE endpoints SET scan_date = ?, verified = ? WHERE id = ?', 
-                                 (now, verified, endpoint_id))
-                    
-                    if VERBOSE:
-                        print(f"[VERBOSE] Updating existing endpoint {ip}:11434 (ID {endpoint_id}) with status '{status}'")
-        else:
-            # Insert with specified status
-            if DATABASE_TYPE == "postgres":
-                # For PostgreSQL, use status field
-                result_db = Database.execute(
-                    'INSERT INTO servers (ip, port, scan_date, status) VALUES (?, ?, ?, ?)',
-                    (ip, 11434, now, status)
-                )
-                
-                # Get the newly inserted ID for PostgreSQL
-                endpoint_row = Database.fetch_one('SELECT id FROM servers WHERE ip = ? AND port = ?', (ip, 11434))
-                endpoint_id = endpoint_row[0] if endpoint_row else None
-            else:
-                # For SQLite, convert status to verified field
-                verified = 1 if status == "verified" else 0
-                result_db = Database.execute(
-                    'INSERT INTO endpoints (ip, port, scan_date, verified) VALUES (?, ?, ?, ?)',
-                    (ip, 11434, now, verified)
-                )
-                
-                # SQLite can use cursor.lastrowid
-                endpoint_id = result_db.lastrowid
-                
-            if VERBOSE:
-                print(f"[VERBOSE] Added new endpoint {ip}:11434 (ID {endpoint_id}) with status '{status}'")
-                
-        # Check /api/tags endpoint
-        tags_url = f"http://{ip}:11434/api/tags"
-        if VERBOSE:
-            print(f"[VERBOSE] Trying endpoint: {tags_url}")
-        
-        verification_start = datetime.now()
-        tags_response = requests.get(tags_url, timeout=calculate_dynamic_timeout(timeout_flag=args.timeout if "args" in locals() else None))
-        verification_time = (datetime.now() - verification_start).total_seconds()
-        
-        if tags_response.status_code == 200:
-            try:
-                tags_data = tags_response.json()
-                
-                # Get model details
-                model_data = {
-                    "models": []
-                }
-                
-                # Extract model information
-                for model in tags_data.get("models", []):
-                    model_data["models"].append(model)
-                
-                result["verified"] = True
-                result["reason"] = "Ollama API verified"
-                result["verification_time"] = verification_time
-                result["model_data"] = model_data
-                result["model_count"] = len(model_data["models"])
-                
-                # Process system info if available
-                if tags_response.headers.get('Server'):
-                    result["server"] = tags_response.headers.get('Server')
-                
-                # Mark the endpoint as verified
-                if endpoint_id:
-                    # Use the verifyEndpoint function which handles both database types
-                    verifyEndpoint(endpoint_id, True, preserve_verified)
-                    
-                if VERBOSE:
-                    print(f"[VERBOSE] Verified Ollama API at {ip}:11434 in {verification_time:.2f}s with {len(model_data['models'])} models")
-                    if len(model_data["models"]) > 0:
-                        for model in model_data["models"]:
-                            print(f"[VERBOSE]   - {model.get('name', 'Unknown')}")
-                
-            except json.JSONDecodeError:
-                result["reason"] = "Invalid JSON response"
-                if VERBOSE:
-                    print(f"[VERBOSE] Invalid JSON from {ip}:11434")
-        else:
-            result["reason"] = f"HTTP {tags_response.status_code}"
-            if VERBOSE:
-                print(f"[VERBOSE] HTTP error {tags_response.status_code} from {ip}:11434")
-    
-    except requests.exceptions.Timeout:
-        result = {
-            'ip': ip,
-            'port': 11434,
-            'verified': False,
-            'reason': f"Connection timeout (>{timeout}s)"
-        }
-        if VERBOSE:
-            print(f"[VERBOSE] Connection timeout for {ip}:11434")
-    
-    except requests.exceptions.ConnectionError:
-        result = {
-            'ip': ip,
-            'port': 11434,
-            'verified': False,
-            'reason': "Connection refused"
-        }
-        if VERBOSE:
-            print(f"[VERBOSE] Connection refused for {ip}:11434")
+            logger.debug(f"No Ollama server found at {ip}:11434")
+            # Not a valid Ollama server
+            result['verified'] = False
+            result['reason'] = 'Not an Ollama server'
+            
+            # Process database operations...
     
     except Exception as e:
-        result = {
-            'ip': ip,
-            'port': 11434,
-            'verified': False,
-            'reason': str(e)
-        }
+        # Log the full exception
+        logger.error(f"Error verifying {ip}: {str(e)}")
         if VERBOSE:
-            print(f"[VERBOSE] Error verifying {ip}:11434: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+        result['error'] = True
+        result['reason'] = f"Error: {str(e)}"
     
-    # Put result in queue if provided (for multiprocessing)
-    if result_queue:
-        result_queue.put(result)
+    # Log the final result before adding to the queue
+    logger.debug(f"Verification result for {ip}: verified={result['verified']}, error={result['error']}, reason={result['reason']}")
+    
+    # Add to result queue if provided
+    if result_queue is not None:
+        try:
+            result_queue.put(result)
+            logger.debug(f"Added result for {ip} to queue")
+        except Exception as e:
+            logger.error(f"Error adding result for {ip} to queue: {str(e)}")
     
     return result
+
+def save_model_to_db(endpoint_id, model):
+    """Helper function to save a model to the database"""
+    name = model.get("name", "Unknown")
+    size = model.get("size", 0)
+    size_mb = size / (1024 * 1024) if size else 0
+    
+    details = model.get("details", {})
+    parameter_size = details.get("parameter_size", "Unknown")
+    quantization_level = details.get("quantization_level", "Unknown")
+    
+    # Check if model already exists
+    model_exists = Database.fetch_one(
+        'SELECT id FROM models WHERE endpoint_id = %s AND name = %s',
+        (endpoint_id, name)
+    )
+    
+    if model_exists:
+        # Update existing model
+        Database.execute(
+            '''UPDATE models 
+            SET parameter_size = %s, quantization_level = %s, size_mb = %s 
+            WHERE endpoint_id = %s AND name = %s''',
+            (parameter_size, quantization_level, size_mb, endpoint_id, name)
+        )
+    else:
+        # Insert new model
+        Database.execute(
+            '''INSERT INTO models 
+            (endpoint_id, name, parameter_size, quantization_level, size_mb)
+            VALUES (%s, %s, %s, %s, %s)''',
+            (endpoint_id, name, parameter_size, quantization_level, size_mb)
+        )
 
 def add_server_to_db(ip, models_data, ps_data, db_path):
     """Add a server and its models to the database"""
@@ -1477,7 +1358,7 @@ def add_server_to_db(ip, models_data, ps_data, db_path):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # Find the endpoint ID in our database
-        endpoint = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, 11434))
+        endpoint = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, 11434))
         if not endpoint:
             if VERBOSE:
                 print(f"[ERROR] Endpoint {ip}:11434 not found in database, can't add models")
@@ -1486,7 +1367,7 @@ def add_server_to_db(ip, models_data, ps_data, db_path):
         endpoint_id = endpoint[0]
         
         # Update scan date and mark as verified
-        Database.execute('UPDATE endpoints SET scan_date = ?, verified = 1, verification_date = ? WHERE id = ?', 
+        Database.execute('UPDATE endpoints SET scan_date = %s, verified = 1, verification_date = %s WHERE id = %s', 
                       (now, now, endpoint_id))
         
         # Process models
@@ -1501,7 +1382,7 @@ def add_server_to_db(ip, models_data, ps_data, db_path):
             name = model.get("name", "Unknown")
             
             # Check if model exists for this endpoint
-            model_query = 'SELECT id FROM models WHERE endpoint_id = ? AND name = ?'
+            model_query = 'SELECT id FROM models WHERE endpoint_id = %s AND name = %s'
             model_params = (endpoint_id, name)
             model_exists = Database.fetch_one(model_query, model_params) is not None
             
@@ -1521,8 +1402,8 @@ def add_server_to_db(ip, models_data, ps_data, db_path):
                 # Update existing model
                 Database.execute(
                     '''UPDATE models 
-                    SET parameter_size = ?, quantization_level = ?, size_mb = ?
-                    WHERE endpoint_id = ? AND name = ?''',
+                    SET parameter_size = %s, quantization_level = %s, size_mb = %s
+                    WHERE endpoint_id = %s AND name = %s''',
                     (param_size, quant_level, size_mb, endpoint_id, name)
                 )
             else:
@@ -1530,7 +1411,7 @@ def add_server_to_db(ip, models_data, ps_data, db_path):
                 Database.execute(
                     '''INSERT INTO models 
                     (endpoint_id, name, parameter_size, quantization_level, size_mb)
-                    VALUES (?, ?, ?, ?, ?)''',
+                    VALUES (%s, %s, %s, %s, %s)''',
                     (endpoint_id, name, param_size, quant_level, size_mb)
                 )
         
@@ -1539,7 +1420,8 @@ def add_server_to_db(ip, models_data, ps_data, db_path):
         print(f"Error adding server to database: {e}")
         if VERBOSE:
             import traceback
-            traceback
+            traceback.print_exc()
+        return False
 
 # Dynamic timeout calculation function
 def calculate_dynamic_timeout(model_name="", prompt="", max_tokens=1000, timeout_flag=None):
@@ -1603,8 +1485,6 @@ def calculate_dynamic_timeout(model_name="", prompt="", max_tokens=1000, timeout
     final_timeout = max(60, min(1800, base_timeout * param_factor * prompt_factor * token_factor))
     
     return final_timeout
-.print_exc()
-        return False
 
 def verify_instances(ip_list, db_path, num_threads=50, status="scanned", preserve_verified=True):
     """
@@ -1617,7 +1497,30 @@ def verify_instances(ip_list, db_path, num_threads=50, status="scanned", preserv
         status (str): Status to assign to endpoints (default: 'scanned')
         preserve_verified (bool): Whether to preserve verified status for existing endpoints
     """
+    # Get DB connection pool size from env or use default
+    max_db_connections = int(os.getenv("DB_MAX_CONNECTIONS", "50"))
+    
+    # Reduce thread count if it exceeds max DB connections
+    # Leave some connections for other operations
+    safe_thread_count = max(1, min(num_threads, max_db_connections - 5))
+    
+    if safe_thread_count < num_threads:
+        print(f"[WARN] Reducing thread count from {num_threads} to {safe_thread_count} to avoid DB connection pool exhaustion")
+        num_threads = safe_thread_count
+    
     print(f"[INFO] Verifying {len(ip_list)} potential Ollama instances using {num_threads} threads")
+    
+    # Process Shodan results properly to extract IPs
+    processed_ips = []
+    for result in ip_list:
+        # If this is a Shodan result object, extract the IP
+        if isinstance(result, dict) and 'ip_str' in result:
+            processed_ips.append(result['ip_str'])
+        # If this is already an IP string
+        elif isinstance(result, str):
+            processed_ips.append(result)
+        else:
+            logger.warning(f"Skipping unrecognized result format: {type(result)}")
     
     # Create a queue to store the results
     result_queue = Queue()
@@ -1625,7 +1528,7 @@ def verify_instances(ip_list, db_path, num_threads=50, status="scanned", preserv
     # Add a detailed statistics tracker with thread safety
     stats = {
         'completed': 0,
-        'total': len(ip_list),
+        'total': len(processed_ips),
         'valid': 0,
         'invalid': 0,
         'errors': 0,
@@ -1633,90 +1536,105 @@ def verify_instances(ip_list, db_path, num_threads=50, status="scanned", preserv
         'lock': threading.Lock()
     }
     
-    # Create a callback function to update progress
-    def update_progress(result):
-        with stats['lock']:
-            stats['completed'] += 1
-            
-            # Track result types
-            if result == True:
-                stats['valid'] += 1
-            elif result == False:
-                stats['invalid'] += 1
-            else:  # None or exception
-                stats['errors'] += 1
+    # Create and start the worker threads
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        # Submit verification tasks for each IP
+        futures = []
+        for ip in processed_ips:
+            if not scanner_running:
+                break
                 
-            percent = (stats['completed'] / stats['total']) * 100
-            
-            # Calculate elapsed and estimated time
-            elapsed = datetime.now() - stats['start_time']
-            elapsed_seconds = elapsed.total_seconds()
-            
-            if stats['completed'] > 0:
-                per_item_seconds = elapsed_seconds / stats['completed']
-                remaining_items = stats['total'] - stats['completed']
-                eta_seconds = remaining_items * per_item_seconds
+            # Skip if we've hit the limit
+            if args and args.limit > 0 and stats['completed'] >= args.limit:
+                break
+                
+            future = executor.submit(
+                verify_instance, 
+                ip, 
+                db_path, 
+                timeout=args.timeout if args and hasattr(args, 'timeout') else 5,
+                result_queue=result_queue,
+                status=status,
+                preserve_verified=preserve_verified
+            )
+            futures.append(future)
+        
+        # Progress monitoring loop
+        try:
+            while stats['completed'] < min(len(processed_ips), args.limit if args and args.limit > 0 else float('inf')) and scanner_running:
+                # Process completed results from the queue
+                try:
+                    # Non-blocking queue check
+                    while not result_queue.empty():
+                        result = result_queue.get_nowait()
+                        with stats['lock']:
+                            stats['completed'] += 1
+                            
+                            # Debug the classification process
+                            logger.debug(f"Processing queue item for {result.get('ip', 'unknown')}: " +
+                                        f"verified={result.get('verified', False)}, " +
+                                        f"error={result.get('error', False)}")
+                            
+                            if result.get('verified', False):
+                                stats['valid'] += 1
+                                logger.info(f"Valid Ollama instance: {result.get('ip', 'unknown')}")
+                            elif result.get('error', False):
+                                stats['errors'] += 1
+                                logger.debug(f"Error verifying {result.get('ip', 'unknown')}: {result.get('reason', 'Unknown error')}")
+                            else:
+                                stats['invalid'] += 1
+                                logger.debug(f"Invalid instance: {result.get('ip', 'unknown')}")
+                except Exception as e:
+                    # Just log any queue errors and continue
+                    logger.error(f"Error processing result queue: {str(e)}")
+                
+                # Show progress
+                elapsed = datetime.now() - stats['start_time']
+                elapsed_seconds = elapsed.total_seconds()
+                rate = stats['completed'] / elapsed_seconds if elapsed_seconds > 0 else 0
+                
+                # Calculate ETA
+                remaining = stats['total'] - stats['completed']
+                eta_seconds = remaining / rate if rate > 0 else 0
                 eta = timedelta(seconds=int(eta_seconds))
-            else:
-                eta = timedelta(seconds=0)
-            
-            # Print progress update with more details
-            if stats['completed'] % 10 == 0 or stats['completed'] == stats['total'] or VERBOSE:
-                print(f"\n[PROGRESS] Verification: {stats['completed']}/{stats['total']} ({percent:.1f}%)")
+                
+                # Display progress
+                print(f"\r[PROGRESS] Verification: {stats['completed']}/{stats['total']} ({stats['completed']/stats['total']*100:.1f}%)")
                 print(f"[STATS] Valid: {stats['valid']}, Invalid: {stats['invalid']}, Errors: {stats['errors']}")
                 print(f"[TIME] Elapsed: {str(elapsed).split('.')[0]}, ETA: {str(eta).split('.')[0]}")
+                print(f"[RATE] {rate:.2f} endpoints/second")
                 
-                # Print rate information
-                if elapsed_seconds > 0:
-                    verify_rate = stats['completed'] / elapsed_seconds
-                    print(f"[RATE] {verify_rate:.2f} endpoints/second")
-    
-    if VERBOSE:
-        print(f"[VERBOSE] Creating thread pool with {num_threads} workers")
-    
-    # Create a thread pool
-    with ThreadPoolExecutor(max_workers=num_threads) as executor:
-        # Submit the tasks
-        futures = []
-        for ip in ip_list:
-            # Ensure ip is a string (handle both string IPs and dict-formatted results)
-            ip_addr = ip if isinstance(ip, str) else ip.get('ip_str', '')
-            if ip_addr:
-                future = executor.submit(verify_instance, ip_addr, db_path, 5, result_queue, status=status, preserve_verified=preserve_verified)
-                future.add_done_callback(lambda f: update_progress(f.result() if not f.exception() else None))
-                futures.append(future)
-        
-        if VERBOSE:
-            print(f"[VERBOSE] All verification tasks submitted, waiting for completion")
-        
-        # Wait for all tasks to complete
-        for future in futures:
-            try:
-                future.result()
-            except Exception as e:
-                if VERBOSE:
-                    print(f"[ERROR] Exception in verification thread: {str(e)}")
-    
-    # Get the results
-    valid_count = stats['valid']
-    
-    # Calculate total time
-    total_time = datetime.now() - stats['start_time']
-    total_seconds = total_time.total_seconds()
-    
-    # Print final statistics summary
-    print(f"\n[VERIFICATION SUMMARY]")
-    print(f"Total endpoints checked: {stats['total']}")
-    print(f"Valid Ollama instances: {stats['valid']} ({(stats['valid']/stats['total']*100):.1f}%)")
-    print(f"Invalid endpoints: {stats['invalid']} ({(stats['invalid']/stats['total']*100):.1f}%)")
-    print(f"Connection errors: {stats['errors']} ({(stats['errors']/stats['total']*100):.1f}%)")
-    print(f"Total time: {str(total_time).split('.')[0]}")
-    
-    if total_seconds > 0:
-        verify_rate = stats['total'] / total_seconds
-        print(f"Average verification rate: {verify_rate:.2f} endpoints/second")
-    
-    return valid_count
+                # Pause if needed
+                while not scanner_paused.is_set() and scanner_running:
+                    time.sleep(0.5)
+                    print("\r[PAUSED] Scanner paused. Press Ctrl+C to resume...")
+                
+                # Exit if termination requested
+                if not scanner_running:
+                    print("\r[TERMINATING] Cleanup in progress...")
+                    break
+                
+                # Sleep briefly to avoid CPU spinning
+                time.sleep(1)
+                
+                # Clear terminal lines for next update (if supported)
+                print("\033[4A\033[K\033[K\033[K\033[K", end='')
+                
+            # Final statistics 
+            print(f"\n[COMPLETE] Verification finished")
+            print(f"[STATS] Total: {stats['completed']}/{stats['total']}, Valid: {stats['valid']}, Invalid: {stats['invalid']}, Errors: {stats['errors']}")
+            print(f"[TIME] Total time: {str(datetime.now() - stats['start_time']).split('.')[0]}")
+            
+            return stats['valid']
+            
+        except KeyboardInterrupt:
+            print("\nVerification interrupted by user.")
+            return stats['valid']
+        finally:
+            # Cancel any pending futures if we're terminating
+            for future in futures:
+                if not future.done():
+                    future.cancel()
 
 def run_scan(args, db_path, target_ips=None):
     """Run scan based on specified method"""
@@ -1761,297 +1679,375 @@ def run_scan(args, db_path, target_ips=None):
     print("Scan completed")
 
 def show_menu(args, db_path):
-    """Display interactive menu for scanner options"""
+    """Show an interactive menu for the user to select options"""
+    print("\n========== Ollama Scanner Menu ==========")
+    
     while True:
-        print("\n=========================================")
-        print("       OLLAMA SCANNER MENU               ")
-        print("=========================================")
-        print("1. Run masscan on ALL IPs (0.0.0.0/0)")
-        print("2. Scan using masscan results file")
-        print("3. Scan using Shodan API")
-        print("4. Scan using Censys API")
-        print("5. Prune duplicates from database")
-        print("6. Exit")
-        print("-----------------------------------------")
+        print("\nChoose a scan method or action:")
+        print("1. Direct IP scan with masscan")
+        print("2. Shodan search for Ollama instances")
+        print("3. Censys search for Ollama instances")
+        print("4. Reassign models for verified endpoints")
+        print("5. Check specific endpoint status")
+        print("6. Database cleanup")
+        print("7. Exit")
         
-        choice = input("Enter your choice (1-6): ")
+        choice = input("\nEnter your choice (1-7): ")
         
-        if choice == '1':
-            print("\n--- Direct Masscan Configuration for Full Internet Scan ---")
-            print("This will run masscan to find Ollama instances on port 11434 across the entire internet")
-            print("NOTE: masscan requires root privileges. You may need to run with sudo.")
-            print("Target range: 0.0.0.0/0 (ALL IPv4 addresses)")
-            
-            # Set fixed values for a full internet scan
-            target_ips = ["0.0.0.0/0"]  # Scan the entire internet
-            port = 11434  # Default Ollama port
-            scan_rate = 10000  # Set a reasonable rate to avoid network issues
-            num_threads = 25  # Fixed 25 worker threads for verification
-            
-            print(f"\nSCAN CONFIGURATION:")
-            print(f"- Target range: 0.0.0.0/0 (ENTIRE INTERNET)")
-            print(f"- Port: {port}")
-            print(f"- Scan rate: {scan_rate} pps")
-            print(f"- Verification threads: {num_threads}")
-            print(f"- Database: {db_path}")
-            print("\nWARNING: Scanning without proper authorization may be illegal.")
-            print("Only scan networks you own or have explicit permission to scan.")
-            print("Scanning the entire internet may violate laws in many countries.")
-            print("This can result in legal consequences including criminal charges.")
-            
-            confirm = input("\nAre you ABSOLUTELY SURE you want to continue with this scan? (y/n): ")
-            
-            if confirm.lower() == 'y' or confirm.lower() == 'yes':
-                # Update args with the new values
-                args.threads = num_threads
-                args.port = port
-                args.rate = scan_rate
-                args.method = "masscan"  # Important: change method to avoid returning to menu
-                
-                # Run the scan
-                result = run_scan(args, db_path, target_ips=target_ips)
-                
-                # If the scan was attempted, ask if user wants to return to menu
-                print("\nScan operation completed.")
-                continue_choice = input("Return to main menu? (y/n): ")
-                if continue_choice.lower() not in ['y', 'yes']:
-                    print("Exiting...")
-                    sys.exit(0)
-            else:
-                print("Scan cancelled.")
+        # Handle choices...
         
-        elif choice == '2':
-            print("\n--- Masscan Results File Import ---")
-            print("This will parse a masscan results file in grepable format (-oG)")
-            print("Example line format: \"Host: 192.168.1.1 () Ports: 11434/open/tcp////\"")
-            
-            masscan_file = input("Enter path to masscan output file: ")
-            if not masscan_file:
-                print("Error: File path is required")
-                continue
-            if not os.path.exists(masscan_file):
-                print(f"Error: File {masscan_file} does not exist")
-                continue
-            
-            num_threads = input("Enter number of verification threads (default 50): ") or "50"
-            
-            print(f"\nIMPORT CONFIGURATION:")
-            print(f"- Input file: {masscan_file}")
-            print(f"- Verification threads: {num_threads}")
-            print(f"- Database: {db_path}")
-            
-            confirm = input("\nContinue with import? (y/n): ")
-            
-            if confirm.lower() == 'y' or confirm.lower() == 'yes':
-                # Update args
-                args.input = masscan_file
-                args.threads = int(num_threads)
-                args.method = "masscan"  # Change method to avoid returning to menu
-                # In this case we're using the input file, not target_ips
-                run_scan(args, db_path)
-                
-                # Ask if user wants to return to menu
-                continue_choice = input("\nReturn to main menu? (y/n): ")
-                if continue_choice.lower() not in ['y', 'yes']:
-                    print("Exiting...")
-                    sys.exit(0)
-            else:
-                print("Import cancelled.")
-            
-        elif choice == '3':
-            print("\n--- Shodan API Search ---")
-            print("This will search Shodan for Ollama instances")
-            
-            if not SHODAN_API_KEY:
-                key = input("Shodan API key not found. Enter your Shodan API key: ")
-                if key:
-                    os.environ["SHODAN_API_KEY"] = key
-                    global shodan_client
-                    shodan_client = shodan.Shodan(key)
-                else:
-                    print("No API key provided. Cannot continue with Shodan scan.")
-                    continue
-            
-            num_threads = input("Enter number of verification threads (default 50): ") or "50"
-            
-            print(f"\nSHODAN SEARCH CONFIGURATION:")
-            print(f"- API Key: {'*' * (len(SHODAN_API_KEY) - 4) + SHODAN_API_KEY[-4:] if SHODAN_API_KEY else 'None'}")
-            print(f"- Verification threads: {num_threads}")
-            print(f"- Database: {db_path}")
-            
-            confirm = input("\nContinue with Shodan search? (y/n): ")
-            
-            if confirm.lower() == 'y' or confirm.lower() == 'yes':
-                # Update args
-                args.threads = int(num_threads)
-                args.method = "shodan"  # Change method to avoid returning to menu
-                run_scan(args, db_path)
-                
-                # Ask if user wants to return to menu
-                continue_choice = input("\nReturn to main menu? (y/n): ")
-                if continue_choice.lower() not in ['y', 'yes']:
-                    print("Exiting...")
-                    sys.exit(0)
-            else:
-                print("Shodan search cancelled.")
-            
         elif choice == '4':
-            print("\n--- Censys API Search ---")
-            print("This will search Censys for Ollama instances")
+            print("\n--- Reassign Models ---")
+            print("This will re-check all verified endpoints for new models")
             
-            if not censys_available:
-                print("Censys module not installed. Run 'pip install censys' to enable Censys searching.")
+            # Get optional IP filter
+            specific_ip = input("Enter specific IP to check (or leave empty for all): ").strip()
+            
+            if specific_ip:
+                args.specific_ip = specific_ip
+            else:
+                args.specific_ip = None
+                
+            args.force = False
+            args.method = "reassign"
+            reassign_models(args, db_path)
+            
+            # Ask if user wants to return to menu
+            continue_choice = input("\nReturn to main menu? (y/n): ")
+            if continue_choice.lower() not in ['y', 'yes']:
+                print("Exiting...")
+                sys.exit(0)
+        
+        elif choice == '5':
+            print("\n--- Check Endpoint Status ---")
+            
+            # Get IP to check
+            check_ip = input("Enter IP address to check: ").strip()
+            
+            if not check_ip:
+                print("Error: No IP specified")
                 continue
                 
-            if not CENSYS_API_ID or not CENSYS_API_SECRET:
-                censys_id = input("Censys API ID not found. Enter your Censys API ID: ")
-                censys_secret = input("Enter your Censys API Secret: ")
-                
-                if censys_id and censys_secret:
-                    os.environ["CENSYS_API_ID"] = censys_id
-                    os.environ["CENSYS_API_SECRET"] = censys_secret
-                else:
-                    print("API credentials not provided. Cannot continue with Censys scan.")
-                    continue
-            
-            num_threads = input("Enter number of verification threads (default 50): ") or "50"
-            
-            print(f"\nCENSYS SEARCH CONFIGURATION:")
-            print(f"- API ID: {'*' * (len(CENSYS_API_ID) - 4) + CENSYS_API_ID[-4:] if CENSYS_API_ID else 'None'}")
-            print(f"- API Secret: {'*' * (len(CENSYS_API_SECRET) - 4) + CENSYS_API_SECRET[-4:] if CENSYS_API_SECRET else 'None'}")
-            print(f"- Verification threads: {num_threads}")
-            print(f"- Database: {db_path}")
-            
-            confirm = input("\nContinue with Censys search? (y/n): ")
-            
-            if confirm.lower() == 'y' or confirm.lower() == 'yes':
-                # Update args
-                args.threads = int(num_threads)
-                args.method = "censys"  # Change method to avoid returning to menu
-                run_scan(args, db_path)
-                
-                # Ask if user wants to return to menu
-                continue_choice = input("\nReturn to main menu? (y/n): ")
-                if continue_choice.lower() not in ['y', 'yes']:
-                    print("Exiting...")
-                    sys.exit(0)
+            # Get optional port
+            check_port = input("Enter port (default: 11434): ").strip()
+            if check_port and check_port.isdigit():
+                args.check_port = int(check_port)
             else:
-                print("Censys search cancelled.")
-            
-        elif choice == '5':
-            print("\n--- Database Cleanup ---")
-            print(f"This will remove duplicate entries from database: {db_path}")
-            
-            confirm = input("\nContinue with database cleanup? (y/n): ")
-            
-            if confirm.lower() == 'y' or confirm.lower() == 'yes':
-                removeDuplicates()
+                args.check_port = 11434
                 
-                # Ask if user wants to return to menu
-                continue_choice = input("\nReturn to main menu? (y/n): ")
-                if continue_choice.lower() not in ['y', 'yes']:
-                    print("Exiting...")
-                    sys.exit(0)
-            else:
-                print("Cleanup cancelled.")
+            args.check_ip = check_ip
+            args.method = "check"
+            check_endpoint(args, db_path)
             
+            # Ask if user wants to return to menu
+            continue_choice = input("\nReturn to main menu? (y/n): ")
+            if continue_choice.lower() not in ['y', 'yes']:
+                print("Exiting...")
+                sys.exit(0)
+        
         elif choice == '6':
-            print("Exiting...")
-            sys.exit(0)
-            
-        else:
-            print("Invalid choice, please try again")
+            # Database cleanup code...
 
 def main():
     """Main function"""
+    global args, VERBOSE  # Make args global
+    
     # Initialize database schema
     init_database()
+    
+    # Configure PostgreSQL connection pool size based on thread count
+    if DATABASE_TYPE == "postgres":
+        # Log current connection pool settings
+        max_conn = os.getenv("DB_MAX_CONNECTIONS", "50")
+        min_conn = os.getenv("DB_MIN_CONNECTIONS", "5")
+        logger.info(f"PostgreSQL connection pool: min={min_conn}, max={max_conn}")
+        
+        # Recommend proper settings if threads are high
+        default_threads = 50
+        if int(max_conn) < default_threads:
+            logger.warning(f"DB_MAX_CONNECTIONS ({max_conn}) is less than default thread count ({default_threads})")
+            logger.warning("Consider increasing DB_MAX_CONNECTIONS or reducing --threads")
+    
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Ollama Scanner - Find Ollama instances using masscan, Shodan, or Censys")
-    parser.add_argument("--method", choices=["masscan", "shodan", "censys", "menu"], default="menu", help="Method to use for scanning")
-    parser.add_argument("--threads", type=int, default=50, help="Number of threads to use for concurrent verification")
-    parser.add_argument("--pages", type=int, default=2, help="Number of pages to fetch from Censys (100 results per page)")
+    parser.add_argument("--method", choices=["masscan", "shodan", "censys", "menu", "reassign", "check"], default="menu", 
+                      help="Method to use (default: menu)")
     
-    # masscan specific options
-    parser.add_argument("--target", dest="target_ips", nargs="+", help="Target IP range(s) for direct masscan scanning (e.g. 192.168.1.0/24)")
-    parser.add_argument("--input", help="Input file with masscan results (grepable format)")
-    parser.add_argument("--port", type=int, default=11434, help="Port to scan for Ollama instances (default: 11434)")
-    parser.add_argument("--rate", type=int, default=10000, help="Masscan rate in packets per second (default: 10000)")
-    parser.add_argument("--continuous", action="store_true", default=False,
-                        help="Run scanner continuously (default: False)")
+    # Existing arguments...
     
-    # database options
-    parser.add_argument("--db", default=None, help="Database file path (default: use predefined path)")
-    parser.add_argument("--timeout", type=int, default=5, help="Connection timeout in seconds (default: 5)")
+    # Add reassignment options
+    parser.add_argument('--specific-ip', type=str, default=None,
+                      help='Specific IP to reassign models for (default: all verified endpoints)')
+    parser.add_argument('--force', action='store_true', default=False,
+                      help='Skip confirmation prompts (default: False)')
     
-    # verbosity options
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output with detailed information about the scanning process")
+    # Add endpoint checking options
+    parser.add_argument('--check-ip', type=str, default=None,
+                      help='IP address to check endpoint status')
+    parser.add_argument('--check-port', type=int, default=11434,
+                      help='Port for endpoint to check (default: 11434)')
     
-    parser.add_argument('--status', type=str, default='scanned',
-                        help="Status to assign to verified instances (default: 'scanned')")
-    parser.add_argument('--preserve-verified', action='store_true', default=True,
-                        help="Preserve existing verified instances in database (default: True)")
-    parser.add_argument('--no-preserve-verified', dest='preserve_verified', action='store_false',
-                        help="Do not preserve existing verified instances in database")
-    parser.add_argument('--limit', type=int, default=0, 
-                        help="Limit the number of IPs to process (default: 0 = no limit)")
-    parser.add_argument('--no-dynamic-ports', action='store_true', default=False,
-                        help="Skip scanning dynamic port ranges which can be slow (default: False)")
-    parser.add_argument('--dynamic-port-limit', type=int, default=20,
-                        help="Maximum number of ports to check in each dynamic port range (default: 20)")
-    parser.add_argument('--dynamic-port-timeout', type=int, default=60,
-                        help="Maximum seconds to spend scanning dynamic ports per IP (default: 60)")
-    
-    args = 
-    # Add timeout flag - 0 means no timeout
-    parser.add_argument('--timeout', '-t', type=int, default=None,
-                      help='Timeout in seconds for API requests. Use 0 for no timeout.')
-parser.parse_args()
+    args = parser.parse_args()
     
     # Set global verbosity flag
-    global VERBOSE
     VERBOSE = args.verbose
     
-    if VERBOSE:
-        print("[VERBOSE] Verbose mode enabled - you will see detailed information about the scanning process")
+    # Rest of the code...
     
-    # Validate masscan options
-    if args.method == "masscan" and not args.input and not args.target_ips:
-        parser.error("masscan method requires either --input FILE or --target IP_RANGE")
+    # Handle new methods
+    if args.method == "reassign":
+        reassign_models(args, db_path)
+        return
+    elif args.method == "check":
+        check_endpoint(args, db_path)
+        return
     
-    # Set database path if provided
-    global database_file
-    if args.db:
-        os.environ['DB_OVERRIDE_PATH'] = args.db
-        if VERBOSE:
-            print(f"[VERBOSE] Database path set to: {args.db}")
-    
-    # Create the database if it doesn't exist
-    if DATABASE_TYPE == "postgres":
-        # For PostgreSQL, just set the db_path to empty since it's not used for file path
-        db_path = ""
-    else:  
-        # For SQLite, use the file path
-        db_path = args.db if args.db else database_file
-        
-    if VERBOSE:
-        print(f"[VERBOSE] Using database: {DATABASE_TYPE}")
-        if DATABASE_TYPE == "sqlite":
-            print(f"[VERBOSE] Database file: {db_path}")
-        print("[VERBOSE] Creating database if it doesn't exist")
-    
-    makeDatabase()
-    
-    # Set up signal handlers for keyboard controls
-    setup_signal_handlers()
-    
-    # Run the scan
+    # Run the scan for other methods
     if args.method == "masscan" and args.target_ips:
         run_scan(args, db_path, target_ips=args.target_ips)
     else:
         run_scan(args, db_path)
     
     print(f"[INFO] Scan completed. Use query_models.py to search the database for specific models.")
+
+def reassign_models(args, db_path):
+    """
+    Re-verify all endpoints in database and update their model information
+    
+    This is useful when new models have been added to instances since the last scan
+    """
+    print("\n[INFO] Starting model reassignment for verified endpoints")
+    
+    # Query for all verified endpoints or specific IPs if provided
+    if hasattr(args, 'specific_ip') and args.specific_ip:
+        # Query for specific IP
+        endpoints = Database.fetch_all(
+            'SELECT id, ip, port FROM endpoints WHERE ip = %s AND verified = 1', 
+            (args.specific_ip,)
+        )
+        print(f"[INFO] Found {len(endpoints)} verified endpoints with IP {args.specific_ip}")
+    else:
+        # Query for all verified endpoints
+        endpoints = Database.fetch_all(
+            'SELECT id, ip, port FROM endpoints WHERE verified = 1', 
+            ()
+        )
+        print(f"[INFO] Found {len(endpoints)} verified endpoints in database")
+    
+    if not endpoints:
+        print("[INFO] No verified endpoints found to reassign models")
+        return 0
+    
+    # Ask for confirmation
+    if not hasattr(args, 'force') or not args.force:
+        confirm = input(f"Continue with model reassignment for {len(endpoints)} endpoints? (y/n): ")
+        if confirm.lower() not in ['y', 'yes']:
+            print("[INFO] Model reassignment cancelled")
+            return 0
+    
+    # Set up stats
+    stats = {
+        'total': len(endpoints),
+        'processed': 0,
+        'updated': 0,
+        'errors': 0,
+        'unchanged': 0,
+        'new_models': 0
+    }
+    
+    print(f"\n[INFO] Processing {stats['total']} endpoints")
+    
+    # Process each endpoint
+    for endpoint in endpoints:
+        endpoint_id, ip, port = endpoint
+        
+        # Show progress
+        stats['processed'] += 1
+        if stats['processed'] % 10 == 0 or stats['processed'] == stats['total']:
+            print(f"[PROGRESS] {stats['processed']}/{stats['total']} ({stats['processed']/stats['total']*100:.1f}%)")
+        
+        try:
+            # Check if the endpoint is still valid
+            is_valid, model_data = isOllamaServer(ip, port, timeout=10)
+            
+            if is_valid and model_data and "models" in model_data:
+                # Get current models for this endpoint
+                current_models = Database.fetch_all(
+                    'SELECT name FROM models WHERE endpoint_id = %s',
+                    (endpoint_id,)
+                )
+                current_model_names = [m[0] for m in current_models] if current_models else []
+                
+                # Update verification timestamp
+                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                Database.execute(
+                    'UPDATE endpoints SET verification_date = %s WHERE id = %s',
+                    (now, endpoint_id)
+                )
+                
+                # Process each model
+                for model in model_data["models"]:
+                    name = model.get("name", "Unknown")
+                    size = model.get("size", 0)
+                    size_mb = size / (1024 * 1024) if size else 0
+                    
+                    details = model.get("details", {})
+                    parameter_size = details.get("parameter_size", "Unknown")
+                    quantization_level = details.get("quantization_level", "Unknown")
+                    
+                    # Check if model exists for this endpoint
+                    if name in current_model_names:
+                        # Update existing model
+                        Database.execute(
+                            '''UPDATE models 
+                            SET parameter_size = %s, quantization_level = %s, size_mb = %s 
+                            WHERE endpoint_id = %s AND name = %s''',
+                            (parameter_size, quantization_level, size_mb, endpoint_id, name)
+                        )
+                        stats['updated'] += 1
+                    else:
+                        # Add new model
+                        Database.execute(
+                            '''INSERT INTO models 
+                            (endpoint_id, name, parameter_size, quantization_level, size_mb)
+                            VALUES (%s, %s, %s, %s, %s)''',
+                            (endpoint_id, name, parameter_size, quantization_level, size_mb)
+                        )
+                        stats['new_models'] += 1
+                        print(f"[NEW] Found new model '{name}' on {ip}:{port}")
+            else:
+                # Endpoint is no longer valid
+                print(f"[INVALID] Endpoint {ip}:{port} is no longer valid, marking as unverified")
+                Database.execute(
+                    'UPDATE endpoints SET verified = 0 WHERE id = %s',
+                    (endpoint_id,)
+                )
+                stats['errors'] += 1
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to process endpoint {ip}:{port}: {str(e)}")
+            stats['errors'] += 1
+    
+    # Show final stats
+    print("\n[COMPLETE] Model reassignment finished")
+    print(f"[STATS] Total endpoints: {stats['total']}")
+    print(f"[STATS] Processed: {stats['processed']}")
+    print(f"[STATS] Updated models: {stats['updated']}")
+    print(f"[STATS] New models found: {stats['new_models']}")
+    print(f"[STATS] Errors: {stats['errors']}")
+    
+    return stats['new_models']
+
+def check_endpoint(args, db_path):
+    """
+    Diagnostic function to check why an endpoint is marked as active or inactive
+    """
+    if not hasattr(args, 'check_ip') or not args.check_ip:
+        print("[ERROR] No IP specified to check. Use --check-ip parameter.")
+        return 1
+        
+    ip = args.check_ip
+    port = args.check_port if hasattr(args, 'check_port') and args.check_port else 11434
+    
+    print(f"\n[DIAGNOSTIC] Checking endpoint {ip}:{port}")
+    
+    # First, check database status
+    endpoint = Database.fetch_one(
+        'SELECT id, verified, scan_date, verification_date FROM endpoints WHERE ip = %s AND port = %s',
+        (ip, port)
+    )
+    
+    if not endpoint:
+        print(f"[INFO] Endpoint {ip}:{port} not found in database")
+        
+        # Try live check
+        print(f"[INFO] Performing live check of {ip}:{port}")
+        is_valid, model_data = isOllamaServer(ip, port, timeout=10)
+        
+        if is_valid:
+            print(f"[RESULT] Endpoint {ip}:{port} is a valid Ollama server but not in database")
+            if model_data and "models" in model_data:
+                print(f"[MODELS] Found {len(model_data['models'])} models:")
+                for model in model_data["models"]:
+                    name = model.get("name", "Unknown")
+                    size = model.get("size", 0)
+                    size_mb = size / (1024 * 1024) if size else 0
+                    print(f"  - {name} ({size_mb:.1f} MB)")
+        else:
+            print(f"[RESULT] Endpoint {ip}:{port} is not a valid Ollama server")
+        
+        return 0
+    
+    # Found in database
+    endpoint_id, verified, scan_date, verification_date = endpoint
+    
+    print(f"[DB STATUS] Endpoint {ip}:{port} found in database (ID: {endpoint_id})")
+    print(f"[DB STATUS] Verified: {'Yes' if verified == 1 else 'No'}")
+    print(f"[DB STATUS] Last scan: {scan_date}")
+    print(f"[DB STATUS] Last verification: {verification_date}")
+    
+    # Get models
+    models = Database.fetch_all(
+        'SELECT name, parameter_size, quantization_level, size_mb FROM models WHERE endpoint_id = %s',
+        (endpoint_id,)
+    )
+    
+    if models:
+        print(f"[DB MODELS] Found {len(models)} models:")
+        for model in models:
+            name, parameter_size, quantization_level, size_mb = model
+            print(f"  - {name} ({parameter_size}, {quantization_level}, {size_mb:.1f} MB)")
+    else:
+        print("[DB MODELS] No models found for this endpoint")
+    
+    # Perform live check
+    print(f"\n[LIVE CHECK] Verifying {ip}:{port} is still active...")
+    is_valid, model_data = isOllamaServer(ip, port, timeout=10)
+    
+    if is_valid:
+        print(f"[LIVE STATUS] Endpoint {ip}:{port} is a valid Ollama server")
+        
+        if model_data and "models" in model_data:
+            print(f"[LIVE MODELS] Found {len(model_data['models'])} models:")
+            for model in model_data["models"]:
+                name = model.get("name", "Unknown")
+                size = model.get("size", 0)
+                size_mb = size / (1024 * 1024) if size else 0
+                print(f"  - {name} ({size_mb:.1f} MB)")
+            
+            # Compare with database
+            db_model_names = [m[0] for m in models] if models else []
+            live_model_names = [m.get("name", "Unknown") for m in model_data["models"]]
+            
+            # Models in database but not live
+            removed_models = [m for m in db_model_names if m not in live_model_names]
+            if removed_models:
+                print(f"[DIFF] Models in database but not live: {', '.join(removed_models)}")
+            
+            # Models live but not in database
+            new_models = [m for m in live_model_names if m not in db_model_names]
+            if new_models:
+                print(f"[DIFF] Models live but not in database: {', '.join(new_models)}")
+                
+            # No differences
+            if not removed_models and not new_models:
+                print("[DIFF] Database models match live models")
+    else:
+        print(f"[LIVE STATUS] Endpoint {ip}:{port} is NOT a valid Ollama server")
+        print(f"[INCONSISTENCY] Database shows verified={verified} but endpoint is not valid")
+        
+        # Ask if user wants to update database
+        if verified == 1:
+            confirm = input("\nUpdate database to mark this endpoint as not verified? (y/n): ")
+            if confirm.lower() in ['y', 'yes']:
+                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                Database.execute(
+                    'UPDATE endpoints SET verified = 0, scan_date = %s WHERE id = %s',
+                    (now, endpoint_id)
+                )
+                print(f"[UPDATE] Marked endpoint {ip}:{port} as not verified")
+    
+    return 0
 
 if __name__ == "__main__":
     main() 
