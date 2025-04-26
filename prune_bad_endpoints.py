@@ -74,7 +74,17 @@ async def get_endpoints_to_prune(batch_size=BATCH_SIZE, offset=0):
     """Get a batch of endpoints that need pruning based on status"""
     try:
         if DATABASE_TYPE == "postgres":
-            if args.retest_all:
+            if args.retest_verified_only:
+                # Process only verified non-honeypot endpoints
+                query = """
+                    SELECT id, ip, port, verified 
+                    FROM endpoints
+                    WHERE verified = 1 AND (is_honeypot = FALSE OR is_honeypot IS NULL)
+                    ORDER BY verification_date ASC NULLS FIRST, scan_date ASC
+                    LIMIT %s OFFSET %s
+                """
+                return Database.fetch_all(query, (batch_size, offset))
+            elif args.retest_all:
                 # Process all endpoints if retest_all is enabled, ordered by oldest verification date first
                 query = """
                     SELECT id, ip, port, verified 
@@ -107,7 +117,17 @@ async def get_endpoints_to_prune(batch_size=BATCH_SIZE, offset=0):
                 return Database.fetch_all(query, (batch_size, offset))
         else:
             # SQLite
-            if args.retest_all:
+            if args.retest_verified_only:
+                # Process only verified non-honeypot endpoints
+                query = """
+                    SELECT id, ip, port, verified 
+                    FROM endpoints
+                    WHERE verified = 1 AND (is_honeypot = 0 OR is_honeypot IS NULL)
+                    ORDER BY verification_date ASC NULLS FIRST, scan_date ASC
+                    LIMIT ? OFFSET ?
+                """
+                return Database.fetch_all(query, (batch_size, offset))
+            elif args.retest_all:
                 # Process all endpoints if retest_all is enabled, ordered by oldest verification date first
                 query = """
                     SELECT id, ip, port, verified 
@@ -147,7 +167,11 @@ async def count_endpoints_to_prune():
     """Count total endpoints that need pruning based on status"""
     try:
         if DATABASE_TYPE == "postgres":
-            if args.retest_all:
+            if args.retest_verified_only:
+                # Count only verified non-honeypot endpoints
+                query = "SELECT COUNT(*) FROM endpoints WHERE verified = 1 AND (is_honeypot = FALSE OR is_honeypot IS NULL)"
+                return Database.fetch_one(query)[0]
+            elif args.retest_all:
                 # Count all endpoints if retest_all is enabled
                 query = "SELECT COUNT(*) FROM endpoints"
                 return Database.fetch_one(query)[0]
@@ -164,7 +188,11 @@ async def count_endpoints_to_prune():
                 return Database.fetch_one(query)[0]
         else:
             # SQLite
-            if args.retest_all:
+            if args.retest_verified_only:
+                # Count only verified non-honeypot endpoints
+                query = "SELECT COUNT(*) FROM endpoints WHERE verified = 1 AND (is_honeypot = 0 OR is_honeypot IS NULL)"
+                return Database.fetch_one(query)[0]
+            elif args.retest_all:
                 # Count all endpoints if retest_all is enabled
                 query = "SELECT COUNT(*) FROM endpoints"
                 return Database.fetch_one(query)[0]
@@ -343,8 +371,17 @@ def mark_endpoint_as_inactive(endpoint_id, reason):
         return False
 
 # Function to check if an Ollama server is accessible
-async def check_endpoint(endpoint_id, ip, port, timeout=TIMEOUT):
-    """Check if an Ollama endpoint is accessible and retrieve model information"""
+async def check_endpoint(endpoint_id, ip, port, timeout=TIMEOUT, specific_model=None):
+    """
+    Check if an Ollama endpoint is accessible and retrieve model information
+    
+    Args:
+        endpoint_id: The ID of the endpoint to check
+        ip: The IP address of the endpoint
+        port: The port of the endpoint
+        timeout: Connection timeout in seconds
+        specific_model: Optional model name to test specifically
+    """
     tags_url = f"http://{ip}:{port}/api/tags"
     
     try:
@@ -368,13 +405,35 @@ async def check_endpoint(endpoint_id, ip, port, timeout=TIMEOUT):
                     # Step 2: Try to send multiple generation requests to validate API compliance
                     logger.info(f"Testing model generation on {ip}:{port}")
                     
-                    # Select the first model to test
-                    model_name = models[0].get("name", "")
-                    if not model_name:
-                        reason = "Invalid model data"
-                        logger.warning(f"Endpoint {ip}:{port} returned invalid model data")
-                        mark_endpoint_failed(endpoint_id, ip, port, reason)
-                        return False, reason
+                    # Select the model to test
+                    if specific_model:
+                        # Check if the specified model exists on this endpoint
+                        model_exists = False
+                        for model in models:
+                            if model.get("name", "") == specific_model:
+                                model_exists = True
+                                break
+                        
+                        if not model_exists:
+                            reason = f"Specified model '{specific_model}' not found on this endpoint"
+                            logger.warning(f"Endpoint {ip}:{port}: {reason}")
+                            if args.debug_model_only:
+                                # Just report the status, don't mark as failed if we're just testing a specific model
+                                return False, reason
+                            else:
+                                mark_endpoint_failed(endpoint_id, ip, port, reason)
+                                return False, reason
+                        
+                        model_name = specific_model
+                        logger.info(f"Using specified model: {model_name}")
+                    else:
+                        # Select the first model to test
+                        model_name = models[0].get("name", "")
+                        if not model_name:
+                            reason = "Invalid model data"
+                            logger.warning(f"Endpoint {ip}:{port} returned invalid model data")
+                            mark_endpoint_failed(endpoint_id, ip, port, reason)
+                            return False, reason
                     
                     # Test with multiple prompts for more reliable detection
                     prompts = [
@@ -509,50 +568,69 @@ async def check_endpoint(endpoint_id, ip, port, timeout=TIMEOUT):
                         # Check if the majority of prompts triggered honeypot detection
                         honeypot_ratio = honeypot_detections / len(all_responses)
                         
-                        if honeypot_ratio >= 0.5:  # If 50% or more responses appear to be from a honeypot
-                            reason = f"Response appears to be from a honeypot ({honeypot_detections}/{len(all_responses)} prompts triggered detection)"
-                            logger.warning(f"Endpoint {ip}:{port} likely honeypot - Response ratio: {honeypot_ratio:.2f}")
-                            # Mark as honeypot in the database
-                            mark_endpoint_as_honeypot(endpoint_id, reason)
+                        # Check for additional honeypot indicators across all responses
+                        all_responses_text = " ".join(all_responses)
+                        all_short_responses = all(len(response.strip()) < 5 for response in all_responses)
+                        all_gibberish = all(has_high_gibberish_ratio(response) for response in all_responses)
+                        
+                        # Additional honeypot check for suspiciously short responses or all gibberish responses
+                        if all_short_responses or all_gibberish or honeypot_ratio >= 0.5:
+                            if all_short_responses:
+                                reason = f"All responses suspiciously short (possible honeypot)"
+                            elif all_gibberish:
+                                reason = f"All responses appear to be gibberish (possible honeypot)"
+                            else:
+                                reason = f"Response appears to be from a honeypot ({honeypot_detections}/{len(all_responses)} prompts triggered detection)"
+                                
+                            logger.warning(f"Endpoint {ip}:{port} likely honeypot - {reason}")
+                            # Mark as honeypot in the database (unless we're just testing a specific model)
+                            if not args.debug_model_only:
+                                mark_endpoint_as_honeypot(endpoint_id, reason)
                             return False, reason
                         
                         # Process models and mark as verified if it's not a honeypot
                         logger.info(f"Endpoint {ip}:{port} validation successful")
-                        mark_endpoint_verified(endpoint_id, ip, port)
-                        process_models(endpoint_id, ip, port, models)
+                        if not args.debug_model_only:
+                            mark_endpoint_verified(endpoint_id, ip, port)
+                            process_models(endpoint_id, ip, port, models)
                         return True, f"Verified: {len(models)} models found, generation test passed"
                     else:
                         # No responses received
                         reason = "No responses received from generation tests"
                         logger.warning(f"Endpoint {ip}:{port} failed: {reason}")
-                        mark_endpoint_failed(endpoint_id, ip, port, reason)
+                        if not args.debug_model_only:
+                            mark_endpoint_failed(endpoint_id, ip, port, reason)
                         return False, reason
                 else:
                     # Failed with HTTP error
                     reason = f"HTTP error: {response.status}"
                     logger.warning(f"Endpoint {ip}:{port} /api/tags request failed: {reason}")
                     
-                    # Mark as inactive in the database if it's a 404 or similar error
-                    if response.status in [404, 403, 401, 500]:
-                        mark_endpoint_as_inactive(endpoint_id, reason)
-                    else:
-                        mark_endpoint_failed(endpoint_id, ip, port, reason)
+                    # Mark as inactive in the database (unless we're just testing a specific model)
+                    if not args.debug_model_only:
+                        if response.status in [404, 403, 401, 500]:
+                            mark_endpoint_as_inactive(endpoint_id, reason)
+                        else:
+                            mark_endpoint_failed(endpoint_id, ip, port, reason)
                     
                     return False, reason
     except asyncio.TimeoutError:
         reason = f"Connection timeout ({timeout}s)"
         logger.warning(f"Endpoint {ip}:{port} timed out after {timeout}s")
-        mark_endpoint_as_inactive(endpoint_id, reason)
+        if not args.debug_model_only:
+            mark_endpoint_as_inactive(endpoint_id, reason)
         return False, reason
     except aiohttp.ClientError as e:
         reason = f"Connection error: {str(e)}"
         logger.warning(f"Endpoint {ip}:{port} connection error: {str(e)}")
-        mark_endpoint_as_inactive(endpoint_id, reason)
+        if not args.debug_model_only:
+            mark_endpoint_as_inactive(endpoint_id, reason)
         return False, reason
     except Exception as e:
         reason = f"Unexpected error: {str(e)}"
         logger.error(f"Endpoint {ip}:{port} unexpected error: {str(e)}")
-        mark_endpoint_failed(endpoint_id, ip, port, reason)
+        if not args.debug_model_only:
+            mark_endpoint_failed(endpoint_id, ip, port, reason)
         return False, reason
 
 # Function to check if a response appears to be from a honeypot
@@ -564,6 +642,11 @@ def is_likely_honeypot_response(text):
     if not text:
         logger.debug("Empty response detected - suspicious")
         return True  # Empty response is suspicious
+    
+    # Check for very short responses (less than 3 characters), which are often from honeypots
+    if len(text.strip()) < 3:
+        logger.debug(f"Suspiciously short response: '{text}' - possible honeypot")
+        return True
     
     # Check for common honeypot patterns
     honeypot_indicators = [
@@ -595,7 +678,15 @@ def is_likely_honeypot_response(text):
         
         # Common log indicators
         "[INFO]", "[DEBUG]", "[ERROR]", "[WARNING]",
-        "INFO:", "DEBUG:", "ERROR:", "WARNING:"
+        "INFO:", "DEBUG:", "ERROR:", "WARNING:",
+        "__main__",  # Common in Python log outputs
+        
+        # Tokens/speed indicators that shouldn't be in responses
+        "tokens/sec",
+        "total time:",
+        "Tokens:",
+        "speed:",
+        "tokens/"
     ]
     
     # Check for any obvious indicators
@@ -639,22 +730,36 @@ def is_likely_honeypot_response(text):
             logger.debug(f"Sensitive information pattern found: '{pattern}'")
             return True
     
-    # Check for gibberish/random text followed by normal text (a common pattern)
-    if len(text) > 100:
-        # Split into first and second half
-        first_half = text[:len(text)//2]
-        second_half = text[len(text)//2:]
-        
-        # If first half is mostly gibberish and second half has normal words
-        if has_high_gibberish_ratio(first_half) and not has_high_gibberish_ratio(second_half):
-            logger.debug("Honeypot pattern detected: gibberish followed by normal text")
-            return True
+    # Check for log content following gibberish (common honeypot pattern)
+    log_content_after_gibberish = r'[a-z0-9]{10,}\s+.*\d{4}-\d{2}-\d{2}'
+    if re.search(log_content_after_gibberish, text, re.IGNORECASE):
+        logger.debug("Detected log content after gibberish text (honeypot pattern)")
+        return True
+    
+    # Check for large amount of alphanumeric gibberish (honeypot signature)
+    # This catches responses like "bltq8mjk7mfoqoa nbfcr3pncsip 6fomrsi7t fr3m..."
+    gibberish_pattern = r'(?:[a-z0-9]{5,}\s+){3,}'
+    if re.search(gibberish_pattern, text.lower()):
+        # Further analyze the words
+        words = text.split()
+        if len(words) >= 5:  # Need enough words to analyze
+            gibberish_words = 0
+            for word in words[:10]:  # Check first 10 words
+                # Count words that appear to be random
+                if len(word) >= 5 and re.match(r'^[a-z0-9]+$', word.lower()) and not has_vowels(word):
+                    gibberish_words += 1
+                elif len(word) >= 6 and re.match(r'^[a-z0-9]+$', word.lower()) and sum(1 for c in word if c.isdigit()) >= 1:
+                    gibberish_words += 1
+            
+            if gibberish_words >= 3:  # If several gibberish words at start
+                logger.debug(f"High density of gibberish alphanumeric tokens detected: {gibberish_words}/10 words")
+                return True
     
     # Check for gibberish/random text
     # Count intelligible words vs random character sequences
     words = text.split()
     if len(words) < 3:
-        return False  # Too short to analyze
+        return False  # Too short to analyze (but not empty)
     
     # Check percentage of words that appear random/gibberish
     gibberish_count = 0
@@ -672,7 +777,7 @@ def is_likely_honeypot_response(text):
             gibberish_count += 1
             is_gibberish = True
         # Check for random character strings with mixed numbers and letters
-        elif len(word) > 8 and sum(1 for c in word if c.isdigit()) > 1 and sum(1 for c in word if c.isalpha()) > 1:
+        elif len(word) > 5 and sum(1 for c in word if c.isdigit()) > 0 and sum(1 for c in word if c.isalpha()) > 3:
             gibberish_count += 1
             is_gibberish = True
             
@@ -685,34 +790,9 @@ def is_likely_honeypot_response(text):
     if gibberish_words and logger.isEnabledFor(logging.DEBUG):
         logger.debug(f"Examples of suspicious gibberish words: {', '.join(gibberish_words[:5])}")
     
-    # If more than 30% of words appear to be gibberish, it's likely a honeypot
-    if gibberish_ratio > 0.3:
+    # If more than 30% of words appear to be gibberish and there are at least 3 gibberish words, it's likely a honeypot
+    if gibberish_ratio > 0.3 and gibberish_count >= 3:
         logger.debug(f"Honeypot detected: high gibberish ratio {gibberish_ratio:.2f}")
-        return True
-    
-    # Enhanced check for mixed content in sections
-    sections = re.split(r'[.!?\n]+', text)
-    mixed_content_sections = 0
-    
-    for section in sections:
-        if len(section.strip()) < 10:
-            continue
-        
-        # Check for sections with mixed gibberish and normal text
-        section_words = section.strip().split()
-        if section_words:
-            gibberish_words_in_section = sum(1 for word in section_words 
-                if (len(word) > 7 and all(c.isalpha() for c in word) and not has_vowels(word))
-                or (len(word) > 8 and sum(1 for c in word if c.isdigit()) > 1 
-                    and sum(1 for c in word if c.isalpha()) > 1))
-            
-            # If we have some gibberish words but not all words are gibberish
-            if 0 < gibberish_words_in_section < len(section_words):
-                mixed_content_sections += 1
-    
-    # If we have multiple sections with mixed content, it's likely a honeypot
-    if mixed_content_sections >= 2 or (len(sections) > 0 and mixed_content_sections / len(sections) > 0.25):
-        logger.debug(f"Honeypot detected: {mixed_content_sections} sections with mixed gibberish and normal content")
         return True
         
     return False
@@ -787,10 +867,10 @@ async def check_endpoints(endpoints, timeout=TIMEOUT, max_concurrent=MAX_CONCURR
     async def _check_with_semaphore(endpoint):
         endpoint_id, ip, port, status = endpoint
         async with semaphore:
-            return await check_endpoint(endpoint_id, ip, port, timeout)
+            return await check_endpoint(endpoint_id, ip, port, timeout, args.model)
     
     total = len(endpoints)
-    logger.info(f"Checking {total} endpoints with timeout {timeout}s")
+    logger.info(f"Checking {total} endpoints with timeout {timeout}s" + (f" using model {args.model}" if args.model else ""))
     
     tasks = []
     for endpoint in endpoints:
@@ -904,6 +984,72 @@ async def prune_endpoints_batch():
     
     return total_verified, total_failed, total_errors
 
+# Function to handle testing with a specific model across multiple endpoints
+async def test_model_across_endpoints(model_name, batch_size=BATCH_SIZE, timeout=TIMEOUT):
+    """
+    Test a specific model across all endpoints that have it available
+    Returns counts of success and failure
+    """
+    logger.info(f"Testing model {model_name} across all endpoints")
+    
+    # First, find all endpoints that report having this model
+    try:
+        if DATABASE_TYPE == "postgres":
+            # Using a subquery approach to fix the DISTINCT/ORDER BY issue
+            query = """
+                SELECT e.id, e.ip, e.port, e.verified 
+                FROM endpoints e
+                JOIN models m ON e.id = m.endpoint_id
+                WHERE m.name = %s AND (e.is_honeypot IS NULL OR e.is_honeypot = FALSE)
+                GROUP BY e.id, e.ip, e.port, e.verified
+                ORDER BY MIN(COALESCE(e.verification_date, '1970-01-01'::timestamp)) ASC, 
+                         MIN(e.scan_date) ASC
+            """
+            endpoints = Database.fetch_all(query, (model_name,))
+        else:
+            # SQLite
+            query = """
+                SELECT DISTINCT e.id, e.ip, e.port, e.verified 
+                FROM endpoints e
+                JOIN models m ON e.id = m.endpoint_id
+                WHERE m.name = ? AND (e.is_honeypot IS NULL OR e.is_honeypot = 0)
+                ORDER BY e.verification_date ASC, e.scan_date ASC
+            """
+            endpoints = Database.fetch_all(query, (model_name,))
+    except Exception as e:
+        logger.error(f"Error finding endpoints with model {model_name}: {e}")
+        return 0, 0, 0
+    
+    total_endpoints = len(endpoints)
+    if total_endpoints == 0:
+        logger.info(f"No endpoints found with model {model_name}")
+        return 0, 0, 0
+    
+    logger.info(f"Found {total_endpoints} endpoints with model {model_name}")
+    
+    # Process in batches
+    success_count = 0
+    fail_count = 0
+    error_count = 0
+    
+    for i in range(0, total_endpoints, batch_size):
+        batch = endpoints[i:i+batch_size]
+        logger.info(f"Testing batch {i//batch_size + 1} of {(total_endpoints + batch_size - 1)//batch_size} ({len(batch)} endpoints)")
+        
+        # Check endpoints in this batch
+        verified, failed, errors = await check_endpoints(
+            batch,
+            timeout=timeout,
+            max_concurrent=args.workers
+        )
+        
+        success_count += verified
+        fail_count += failed
+        error_count += errors
+        
+    logger.info(f"Model {model_name} test complete: {success_count} working, {fail_count} failed, {error_count} errors")
+    return success_count, fail_count, error_count
+
 # Command line interface
 def main():
     global args
@@ -917,6 +1063,7 @@ def main():
     parser.add_argument('--fail-status', default='failed', help='Status to assign to non-working endpoints')
     parser.add_argument('--force', action='store_true', help='Process all endpoints regardless of current status')
     parser.add_argument('--retest-all', action='store_true', help='Retest ALL endpoints regardless of previous status, oldest verification first')
+    parser.add_argument('--retest-verified-only', action='store_true', help='Retest only verified non-honeypot endpoints')
     parser.add_argument('--timeout', type=int, default=TIMEOUT, help=f"Connection timeout in seconds (default: {TIMEOUT})")
     parser.add_argument('--workers', type=int, default=MAX_CONCURRENT_REQUESTS, help=f"Maximum concurrent workers (default: {MAX_CONCURRENT_REQUESTS})")
     parser.add_argument('--batch-size', type=int, default=BATCH_SIZE, help=f"Number of endpoints to process in each batch (default: {BATCH_SIZE})")
@@ -925,6 +1072,9 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true', help="Enable verbose output")
     parser.add_argument('--debug-endpoint', help='Debug a specific endpoint (format: IP:PORT)')
     parser.add_argument('--debug-response', action='store_true', help='Save full response content to a debug file')
+    parser.add_argument('--model', help='Specify a model name to test with (if available on the endpoint)')
+    parser.add_argument('--debug-model-only', action='store_true', help='Only test if the specified model works, do not update endpoint status')
+    parser.add_argument('--test-model-all-endpoints', action='store_true', help='Test the specified model across all endpoints that have it available')
     args = parser.parse_args()
     
     # Set logging level based on verbosity
@@ -934,12 +1084,28 @@ def main():
             handler.setLevel(logging.DEBUG)
         logger.debug("Verbose logging enabled")
     
+    # Check if we're testing a specific model across all endpoints
+    if args.test_model_all_endpoints:
+        if not args.model:
+            logger.error("You must specify a model name with --model when using --test-model-all-endpoints")
+            print("\nERROR: You must specify a model name with --model when using --test-model-all-endpoints")
+            return 1
+            
+        logger.info(f"Testing model {args.model} across all available endpoints")
+        success_count, fail_count, error_count = asyncio.run(test_model_across_endpoints(args.model, args.batch_size, args.timeout))
+        
+        print(f"\nModel Test Summary for {args.model}:")
+        print(f"- Working endpoints: {success_count}")
+        print(f"- Failed endpoints: {fail_count}")
+        print(f"- Errors: {error_count}")
+        return 0
+    
     # Check if we should test a specific endpoint
     if args.debug_endpoint:
         try:
             ip, port = args.debug_endpoint.split(':')
             port = int(port)
-            logger.info(f"DEBUG MODE: Testing specific endpoint {ip}:{port}")
+            logger.info(f"DEBUG MODE: Testing specific endpoint {ip}:{port}" + (f" with model {args.model}" if args.model else ""))
             
             # Find endpoint in the database
             endpoint_info = Database.fetch_one(
@@ -952,7 +1118,7 @@ def main():
                 logger.info(f"Found endpoint ID: {endpoint_id}, verified: {verified}, is_honeypot: {is_honeypot}, reason: {reason}")
                 
                 # Test the endpoint
-                success, result = asyncio.run(check_endpoint(endpoint_id, ip, port, timeout=args.timeout))
+                success, result = asyncio.run(check_endpoint(endpoint_id, ip, port, timeout=args.timeout, specific_model=args.model))
                 
                 # Get updated status
                 updated_info = Database.fetch_one(
@@ -971,6 +1137,8 @@ def main():
                 print(f"- Updated status: verified={new_verified}, is_honeypot={new_is_honeypot}")
                 print(f"- Test result: {'SUCCESS' if success else 'FAILED'}")
                 print(f"- Reason: {result}")
+                if args.model:
+                    print(f"- Model tested: {args.model}")
                 
                 return 0
             else:
@@ -1002,6 +1170,8 @@ def main():
     print(f"- Verified endpoints: {verified_count}")
     print(f"- Failed endpoints: {failed_count}")
     print(f"- Errors: {error_count}")
+    if args.model:
+        print(f"- Model tested: {args.model}")
     
     if args.dry_run:
         print("\nNOTE: This was a dry run. No changes were made to the database.")
