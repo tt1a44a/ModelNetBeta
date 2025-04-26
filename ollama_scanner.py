@@ -566,9 +566,9 @@ def process_server(result, total_count, current_index, stats, status="scanned", 
                 
                 # Get the endpoint ID from the database
                 if DATABASE_TYPE == "postgres":
-                    endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, test_port))
+                    endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, test_port))
                 else:
-                    endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, test_port))
+                    endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, test_port))
                 
                 if endpoint_row:
                     endpoint_id = endpoint_row[0]
@@ -664,9 +664,9 @@ def process_server(result, total_count, current_index, stats, status="scanned", 
                             
                             # Get the endpoint ID
                             if DATABASE_TYPE == "postgres":
-                                endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, dynamic_port))
+                                endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, dynamic_port))
                             else:
-                                endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = ? AND port = ?', (ip, dynamic_port))
+                                endpoint_row = Database.fetch_one('SELECT id FROM endpoints WHERE ip = %s AND port = %s', (ip, dynamic_port))
                             
                             if endpoint_row:
                                 endpoint_id = endpoint_row[0]
@@ -1694,8 +1694,63 @@ def show_menu(args, db_path):
         
         choice = input("\nEnter your choice (1-7): ")
         
-        # Handle choices...
-        
+        if choice == '1':
+            print("\n--- Direct IP scan with masscan ---")
+            # Ask for target IPs
+            target_ips_str = input("Enter target IP ranges (comma separated, e.g. 192.168.1.0/24,10.0.0.0/16): ")
+            target_ips = [ip.strip() for ip in target_ips_str.split(',') if ip.strip()]
+            
+            if not target_ips:
+                print("Error: No target IPs specified")
+                continue
+                
+            # Ask for scan rate
+            scan_rate = input("Enter scan rate in packets per second (default: 10000): ")
+            args.rate = int(scan_rate) if scan_rate.isdigit() else 10000
+            
+            # Set other arguments
+            args.method = "masscan"
+            args.target_ips = target_ips
+            run_scan(args, db_path, target_ips=target_ips)
+            
+        elif choice == '2':
+            print("\n--- Shodan search for Ollama instances ---")
+            if not SHODAN_API_KEY:
+                print("Error: Shodan API key not configured")
+                print("Please set SHODAN_API_KEY in your environment or .env file")
+                continue
+                
+            # Ask for max results
+            max_results = input("Enter maximum number of results to process (default: 1000): ")
+            args.limit = int(max_results) if max_results.isdigit() else 1000
+            
+            # Ask for number of pages
+            pages = input("Enter number of Shodan pages to fetch (default: 10): ")
+            args.pages = int(pages) if pages.isdigit() else 10
+            
+            # Set arguments
+            args.method = "shodan"
+            run_scan(args, db_path)
+            
+        elif choice == '3':
+            print("\n--- Censys search for Ollama instances ---")
+            if not censys_available:
+                print("Error: Censys module not installed. Install with: pip install censys")
+                continue
+                
+            if not CENSYS_API_ID or not CENSYS_API_SECRET:
+                print("Error: Censys API credentials not configured")
+                print("Please set CENSYS_API_ID and CENSYS_API_SECRET in your environment or .env file")
+                continue
+                
+            # Ask for max results
+            max_results = input("Enter maximum number of results to process (default: 1000): ")
+            args.limit = int(max_results) if max_results.isdigit() else 1000
+            
+            # Set arguments
+            args.method = "censys"
+            run_scan(args, db_path)
+            
         elif choice == '4':
             print("\n--- Reassign Models ---")
             print("This will re-check all verified endpoints for new models")
@@ -1746,7 +1801,20 @@ def show_menu(args, db_path):
                 sys.exit(0)
         
         elif choice == '6':
-            # Database cleanup code...
+            print("\n--- Database Cleanup ---")
+            print("This will remove duplicate entries from the database")
+            
+            confirm = input("Are you sure you want to proceed? (y/n): ")
+            if confirm.lower() in ['y', 'yes']:
+                removeDuplicates()
+                print("Database cleanup completed")
+            
+        elif choice == '7':
+            print("Exiting...")
+            return
+            
+        else:
+            print(f"Invalid choice: {choice}")
 
 def main():
     """Main function"""
@@ -1754,6 +1822,9 @@ def main():
     
     # Initialize database schema
     init_database()
+    
+    # Define db_path for compatibility
+    db_path = os.getenv("SQLITE_DB_PATH", "ollama_instances.db")
     
     # Configure PostgreSQL connection pool size based on thread count
     if DATABASE_TYPE == "postgres":
@@ -1773,7 +1844,37 @@ def main():
     parser.add_argument("--method", choices=["masscan", "shodan", "censys", "menu", "reassign", "check"], default="menu", 
                       help="Method to use (default: menu)")
     
-    # Existing arguments...
+    # Add scanning options
+    parser.add_argument('--limit', type=int, default=1000,
+                      help='Maximum number of results to process (default: 1000)')
+    parser.add_argument('--threads', type=int, default=50,
+                      help='Number of concurrent threads for verification (default: 50)')
+    parser.add_argument('--timeout', type=int, default=5,
+                      help='Connection timeout in seconds (default: 5)')
+    parser.add_argument('--rate', type=int, default=10000,
+                      help='Masscan rate in packets per second (default: 10000)')
+    parser.add_argument('--port', type=int, default=11434,
+                      help='Port to scan (default: 11434)')
+    parser.add_argument('--pages', type=int, default=10,
+                      help='Number of Shodan/Censys pages to fetch (default: 10)')
+    parser.add_argument('--input', type=str, default=None,
+                      help='Input file for masscan results (default: None)')
+    parser.add_argument('--target-ips', nargs='+', default=None,
+                      help='Target IP ranges for masscan (default: None)')
+    parser.add_argument('--no-dynamic-ports', action='store_true', default=False,
+                      help='Disable dynamic port scanning (default: False)')
+    parser.add_argument('--dynamic-port-limit', type=int, default=100,
+                      help='Maximum number of dynamic ports to scan per range (default: 100)')
+    parser.add_argument('--dynamic-port-timeout', type=int, default=300,
+                      help='Timeout in seconds for dynamic port scanning (default: 300)')
+    parser.add_argument('--status', type=str, choices=['scanned', 'verified'], default='scanned',
+                      help='Status to assign to discovered endpoints (default: scanned)')
+    parser.add_argument('--preserve-verified', action='store_true', default=True,
+                      help='Preserve verified status for existing endpoints (default: True)')
+    parser.add_argument('--verbose', action='store_true', default=False,
+                      help='Enable verbose output (default: False)')
+    parser.add_argument('--scan-localai', action='store_true', default=False,
+                      help='Also scan for LocalAI instances (default: False)')
     
     # Add reassignment options
     parser.add_argument('--specific-ip', type=str, default=None,
