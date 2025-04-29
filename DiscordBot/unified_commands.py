@@ -13,7 +13,7 @@ import logging
 import json
 import asyncio
 import aiohttp
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from typing import Optional, List, Dict, Any, Union, Tuple
 
@@ -88,6 +88,47 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
     
     # Initialize additional database tables for chat and model selection
     setup_additional_tables(DB_FILE)
+    
+    # Function to get statistics about the database
+    def get_database_stats():
+        """Get comprehensive statistics from the database"""
+        try:
+            # Get endpoint count
+            query = "SELECT COUNT(*) FROM servers"
+            endpoint_count = Database.fetch_one(query)[0]
+            
+            # Get total model count
+            query = "SELECT COUNT(*) FROM models"
+            total_models = Database.fetch_one(query)[0]
+            
+            # Get unique model count
+            query = "SELECT COUNT(DISTINCT name) FROM models"
+            unique_models = Database.fetch_one(query)[0]
+            
+            # Get parameter size distribution
+            query = "SELECT parameter_size, COUNT(*) FROM models WHERE parameter_size IS NOT NULL GROUP BY parameter_size ORDER BY COUNT(*) DESC"
+            param_counts = Database.fetch_all(query)
+            
+            # Get quantization level distribution
+            query = "SELECT quantization_level, COUNT(*) FROM models WHERE quantization_level IS NOT NULL GROUP BY quantization_level ORDER BY COUNT(*) DESC"
+            quant_counts = Database.fetch_all(query)
+            
+            # Get top models
+            query = "SELECT name, COUNT(*) FROM models GROUP BY name ORDER BY COUNT(*) DESC LIMIT 10"
+            top_models = Database.fetch_all(query)
+            
+            return {
+                "endpoint_count": endpoint_count,
+                "total_models": total_models,
+                "unique_models": unique_models,
+                "parameter_sizes": param_counts,
+                "quantization_levels": quant_counts,
+                "top_models": top_models
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting database stats: {e}")
+            return None
     
     # Helper function to get a user's selected model
     async def get_user_selected_model(user_id):
@@ -874,6 +915,146 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
         except Exception as e:
             logger.error(f"Error in unified_admin: {str(e)}")
             await safe_followup(interaction, f"Error processing admin command: {str(e)}")
+
+    @bot.tree.command(name="stats", description="View database statistics and analytics")
+    @app_commands.describe(
+        type="Type of statistics to view",
+        format="Output format for the statistics",
+        check_connectivity="Check server connectivity when viewing server stats"
+    )
+    @app_commands.choices(type=[
+        app_commands.Choice(name="Database Overview", value="overview"),
+        app_commands.Choice(name="Model Statistics", value="models"),
+        app_commands.Choice(name="Server Statistics", value="servers"),
+        app_commands.Choice(name="Parameter Size Distribution", value="param_sizes"),
+        app_commands.Choice(name="Quantization Distribution", value="quant_levels"),
+        app_commands.Choice(name="Top Models", value="top_models")
+    ])
+    @app_commands.choices(format=[
+        app_commands.Choice(name="Table", value="table"),
+        app_commands.Choice(name="Detailed", value="detailed")
+    ])
+    async def stats_command(
+        interaction,
+        type: str = "overview",
+        format: str = "table",
+        check_connectivity: bool = False
+    ):
+        """
+        Command for viewing database statistics and analytics
+        
+        Args:
+            interaction: Discord interaction
+            type: Type of statistics to view
+            format: Output format for the statistics
+            check_connectivity: Check server connectivity when viewing server stats
+        """
+        # Check if user has admin rights
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("You need administrator privileges to use the stats command.", ephemeral=True)
+            return
+            
+        if not await safe_defer(interaction):
+            return
+            
+        try:
+            # Get database statistics
+            stats = get_database_stats()
+            
+            if not stats:
+                await safe_followup(interaction, "Error retrieving database statistics.")
+                return
+                
+            if type == "overview":
+                # Overview of database statistics
+                message = "**📊 Database Statistics Overview**\n\n"
+                message += f"**Endpoints:** {stats['endpoint_count']}\n"
+                message += f"**Total Models:** {stats['total_models']}\n"
+                message += f"**Unique Model Types:** {stats['unique_models']}\n"
+                
+                # Create an embed for better formatting if format is detailed
+                if format == "detailed":
+                    embed = discord.Embed(
+                        title="📊 Database Statistics Overview",
+                        description="General statistics about the database content",
+                        color=discord.Color.blue()
+                    )
+                    
+                    embed.add_field(name="Endpoints", value=str(stats['endpoint_count']), inline=True)
+                    embed.add_field(name="Total Models", value=str(stats['total_models']), inline=True)
+                    embed.add_field(name="Unique Models", value=str(stats['unique_models']), inline=True)
+                    
+                    # Add timestamp
+                    embed.timestamp = datetime.now(timezone.utc)
+                    embed.set_footer(text="Last updated")
+                    
+                    await safe_followup(interaction, embed=embed)
+                else:
+                    await safe_followup(interaction, message)
+                    
+            elif type == "models":
+                # Model statistics
+                message = "**📊 Model Statistics**\n\n"
+                message += f"**Total Models:** {stats['total_models']}\n"
+                message += f"**Unique Model Types:** {stats['unique_models']}\n\n"
+                
+                # Add top models
+                message += "**Top Models by Count:**\n"
+                for model, count in stats['top_models']:
+                    message += f"- {model}: {count} instances\n"
+                
+                await safe_followup(interaction, message)
+                
+            elif type == "servers":
+                # Server statistics
+                message = "**📊 Server Statistics**\n\n"
+                message += f"**Total Endpoints:** {stats['endpoint_count']}\n"
+                
+                # Add other server stats if available
+                await safe_followup(interaction, message)
+                
+            elif type == "param_sizes":
+                # Parameter size distribution
+                message = "**📊 Model Parameter Size Distribution**\n\n"
+                
+                if stats['parameter_sizes']:
+                    for param_size, count in stats['parameter_sizes']:
+                        message += f"- {param_size}: {count} models\n"
+                else:
+                    message += "*No parameter size data available*\n"
+                
+                await safe_followup(interaction, message)
+                
+            elif type == "quant_levels":
+                # Quantization level distribution
+                message = "**📊 Model Quantization Level Distribution**\n\n"
+                
+                if stats['quantization_levels']:
+                    for quant_level, count in stats['quantization_levels']:
+                        message += f"- {quant_level}: {count} models\n"
+                else:
+                    message += "*No quantization level data available*\n"
+                
+                await safe_followup(interaction, message)
+                
+            elif type == "top_models":
+                # Top models
+                message = "**📊 Top Models by Instance Count**\n\n"
+                
+                if stats['top_models']:
+                    for i, (model, count) in enumerate(stats['top_models']):
+                        message += f"{i+1}. **{model}**: {count} instances\n"
+                else:
+                    message += "*No model data available*\n"
+                
+                await safe_followup(interaction, message)
+                
+            else:
+                await safe_followup(interaction, f"Unknown statistics type: {type}")
+                
+        except Exception as e:
+            logger.error(f"Error in stats_command: {str(e)}")
+            await safe_followup(interaction, f"Error processing stats command: {str(e)}")
 
     @bot.tree.command(name="model", description="Unified model management command")
     @app_commands.describe(
@@ -1845,6 +2026,7 @@ def setup(bot):
         unified_search,
         unified_server,
         unified_admin,
+        stats_command,
         unified_model,
         chat,
         quickprompt,

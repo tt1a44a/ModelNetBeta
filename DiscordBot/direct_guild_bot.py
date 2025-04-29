@@ -429,7 +429,7 @@ async def quickprompt(
                 endpoints e ON m.id = e.model_id
             WHERE 
                 m.name ILIKE %s 
-                AND e.verified = TRUE
+                AND e.verified = 1
             """
             
             # Add parameter size conditions if any
@@ -720,7 +720,7 @@ async def find_model_endpoints(
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             
             # Initialize parameters and conditions
-            conditions = ["LOWER(m.name) LIKE LOWER(%s)", "e.verified = TRUE"]
+            conditions = ["LOWER(m.name) LIKE LOWER(%s)", "e.verified = 1"]
             params = [f"%{model_name.lower()}%"]
             
             # Add parameter size filter if specified
@@ -921,7 +921,7 @@ async def allmodels(
             JOIN 
                 endpoints e ON m.endpoint_id = e.id
             WHERE 
-                m.verified = TRUE
+                m.verified = 1
             """
             
             # Get total count
@@ -929,7 +929,7 @@ async def allmodels(
             SELECT COUNT(*) 
             FROM models m
             JOIN endpoints e ON m.endpoint_id = e.id
-            WHERE m.verified = TRUE
+            WHERE m.verified = 1
             """
             
             # Set sorting order

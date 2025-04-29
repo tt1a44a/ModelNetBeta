@@ -280,7 +280,7 @@ async def scan_verified_endpoints(days_since_last_check=7, limit=100, batch_size
             query = """
                 SELECT id, ip, port
                 FROM endpoints
-                WHERE verified = TRUE
+                WHERE verified = 1
                 AND (last_check_date IS NULL OR last_check_date < NOW() - INTERVAL '%s days')
                 ORDER BY last_check_date ASC NULLS FIRST
                 LIMIT %s

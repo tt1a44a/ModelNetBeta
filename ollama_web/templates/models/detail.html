@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}{{ model.name }} - Model Details{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('models') }}">Models</a></li>
+                <li class="breadcrumb-item active">{{ model.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>{{ model.name }}</h1>
+            <div>
+                <a href="{{ url_for('edit_model', model_id=model.id) }}" class="btn btn-primary">
+                    <i class="fa-solid fa-edit"></i> Edit Model
+                </a>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Model Information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Model Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <th style="width: 40%">ID</th>
+                            <td>{{ model.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Name</th>
+                            <td>{{ model.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Parameter Size</th>
+                            <td>{{ model.parameter_size or 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Quantization</th>
+                            <td>{{ model.quantization_level or 'None' }}</td>
+                        </tr>
+                        <tr>
+                            <th>File Size</th>
+                            <td>{{ '%.2f MB'|format(model.size_mb) if model.size_mb else 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Family</th>
+                            <td>{{ model.family or 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Instances</th>
+                            <td><span class="badge bg-info">{{ model.endpoints|length }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Tags</th>
+                            <td>
+                                {% if model.tags %}
+                                    {% for tag in model.tags.split(',') %}
+                                        <span class="badge bg-secondary">{{ tag.strip() }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No tags</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Created</th>
+                            <td>{{ model.created_at.strftime('%Y-%m-%d %H:%M') if model.created_at else 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Updated</th>
+                            <td>{{ model.updated_at.strftime('%Y-%m-%d %H:%M') if model.updated_at else 'Unknown' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Model Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-center">
+                    <canvas id="modelAvailabilityChart" width="100%"></canvas>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fa-solid fa-info-circle"></i> This model is available on <strong>{{ model.endpoints|length }}</strong> endpoints.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Description and Notes -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Description</h5>
+            </div>
+            <div class="card-body">
+                {% if model.description %}
+                    {{ model.description|safe }}
+                {% else %}
+                    <p class="text-muted">No description available.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Endpoints with this model -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Available on Endpoints</h5>
+                <span class="badge bg-primary">{{ model.endpoints|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if model.endpoints %}
+                <div class="table-responsive">
+                    <table class="table table-striped datatable">
+                        <thead>
+                            <tr>
+                                <th>IP:Port</th>
+                                <th>Status</th>
+                                <th>Verified</th>
+                                <th>Last Seen</th>
+                                <th>Scan</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for endpoint in model.endpoints %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('endpoint_detail', endpoint_id=endpoint.id) }}">
+                                        {{ endpoint.ip }}:{{ endpoint.port }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if endpoint.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if endpoint.is_verified %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Unverified</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ endpoint.last_seen.strftime('%Y-%m-%d %H:%M') if endpoint.last_seen else 'Never' }}</td>
+                                <td>{{ endpoint.last_scan.strftime('%Y-%m-%d %H:%M') if endpoint.last_scan else 'Never' }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('endpoint_detail', endpoint_id=endpoint.id) }}" class="btn btn-outline-primary">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                        <a href="http://{{ endpoint.ip }}:{{ endpoint.port }}" target="_blank" class="btn btn-outline-secondary">
+                                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fa-solid fa-exclamation-triangle"></i> No endpoints currently have this model.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the model <strong>{{ model.name }}</strong>?</p>
+                <p class="text-danger">This action cannot be undone and will remove all references to this model from the database.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('delete_model', model_id=model.id) }}" method="post">
+                    <button type="submit" class="btn btn-danger">Delete Model</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Model Availability Chart
+        var ctx = document.getElementById('modelAvailabilityChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Verified', 'Unverified', 'Honeypot'],
+                datasets: [{
+                    data: [
+                        {{ model.endpoints|selectattr('is_verified', 'eq', true)|list|length }},
+                        {{ model.endpoints|selectattr('is_verified', 'eq', false)|rejectattr('is_honeypot', 'eq', true)|list|length }},
+                        {{ model.endpoints|selectattr('is_honeypot', 'eq', true)|list|length }}
+                    ],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+        
+        // Initialize DataTables
+        $('.datatable').DataTable({
+            lengthMenu: [5, 10, 25, 50],
+            pageLength: 10
+        });
+    });
+</script>
+{% endblock %} 

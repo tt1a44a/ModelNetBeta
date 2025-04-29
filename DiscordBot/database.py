@@ -507,7 +507,7 @@ class Database:
     @staticmethod
     def _process_params(params):
         """Process parameters for PostgreSQL compatibility
-        Convert dictionaries to JSON strings"""
+        Convert dictionaries to JSON strings and handle boolean values consistently"""
         import json
         
         if isinstance(params, dict):
@@ -519,6 +519,13 @@ class Database:
             for item in params:
                 if isinstance(item, dict):
                     processed.append(json.dumps(item))
+                elif item == 'TRUE':  # Handle string TRUE values
+                    processed.append(True if DATABASE_TYPE == "postgres" else 1)
+                elif item == 'FALSE':  # Handle string FALSE values
+                    processed.append(False if DATABASE_TYPE == "postgres" else 0)
+                elif isinstance(item, bool) and DATABASE_TYPE == "postgres":
+                    # For PostgreSQL, pass boolean values as-is
+                    processed.append(item)
                 else:
                     processed.append(item)
             return tuple(processed)
@@ -567,7 +574,31 @@ class Database:
         return True
 
 
-# Initialize database schema if needed
+# Function to get proper boolean representation for different database types
+def get_db_boolean(value, as_string=True, for_verified=False):
+    """
+    Get the proper boolean value for the current database type
+    Args:
+        value (bool): Python boolean value
+        as_string (bool): Whether to return the value as a string
+        for_verified (bool): Whether this is for the verified column (which is INTEGER in both databases)
+    
+    Returns:
+        String or integer representation of the boolean value for SQL
+    """
+    if for_verified:
+        # 'verified' column is INTEGER in both database types
+        return "1" if value else "0" if as_string else 1 if value else 0
+    
+    if DATABASE_TYPE == "postgres":
+        # PostgreSQL
+        return "TRUE" if value else "FALSE" if as_string else True if value else False
+    else:
+        # SQLite
+        return "1" if value else "0" if as_string else 1 if value else 0
+
+
+# Function to initialize the database
 def init_database():
     """Initialize the database schema based on the configured database type"""
     db_manager = get_db_manager()

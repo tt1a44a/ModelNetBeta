@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}{{ endpoint.ip }}:{{ endpoint.port }} - Ollama Scanner Web UI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('endpoints') }}">Endpoints</a></li>
+                <li class="breadcrumb-item active">{{ endpoint.ip }}:{{ endpoint.port }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Endpoint: {{ endpoint.ip }}:{{ endpoint.port }}</h1>
+            <div>
+                <a href="{{ url_for('verify_endpoint', endpoint_id=endpoint.id) }}" class="btn btn-success">
+                    <i class="fa-solid fa-check"></i> Verify
+                </a>
+                <a href="{{ url_for('edit_endpoint', endpoint_id=endpoint.id) }}" class="btn btn-primary">
+                    <i class="fa-solid fa-edit"></i> Edit
+                </a>
+                <a href="{{ url_for('delete_endpoint', endpoint_id=endpoint.id) }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this endpoint?');">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Endpoint Information -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Endpoint Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <tbody>
+                        <tr>
+                            <th style="width: 35%">ID</th>
+                            <td>{{ endpoint.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>IP Address</th>
+                            <td>{{ endpoint.ip }}</td>
+                        </tr>
+                        <tr>
+                            <th>Port</th>
+                            <td>{{ endpoint.port }}</td>
+                        </tr>
+                        <tr>
+                            <th>Verified</th>
+                            <td>
+                                {% if endpoint.verified == 1 %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Honeypot</th>
+                            <td>
+                                {% if endpoint.is_honeypot == 1 %}
+                                <span class="badge bg-warning">Yes</span>
+                                {% if endpoint.honeypot_reason %}
+                                <div class="mt-1 small text-muted">Reason: {{ endpoint.honeypot_reason }}</div>
+                                {% endif %}
+                                {% else %}
+                                <span class="badge bg-success">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Active</th>
+                            <td>
+                                {% if endpoint.is_active == 1 %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% if endpoint.inactive_reason %}
+                                <div class="mt-1 small text-muted">Reason: {{ endpoint.inactive_reason }}</div>
+                                {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Scan Date</th>
+                            <td>{{ endpoint.scan_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Verification Date</th>
+                            <td>
+                                {% if endpoint.verification_date %}
+                                {{ endpoint.verification_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Last Check Date</th>
+                            <td>
+                                {% if endpoint.last_check_date %}
+                                {{ endpoint.last_check_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connected Actions -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('verify_endpoint', endpoint_id=endpoint.id) }}" class="btn btn-success w-100">
+                            <i class="fa-solid fa-sync me-2"></i> Verify Now
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('edit_endpoint', endpoint_id=endpoint.id) }}" class="btn btn-primary w-100">
+                            <i class="fa-solid fa-edit me-2"></i> Edit
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('endpoint_models', endpoint_id=endpoint.id) }}" class="btn btn-info w-100">
+                            <i class="fa-solid fa-brain me-2"></i> View Models
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('toggle_honeypot', endpoint_id=endpoint.id) }}" class="btn btn-warning w-100">
+                            <i class="fa-solid fa-flag me-2"></i> Toggle Honeypot
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('toggle_active', endpoint_id=endpoint.id) }}" class="btn btn-secondary w-100">
+                            <i class="fa-solid fa-power-off me-2"></i> Toggle Active
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('delete_endpoint', endpoint_id=endpoint.id) }}" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to delete this endpoint?');">
+                            <i class="fa-solid fa-trash me-2"></i> Delete
+                        </a>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Direct Connection</h6>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" value="http://{{ endpoint.ip }}:{{ endpoint.port }}" id="endpoint-url" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('endpoint-url')">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                            <a href="http://{{ endpoint.ip }}:{{ endpoint.port }}" target="_blank" class="btn btn-outline-primary">
+                                <i class="fa-solid fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Models -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Models ({{ endpoint.models|length }})</h5>
+                <a href="{{ url_for('endpoint_models', endpoint_id=endpoint.id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fa-solid fa-search"></i> View All Models
+                </a>
+            </div>
+            <div class="card-body">
+                {% if endpoint.models %}
+                <div class="table-responsive">
+                    <table class="table table-striped datatable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Parameter Size</th>
+                                <th>Quantization</th>
+                                <th>Size (MB)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model in endpoint.models %}
+                            <tr>
+                                <td>{{ model.id }}</td>
+                                <td>{{ model.name }}</td>
+                                <td>{{ model.parameter_size or 'Unknown' }}</td>
+                                <td>{{ model.quantization_level or 'None' }}</td>
+                                <td>{{ '%.2f'|format(model.size_mb) if model.size_mb else 'Unknown' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No models found for this endpoint.
+                    <a href="{{ url_for('verify_endpoint', endpoint_id=endpoint.id) }}" class="alert-link">Verify now</a> to check for models.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        element.select();
+        document.execCommand('copy');
+        
+        // Show tooltip/alert that text was copied
+        const button = element.nextElementSibling;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+        }, 1500);
+    }
+</script>
+{% endblock %} 

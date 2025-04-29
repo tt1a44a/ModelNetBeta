@@ -1,0 +1,141 @@
+/* Custom styles for Ollama Scanner Web UI */
+
+body {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.card {
+    margin-bottom: 1rem;
+}
+
+.endpoint-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.endpoint-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.model-list {
+    margin-top: 1rem;
+}
+
+.model-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.verified {
+    color: #28a745;
+}
+
+.not-verified {
+    color: #dc3545;
+}
+
+.honeypot {
+    color: #fd7e14;
+}
+
+.inactive {
+    color: #6c757d;
+}
+
+.table-responsive {
+    margin-bottom: 1rem;
+}
+
+.actions-column {
+    width: 150px;
+}
+
+/* Filter sidebar */
+.sidebar {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+/* Status badges */
+.badge {
+    font-size: 85%;
+}
+
+/* Custom navbar */
+.navbar-custom {
+    background-color: #343a40;
+}
+
+.navbar-custom .navbar-brand {
+    color: white;
+}
+
+/* Footer */
+.footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Pagination */
+.pagination {
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Dashboard stats */
+.stats-card {
+    text-align: center;
+    padding: 1rem;
+}
+
+.stats-card .number {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.stats-card .label {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+/* DataTables custom styling */
+table.dataTable thead th {
+    position: relative;
+    background-image: none !important;
+}
+
+table.dataTable thead th.sorting:after,
+table.dataTable thead th.sorting_asc:after,
+table.dataTable thead th.sorting_desc:after {
+    position: absolute;
+    top: 12px;
+    right: 8px;
+    display: block;
+    font-family: 'Font Awesome 5 Free';
+}
+
+table.dataTable thead th.sorting:after {
+    content: "\f0dc";
+    opacity: 0.5;
+}
+
+table.dataTable thead th.sorting_asc:after {
+    content: "\f0de";
+}
+
+table.dataTable thead th.sorting_desc:after {
+    content: "\f0dd";
+}

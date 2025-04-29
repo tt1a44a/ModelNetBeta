@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, List, Dict, Any, Union
 from ollama_models import (
     setup_database, 
     get_models, 
@@ -321,123 +321,125 @@ async def on_ready():
         except Exception as e:
             logger.error(f"Error initializing database: {str(e)}")
         
-        # The explicitly approved commands for the streamlined bot
-        approved_commands = [
-            "ping", 
-            "help", 
-            "benchmark", 
-            "manage_models",
-            "model_status",
-            "offline_endpoints",  # Add the new command
-            "list_models", 
-            "db_info", 
-            "honeypot_stats",
-            "quickprompt", 
-            "chat",
-            "find_model_endpoints",
-            "all_models",
-            "server_info",
-            "models_with_servers",
-            "cleanup"
-        ]
-        
-        # Get all currently registered commands
+        # Import and use the consolidated command registration system
         try:
-            # First check if commands are already registered properly
-            current_commands = await bot.tree.fetch_commands()
-            current_command_names = [cmd.name for cmd in current_commands]
-            logger.info(f"Current commands: {', '.join(current_command_names) if current_command_names else 'None'}")
+            # Import both registration systems
+            from register_commands import register_all_commands, sync_commands
+            from register_consolidated_commands import register_commands_with_bot, apply_command_deprecation
             
-            # Check if our commands list matches what's already registered
-            missing_commands = [cmd for cmd in approved_commands if cmd not in current_command_names]
-            extra_commands = [cmd for cmd in current_command_names if cmd not in approved_commands]
+            logger.info("Registering consolidated commands from plan2.md")
             
-            if not missing_commands and not extra_commands:
-                logger.info("Command registration is up to date - skipping sync to avoid rate limits")
+            # First try to register with the consolidated system
+            try:
+                logger.info("Using consolidated command registration system")
+                commands = register_commands_with_bot(bot, safe_defer, safe_followup)
+                logger.info(f"Successfully registered consolidated commands: {', '.join(commands.keys())}")
                 
-                # Set bot status
-                activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
-                await bot.change_presence(activity=activity)
+                # Apply deprecation notices to old commands
+                apply_command_deprecation(bot)
+                logger.info("Applied deprecation notices to old commands")
+            except Exception as e:
+                logger.error(f"Error using consolidated command system: {str(e)}")
+                logger.info("Falling back to traditional registration...")
                 
-                logger.info("Bot is ready!")
-                print(f"Bot is ready! Logged in as {bot.user} (ID: {bot.user.id})")
-                return
-            else:
-                logger.info(f"Command list needs updating - missing: {missing_commands}, extra: {extra_commands}")
+                # If consolidated registration fails, fall back to the traditional system
+                commands = register_all_commands(
+                    bot, 
+                    safe_defer, 
+                    safe_followup, 
+                    check_server_connectivity=check_server_connectivity,
+                    sync_models_with_server=sync_models_with_server_async
+                )
+                logger.info(f"Registered commands using traditional system")
+            
+            # Define ONLY the 8 commands from plan2.md (5 user commands, 3 admin commands)
+            approved_commands = [
+                # 5 User commands
+                "models",  # Unified model discovery command
+                "chat",    # Unified chat command
+                "server",  # Unified server management command
+                "history", # Chat history command
+                "help",    # Updated help command
                 
-                # Check if we've synced recently - to avoid rate limits, skip sync if it hasn't been long enough
-                last_sync_time = getattr(bot, '_last_sync_time', 0)
-                current_time = time.time()
-                if current_time - last_sync_time < 3600:  # Less than 1 hour since last sync
-                    logger.warning("Skipping command sync due to recent sync - avoiding rate limits")
+                # 3 Admin commands
+                "admin",   # Administrative functions command
+                "manage",  # Management command
+                "stats",   # Statistics command
+                
+                # Keep ping for basic functionality
+                "ping"     # Basic bot status check
+            ]
+            
+            # Get all currently registered commands
+            try:
+                # First check if commands are already registered properly
+                current_commands = await bot.tree.fetch_commands()
+                current_command_names = [cmd.name for cmd in current_commands]
+                logger.info(f"Current commands: {', '.join(current_command_names) if current_command_names else 'None'}")
+                
+                # Check if our commands list matches what's already registered
+                missing_commands = [cmd for cmd in approved_commands if cmd not in current_command_names]
+                extra_commands = [cmd for cmd in current_command_names if cmd not in approved_commands]
+                
+                if not missing_commands and not extra_commands:
+                    logger.info("Command registration is up to date - skipping sync to avoid rate limits")
+                else:
+                    logger.info(f"Command list needs updating - missing: {missing_commands}, extra: {extra_commands}")
                     
-                    # Set bot status anyway
-                    activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
-                    await bot.change_presence(activity=activity)
+                    # Remove all commands not in the approved list
+                    for cmd_name in list(extra_commands):
+                        logger.info(f"Removing unauthorized command: {cmd_name}")
+                        bot.tree.remove_command(cmd_name)
+                        
+                    # Sync commands to update Discord with our changes
+                    # Force sync commands to all guilds
+                    for guild in bot.guilds:
+                        logger.info(f"Syncing commands to guild: {guild.name} (ID: {guild.id})")
+                        try:
+                            synced = await bot.tree.sync(guild=guild)
+                            logger.info(f"Successfully synced {len(synced)} commands to guild {guild.name}")
+                        except Exception as e:
+                            logger.error(f"Error syncing commands to guild {guild.name}: {str(e)}")
                     
-                    logger.info("Bot is ready (with outdated commands)!")
-                    print(f"Bot is ready! Logged in as {bot.user} (ID: {bot.user.id})")
-                    return
-        except discord.errors.HTTPException as e:
-            if e.status == 429:  # Rate limited
-                logger.warning(f"Rate limited when fetching commands - waiting {e.retry_after} seconds")
-                
-                # Set bot status anyway
-                activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
-                await bot.change_presence(activity=activity)
-                
-                logger.info("Bot is ready (with existing commands due to rate limit)!")
-                print(f"Bot is ready! Logged in as {bot.user} (ID: {bot.user.id})")
-                return
-            else:
-                logger.error(f"HTTP error when fetching commands: {e}")
-        
-        try:
-            # We need to update commands - only do this if absolutely necessary due to rate limits
-            # Make sure ONLY the commands we want are in the command tree
-            all_commands = {}
-            for command in bot.tree.get_commands():
-                all_commands[command.name] = command
-                
-            for cmd_name in list(all_commands.keys()):
-                if cmd_name not in approved_commands:
-                    logger.info(f"Removing unauthorized command: {cmd_name}")
-                    bot.tree.remove_command(cmd_name)
+                    # Also sync globally
+                    try:
+                        synced = await bot.tree.sync()
+                        logger.info(f"Successfully synced {len(synced)} commands globally")
+                    except Exception as e:
+                        logger.error(f"Error syncing commands globally: {str(e)}")
+            except discord.errors.HTTPException as e:
+                if e.status == 429:  # Rate limited
+                    logger.warning(f"Rate limited when fetching commands - waiting {e.retry_after} seconds")
             
-            # Sync the commands - this will update Discord with our command list
-            # Note: This is where rate limits often occur, so we limit how often we do this
-            await bot.tree.sync()
-            setattr(bot, '_last_sync_time', time.time())  # Record when we synced
+            # Set bot status
+            activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
+            await bot.change_presence(activity=activity)
             
-            # Register with each guild for immediate availability
-            guilds_updated = 0
-            for guild in bot.guilds:
-                try:
-                    # Only sync with a few guilds to avoid rate limits
-                    if guilds_updated < 2:  # Limit to 2 guilds max per startup
-                        await bot.tree.sync(guild=guild)
-                        logger.info(f"Synced commands with guild: {guild.name} (ID: {guild.id})")
-                        guilds_updated += 1
-                    else:
-                        logger.info(f"Skipped syncing with guild {guild.name} to avoid rate limits")
-                except Exception as e:
-                    logger.error(f"Error syncing commands with guild {guild.name}: {e}")
-        except discord.errors.HTTPException as e:
-            if e.status == 429:  # Rate limited
-                logger.warning(f"Rate limited when syncing commands - waiting {e.retry_after} seconds")
-            else:
-                logger.error(f"HTTP error when syncing commands: {e}")
-        
-        # Set bot status
-        activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
-        await bot.change_presence(activity=activity)
-        
-        logger.info("Bot is ready!")
-        print(f"Bot is ready! Logged in as {bot.user} (ID: {bot.user.id})")
-        
+            logger.info("Bot is ready!")
+            print(f"Bot is ready! Logged in as {bot.user} (ID: {bot.user.id})")
+            
+        except Exception as e:
+            logger.error(f"Error registering and syncing commands: {str(e)}")
+            
+            # Set bot status anyway
+            activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
+            await bot.change_presence(activity=activity)
+            
+            logger.info("Bot is ready (with existing commands)!")
+            print(f"Bot is ready! Logged in as {bot.user} (ID: {bot.user.id})")
+            
     except Exception as e:
         logger.error(f"Error in on_ready: {str(e)}")
-        print(f"Error in on_ready: {str(e)}")
+        
+        # Set bot status anyway in case of errors
+        try:
+            activity = discord.Activity(type=discord.ActivityType.watching, name="Ollama instances")
+            await bot.change_presence(activity=activity)
+        except Exception as presence_error:
+            logger.error(f"Error setting presence: {str(presence_error)}")
+            
+        logger.info("Bot is ready (with errors)!")
+        print(f"Bot is ready (with errors)! Logged in as {bot.user} (ID: {bot.user.id})")
 
 async def keep_alive():
     """Maintains bot connection and database health with periodic checks"""
@@ -1212,75 +1214,90 @@ async def interact_with_model(
 
 @bot.tree.command(name="help", description="Show help information")
 async def help_command(interaction: discord.Interaction):
-    """Display help information"""
-    if not await safe_defer(interaction):
-        return
-    
+    """Show help information about the bot and its commands"""
     try:
-        # Create the main help embed
+        # Create a clean, modern help embed with command categories
         embed = discord.Embed(
-            title="ModelNet Bot Help",
-            description="This bot helps you interact with Ollama models hosted across many endpoints.",
-            color=discord.Color.blue()
+            title="🤖 Ollama Discord Bot Help",
+            description="This bot allows you to interact with Ollama models directly from Discord.",
+            color=discord.Color.blurple()
         )
         
-        # Commands section
+        # Add bot icon as thumbnail if available
+        if bot.user and bot.user.avatar:
+            embed.set_thumbnail(url=bot.user.avatar.url)
+        
+        # Model commands section
         embed.add_field(
-            name="**📋 Basic Commands**",
+            name="📋 Model Commands",
             value=(
-                "`/quickprompt <model_name> <prompt>` - Chat with any model by name\n"
-                "`/list_models` - Browse available models with filters\n"
-                "`/find_model_endpoints <model_name>` - Find endpoints hosting a specific model\n"
-                "`/model_status <ip> <port>` - Check which models are loaded on a server\n"
-                "`/db_info` - View database statistics"
+                "• `/list_models` - List available models with filtering options\n"
+                "• `/searchmodels` - Search for models by name\n"
+                "• `/modelsbyparam` - Find models by parameter size\n"
+                "• `/allmodels` - List all models with sorting\n"
+                "• `/find_model_endpoints` - Find servers hosting a specific model"
             ),
             inline=False
         )
         
-        # Model filtering section
+        # Chat commands section
         embed.add_field(
-            name="**🔍 Model Selection & Filtering**",
+            name="💬 Chat Commands",
             value=(
-                "`/searchmodels <model_name>` - Search for models by name\n"
-                "`/modelsbyparam <parameter_size>` - Find models with specific parameters\n"
-                "`/allmodels` - List all available models"
+                "• `/chat` - Chat with a model by ID\n"
+                "• `/quickprompt` - Quickly chat with any model by name\n"
+                "• `/interact` - Interact with a selected model\n"
             ),
             inline=False
         )
         
-        # Add section about honeypot protection
+        # Server management section
         embed.add_field(
-            name="**🛡️ Honeypot Protection**", 
+            name="🖥️ Server Commands",
             value=(
-                "This bot automatically detects and filters out honeypot endpoints.\n"
-                "All model interactions use only verified, legitimate endpoints.\n"
-                "Honeypot statistics (via `/honeypot_stats`) are for informational purposes only."
-            ), 
+                "• `/listservers` - List all servers in the database\n"
+                "• `/serverinfo` - Show detailed server information\n"
+                "• `/checkserver` - Check available models on a server\n"
+                "• `/syncserver` - Sync models with a server\n"
+                "• `/offline_endpoints` - Manage offline endpoints"
+            ),
             inline=False
         )
         
-        # Maintenance commands
-        if interaction.user.guild_permissions.administrator:
-            embed.add_field(
-                name="**⚙️ Admin Commands**",
-                value=(
-                    "`/addmodel <ip> <port> <name>` - Add a new model to the database\n"
-                    "`/syncserver <ip> <port>` - Sync server models with database\n"
-                    "`/checkserver <ip> <port>` - Check available models on server\n"
-                    "`/cleanup` - Clean up duplicate database entries\n"
-                    "`/offline_endpoints` - View and manage offline endpoints\n"
-                ),
-                inline=False
-            )
+        # Model management section
+        embed.add_field(
+            name="⚙️ Management Commands",
+            value=(
+                "• `/addmodel` - Add a model to a server\n"
+                "• `/deletemodel` - Delete a model from a server\n"
+                "• `/selectmodel` - Select a model by ID\n"
+                "• `/manage_models` - Unified model management\n"
+                "• `/benchmark` - Run performance benchmark"
+            ),
+            inline=False
+        )
         
-        # Footer with version info
-        embed.set_footer(text="ModelNet Bot v2.0")
+        # Information commands
+        embed.add_field(
+            name="📊 Info Commands",
+            value=(
+                "• `/db_info` - Show database statistics\n"
+                "• `/ping` - Check if the bot is responding\n"
+                "• `/honeypot_stats` - Statistics about honeypots\n"
+            ),
+            inline=False
+        )
         
-        await safe_followup(interaction, "", embed=embed)
+        # Add a footer with additional information
+        embed.set_footer(text="Type / to see all available commands • Parameters are shown when you select a command")
+        embed.timestamp = datetime.now(timezone.utc)
+        
+        # Send the embed
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         
     except Exception as e:
         logger.error(f"Error in help command: {str(e)}")
-        await safe_followup(interaction, f"Error displaying help: {str(e)}")
+        await interaction.response.send_message(f"Error generating help: {str(e)}", ephemeral=True)
 
 @bot.tree.command(name="checkserver", description="Check which models are available on a specific server")
 async def check_server(interaction: discord.Interaction, ip: str, port: int):
@@ -2953,143 +2970,140 @@ async def list_models(
     descending: bool = True,
     limit: int = 25
 ):
-    if not await safe_defer(interaction):
-        return
+    """List all models with filtering and sorting options"""
+    await safe_defer(interaction)
     
     try:
-        # Default sorting - by server count in descending order
-        orderby = "server_count DESC"
-        
-        # Apply sorting options if provided
-        if sort_by:
-            if sort_by == "name":
-                if descending:
-                    orderby = "name DESC"
-                else:
-                    orderby = "name ASC"
-            elif sort_by == "params":
-                if descending:
-                    orderby = "CASE WHEN parameter_size LIKE '%B' THEN CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL) ELSE 0 END DESC"
-                else:
-                    orderby = "CASE WHEN parameter_size LIKE '%B' THEN CAST(REPLACE(REPLACE(parameter_size, 'B', ''), '.', '') AS REAL) ELSE 0 END ASC"
-            elif sort_by == "quant":
-                if descending:
-                    orderby = "quantization_level DESC"
-                else:
-                    orderby = "quantization_level ASC"
-            elif sort_by == "count":
-                if descending:
-                    orderby = "server_count DESC"
-                else:
-                    orderby = "server_count ASC"
-        
-        # Build base query
-        base_query = """
-            SELECT 
-                m.id,
-                m.name, 
-                m.parameter_size, 
-                m.quantization_level, 
-                COUNT(DISTINCT (s.ip || ':' || s.port)) as server_count
+        # Base query
+        query = """
+            SELECT m.id, m.name, m.parameter_size, m.quantization_level, 
+                   e.ip, e.port, m.size_mb,
+                   COUNT(m2.id) OVER(PARTITION BY m.name) as count
             FROM models m
-            JOIN servers s ON m.endpoint_id = s.id
+            JOIN endpoints e ON m.endpoint_id = e.id
+            LEFT JOIN models m2 ON m.name = m2.name
             WHERE 1=1
         """
+        params = []
         
-        # We'll handle server list display separately without string_agg which might cause issues
-        parameters = []
-        
-        # Add search filters
+        # Add filters if provided
         if search_term:
-            base_query += " AND m.name LIKE %s"
-            parameters.append(f"%{search_term}%")
-            
-        if quant_level:
-            base_query += " AND m.quantization_level LIKE %s"
-            parameters.append(f"%{quant_level}%")
-            
-        if param_size:
-            base_query += " AND m.parameter_size LIKE %s"
-            parameters.append(f"%{param_size}%")
-            
-        # Complete the query with GROUP BY and ORDER BY
-        query = base_query + f"""
-            GROUP BY m.id, m.name, m.parameter_size, m.quantization_level
-            ORDER BY COALESCE({orderby}, 0)
-            LIMIT %s
-        """
-        parameters.append(limit)
+            query += " AND m.name LIKE %s"
+            params.append(f"%{search_term}%")
         
-        # Execute query with properly formatted parameters
-        results = Database.fetch_all(query.strip(), tuple(parameters))
+        if quant_level:
+            query += " AND m.quantization_level LIKE %s"
+            params.append(f"%{quant_level}%")
+        
+        if param_size:
+            query += " AND m.parameter_size LIKE %s"
+            params.append(f"%{param_size}%")
+        
+        # Add sorting
+        if sort_by == "name":
+            query += " ORDER BY m.name"
+        elif sort_by == "params":
+            query += " ORDER BY m.parameter_size"
+        elif sort_by == "quant":
+            query += " ORDER BY m.quantization_level"
+        elif sort_by == "count":
+            query += " ORDER BY count"
+        else:
+            query += " ORDER BY m.name"  # Default sort
+            
+        if not descending:
+            query += " ASC"
+        else:
+            query += " DESC"
+            
+        # Add limit
+        query += " LIMIT %s"
+        params.append(limit)
+        
+        # Execute query
+        results = Database.fetch_all(query, tuple(params))
         
         if not results:
-            await safe_followup(interaction, "No models found matching your criteria.")
+            # Create a simple embed for no results
+            embed = await format_embed_message(
+                title="No Models Found",
+                description="No models match the specified criteria.",
+                color=discord.Color.orange()
+            )
+            await interaction.followup.send(embed=embed)
             return
             
-        # Format the results with proper Discord markdown
-        formatted_response = "# Model Search Results\n\n"
+        # Parse results and eliminate duplicates by name
+        models_dict = {}
+        for row in results:
+            model_id, name, param_size, quant_level, ip, port, size_mb, count = row
+            
+            if name not in models_dict:
+                models_dict[name] = {
+                    'id': model_id,
+                    'name': name,
+                    'parameter_size': param_size,
+                    'quantization_level': quant_level,
+                    'ip': ip,
+                    'port': port,
+                    'size_mb': size_mb,
+                    'count': count
+                }
         
-        # Add search criteria if any were used
-        filters_used = []
+        # Convert dict to list for pagination
+        models_list = list(models_dict.values())
+        
+        # Create description with applied filters
+        description_parts = ["Available Ollama models:"]
+        
         if search_term:
-            filters_used.append(f"Name: '{search_term}'")
+            description_parts.append(f"• Search: `{search_term}`")
         if param_size:
-            filters_used.append(f"Parameters: '{param_size}'")
+            description_parts.append(f"• Parameter size: `{param_size}`")
         if quant_level:
-            filters_used.append(f"Quantization: '{quant_level}'")
+            description_parts.append(f"• Quantization: `{quant_level}`")
         
-        if filters_used:
-            formatted_response += "## Search Filters\n"
-            formatted_response += "```\n"
-            for filter_desc in filters_used:
-                formatted_response += f"• {filter_desc}\n"
-            formatted_response += "```\n\n"
+        description = "\n".join(description_parts)
         
-        # Add result count and sorting info
-        formatted_response += f"## Found {len(results)} Models\n"
-        formatted_response += f"Sorted by: {sort_by or 'server count'} ({'descending' if descending else 'ascending'})\n\n"
-        
-        # Create the main results table
-        formatted_response += "```\n"
-        formatted_response += "ID     | Model Name                | Parameters | Quantization | Servers\n"
-        formatted_response += "-------|---------------------------|------------|--------------|--------\n"
-        
-        for result in results:
-            id, name, params, quant, count = result
+        # Format each model item
+        async def format_model_item(i, model):
+            # Format the model with our helper function
+            model_details = await format_model_details(model)
             
-            # Format each field with proper padding
-            id_str = str(id).ljust(6)
-            
-            # Truncate long model names
-            if len(name) > 25:
-                name_str = name[:22] + "..."
-            else:
-                name_str = name.ljust(25)
-            
-            # Format parameters and quantization
-            params_str = (params or "N/A").ljust(10)
-            quant_str = (quant or "N/A").ljust(12)
-            
-            # Format the count
-            count_str = str(count).rjust(7)
-            
-            # Add the line to the table
-            formatted_response += f"{id_str} | {name_str} | {params_str} | {quant_str} | {count_str}\n"
+            # Add instance count if more than 1
+            if model['count'] > 1:
+                model_details += f" | **{model['count']}** instances"
+                
+            return model_details
         
-        formatted_response += "```\n\n"
+        # Create paginated embeds
+        embed_pages = await format_list_as_pages(
+            items=models_list,
+            title="🤖 Ollama Models",
+            description=description,
+            color=discord.Color.blue(),
+            items_per_page=10,
+            format_item=format_model_item
+        )
         
-        # Add usage tips
-        formatted_response += "## Usage Tips\n"
-        formatted_response += "• Use `/chat <model_id> <prompt>` to chat with any model\n"
-        formatted_response += "• Use `/benchmark <model_id>` to test model performance\n"
-        formatted_response += "• Use `/find_model_endpoints <model_name>` to see all endpoints for a model\n"
-        
-        await safe_followup(interaction, formatted_response)
-        
+        # Send the first page
+        if len(embed_pages) == 1:
+            await interaction.followup.send(embed=embed_pages[0])
+        else:
+            # For multi-page results, eventually implement pagination controls
+            # For now, just send the first page with a note
+            first_page = embed_pages[0]
+            first_page.set_footer(text=f"Page 1 of {len(embed_pages)} • {len(models_list)} total models • Use limit parameter to see more")
+            await interaction.followup.send(embed=first_page)
+            
     except Exception as e:
-        logger.error(f"Error in list_models: {str(e)}")
-        await safe_followup(interaction, f"Error: {str(e)}")
+        logger.error(f"Error in list_models: {e}")
+        error_embed = await format_embed_message(
+            title="Error Listing Models",
+            description=f"An error occurred while listing models: ```{str(e)}```",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=error_embed)
 
 @bot.tree.command(name="db_info", description="Show database statistics for models and endpoints")
 async def db_info(interaction: discord.Interaction):
@@ -3097,160 +3111,9 @@ async def db_info(interaction: discord.Interaction):
         return
     
     try:
-        # Get database connection parameters
-        from database import PG_DB_NAME, PG_DB_USER, PG_DB_PASSWORD, PG_DB_HOST, PG_DB_PORT
-        
-        # Connect directly to the database using psycopg2
-        import psycopg2
-        
-        # Create a connection
-        conn = psycopg2.connect(
-            dbname=PG_DB_NAME,
-            user=PG_DB_USER,
-            password=PG_DB_PASSWORD,
-            host=PG_DB_HOST,
-            port=PG_DB_PORT
-        )
-        
-        # Create a cursor
-        cursor = conn.cursor()
-        
-        # Count verified API endpoints - Handle verified column as integer (1) instead of boolean (TRUE)
-        endpoint_query = f"SELECT COUNT(*) FROM endpoints WHERE verified = {get_db_boolean(True, as_string=True, for_verified=True)}"
-        cursor.execute(endpoint_query)
-        endpoint_count = cursor.fetchone()[0]
-        
-        # Count total models
-        total_models_query = f"""
-            SELECT COUNT(*) FROM models m
-            JOIN endpoints e ON m.endpoint_id = e.id
-            WHERE e.verified = {get_db_boolean(True, as_string=True, for_verified=True)} 
-            AND e.is_honeypot = {get_db_boolean(False)}
-            AND e.is_active = {get_db_boolean(True)}
-        """
-        cursor.execute(total_models_query)
-        total_models = cursor.fetchone()[0]
-        
-        # Count unique models
-        unique_models_query = f"""
-            SELECT COUNT(DISTINCT m.name) FROM models m
-            JOIN endpoints e ON m.endpoint_id = e.id
-            WHERE e.verified = {get_db_boolean(True, as_string=True, for_verified=True)}
-            AND e.is_honeypot = {get_db_boolean(False)}
-            AND e.is_active = {get_db_boolean(True)}
-        """
-        cursor.execute(unique_models_query)
-        unique_models = cursor.fetchone()[0]
-        
-        # Get model counts by parameter size using direct connection
-        param_size_query = f"""
-            SELECT m.parameter_size, COUNT(*) as count
-            FROM models m
-            JOIN endpoints e ON m.endpoint_id = e.id
-            WHERE m.parameter_size IS NOT NULL
-            AND e.verified = {get_db_boolean(True, as_string=True, for_verified=True)}
-            AND e.is_honeypot = {get_db_boolean(False)}
-            AND e.is_active = {get_db_boolean(True)}
-            GROUP BY m.parameter_size 
-            ORDER BY 
-                CASE WHEN m.parameter_size LIKE '%B' THEN 
-                    CAST(REPLACE(REPLACE(m.parameter_size, 'B', ''), '.', '') AS NUMERIC)
-                ELSE 0
-                END DESC
-        """
-        cursor.execute(param_size_query)
-        param_counts = cursor.fetchall()
-        
-        # Get model counts by quantization level
-        quant_query = f"""
-            SELECT m.quantization_level, COUNT(*) as count
-            FROM models m
-            JOIN endpoints e ON m.endpoint_id = e.id
-            WHERE m.quantization_level IS NOT NULL
-            AND e.verified = {get_db_boolean(True, as_string=True, for_verified=True)}
-            AND e.is_honeypot = {get_db_boolean(False)}
-            AND e.is_active = {get_db_boolean(True)}
-            GROUP BY m.quantization_level 
-            ORDER BY count DESC
-        """
-        cursor.execute(quant_query)
-        quant_counts = cursor.fetchall()
-        
-        # Get top 5 models by count
-        top_models_query = f"""
-            SELECT m.name, COUNT(*) as count 
-            FROM models m
-            JOIN endpoints e ON m.endpoint_id = e.id
-            WHERE e.verified = {get_db_boolean(True, as_string=True, for_verified=True)}
-            AND e.is_honeypot = {get_db_boolean(False)}
-            AND e.is_active = {get_db_boolean(True)}
-            GROUP BY m.name 
-            ORDER BY count DESC 
-            LIMIT 10
-        """
-        cursor.execute(top_models_query)
-        top_models = cursor.fetchall()
-        
-        # Close the connection
-        cursor.close()
-        conn.close()
-        
-        # Format the results with proper Discord markdown
-        formatted_response = "# Database Statistics\n\n"
-        
-        # Summary section
-        formatted_response += "## Summary\n"
-        formatted_response += "```\n"
-        formatted_response += f"Verified API Endpoints: {endpoint_count:,}\n"
-        formatted_response += f"Total Model Instances: {total_models:,}\n"
-        formatted_response += f"Unique Model Types:    {unique_models:,}\n"
-        formatted_response += "```\n\n"
-        
-        # Parameter Sizes section
-        if param_counts:
-            formatted_response += "## Parameter Size Distribution\n"
-            formatted_response += "```\n"
-            formatted_response += "Size    | Count   | Percentage\n"
-            formatted_response += "--------|---------|------------\n"
-            for param_size, count in param_counts[:10]:  # Limit to top 10
-                percentage = (count / total_models) * 100 if total_models > 0 else 0
-                formatted_response += f"{param_size or 'Unknown':<8} | {count:>7,} | {percentage:>6.1f}%\n"
-            if len(param_counts) > 10:
-                formatted_response += f"... and {len(param_counts) - 10} more sizes ...\n"
-            formatted_response += "```\n\n"
-            
-        # Quantization Levels section
-        if quant_counts:
-            formatted_response += "## Quantization Level Distribution\n"
-            formatted_response += "```\n"
-            formatted_response += "Level   | Count   | Percentage\n"
-            formatted_response += "--------|---------|------------\n"
-            for quant_level, count in quant_counts:
-                percentage = (count / total_models) * 100 if total_models > 0 else 0
-                formatted_response += f"{quant_level or 'Unknown':<8} | {count:>7,} | {percentage:>6.1f}%\n"
-            formatted_response += "```\n\n"
-            
-        # Top Models section
-        if top_models:
-            formatted_response += "## Most Common Models\n"
-            formatted_response += "```\n"
-            formatted_response += "Model Name                | Instances | Percentage\n"
-            formatted_response += "-------------------------|-----------|------------\n"
-            for name, count in top_models:
-                percentage = (count / total_models) * 100 if total_models > 0 else 0
-                # Truncate long model names
-                display_name = name[:23] + "..." if len(name) > 23 else name.ljust(23)
-                formatted_response += f"{display_name} | {count:>9,} | {percentage:>6.1f}%\n"
-            formatted_response += "```\n\n"
-        
-        # Add usage tips
-        formatted_response += "## Usage Tips\n"
-        formatted_response += "• Use `/list_models` to see detailed model information\n"
-        formatted_response += "• Use `/find_model_endpoints <model_name>` to find specific models\n"
-        formatted_response += "• Use `/model_status <ip> <port>` to check loaded models on a server\n"
-        
-        await safe_followup(interaction, formatted_response)
-        
+        # Import and use the more comprehensive implementation from admin_command.py
+        from admin_command import handle_db_info
+        await handle_db_info(interaction, safe_followup)
     except Exception as e:
         logger.error(f"Error in db_info: {str(e)}")
         await safe_followup(interaction, f"Error querying database: {str(e)}\n\nPlease check the database connection and schema.")
@@ -3659,224 +3522,233 @@ async def chat(
     max_tokens: int = 1000,
     verbose: bool = False
 ):
-    if not await safe_defer(interaction):
-        return
+    """Chat with a specific model by ID"""
+    await safe_defer(interaction)
     
     try:
-        # Validate model ID
-        model_info = await validate_model_id(model_id)
+        # Validate model ID exists and get details
+        validation_result = await validate_model_id(model_id)
         
-        if not model_info["valid"]:
-            await safe_followup(interaction, model_info["message"])
+        if not validation_result["valid"]:
+            error_embed = await format_embed_message(
+                title="🚫 Model Not Found",
+                description=validation_result["message"],
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed)
             return
         
-        # Extract model details
-        name = model_info["name"]
-        ip = model_info["ip"]
-        port = model_info["port"]
-        param_size = model_info.get("parameter_size") or "Unknown"
+        # Get model info
+        model_id = validation_result["model_id"]
+        model_name = validation_result["name"]
+        endpoint_ip = validation_result["ip"]
+        endpoint_port = validation_result["port"]
         
-        # Validate input parameters
-        if not prompt:
-            await safe_followup(interaction, "Error: Prompt is required.")
-            return
-            
-        # Ensure temperature is within valid range
-        safe_temp = max(0.0, min(1.0, temperature))
-        
-        # Ensure max_tokens is reasonable
-        safe_max_tokens = max(10, min(4096, max_tokens))
-        
-        # Check if endpoint is reachable
-        is_reachable, error_msg = await check_server_connectivity(ip, port)
-        if not is_reachable:
-            await safe_followup(interaction, f"Error: Cannot connect to endpoint {ip}:{port} - {error_msg}")
+        # Check server connectivity first
+        server_status = await check_server_connectivity(endpoint_ip, endpoint_port)
+        if not server_status["connected"]:
+            error_embed = await format_embed_message(
+                title="⚠️ Server Connection Error",
+                description=f"Could not connect to the endpoint hosting this model: {server_status['message']}",
+                color=discord.Color.orange()
+            )
+            await interaction.followup.send(embed=error_embed)
             return
         
-        # Build request data according to Ollama API spec
-        request_data = {
-            "model": name,
+        # Create loading/thinking indicator
+        thinking_embed = await format_embed_message(
+            title="💭 Thinking...",
+            description=f"Sending your prompt to **{model_name}**...",
+            color=discord.Color.purple()
+        )
+        thinking_msg = await interaction.followup.send(embed=thinking_embed)
+        
+        # Prepare the API request
+        api_url = f"http://{endpoint_ip}:{endpoint_port}/api/generate"
+        
+        payload = {
+            "model": model_name,
             "prompt": prompt,
+            "system": system_prompt if system_prompt else None,
             "stream": False,
-            "temperature": safe_temp,
-            "max_tokens": safe_max_tokens
+            "temperature": temperature,
+            "max_tokens": max_tokens
         }
         
-        # Add system prompt if provided
-        if system_prompt:
-            request_data["system"] = system_prompt
+        # Remove None values from payload
+        payload = {k: v for k, v in payload.items() if v is not None}
         
-        # Calculate dynamic timeout based on prompt length, model size, and max tokens
-        prompt_length = len(prompt)
-        base_timeout = 180  # Base timeout in seconds (3 minutes)
-        
-        # Factor in prompt length (longer prompts need more time)
-        prompt_factor = 1.0 + (prompt_length / 1000)  # Add 1 second per 1000 chars
-        
-        # Factor in model complexity based on parameter size
-        param_factor = 1.0
-        if param_size:
-            # Extract number from strings like "7B", "13B", etc.
-            try:
-                if "B" in param_size:
-                    size_num = float(param_size.replace("B", "").strip())
-                    # Special handling for very large models (50B+)
-                    if size_num >= 50:
-                        param_factor = 2.5 + (size_num / 20)  # Much more time for 70B models
-                    else:
-                        param_factor = 1.0 + (size_num / 10)  # Standard scaling for smaller models  # Larger models get more time
-            except ValueError:
-                # If we can't parse it, use default factor
-                param_factor = 1.5
-        
-        # Factor in max_tokens (more tokens = more generation time)
-        token_factor = max(1.0, safe_max_tokens / 1000)
-        
-        # Calculate final timeout (minimum 180s, maximum 900s)
-        dynamic_timeout = min(1500, max(180, base_timeout * prompt_factor * param_factor * token_factor))
-        
-        # Format timeout for display
-        timeout_message = f"Timeout set to {int(dynamic_timeout)} seconds based on prompt length and model size."
+        # Log the request details
         if verbose:
-            logger.info(f"Dynamic timeout for {name}: {dynamic_timeout:.1f}s (prompt: {prompt_length} chars, model: {param_size}, max_tokens: {safe_max_tokens})")
-            await safe_followup(interaction, f"Using Model: {name}\nSending prompt to {ip}:{port}...\n{timeout_message}")
-        else:
-            await safe_followup(interaction, f"Using Model: {name}\nSending prompt to {ip}:{port}...")
+            logger.info(f"Request to {api_url}: {json.dumps(payload)}")
         
-        # Record start time for verbose output
-        start_time = datetime.now()
+        start_time = time.time()
         
         # Send request to Ollama API
         try:
-            async with session.post(
-                f"http://{ip}:{port}/api/generate", 
-                json=request_data, 
-                timeout=dynamic_timeout
-            ) as response:
-                if response.status == 200:
-                    # Get the raw response text for verbose output
-                    raw_response_text = await response.text()
-                    result = json.loads(raw_response_text)
-                    response_text = result.get("response", "No response received.")
-                    
-                    # Get stats if available
-                    eval_count = result.get("eval_count", 0)
-                    eval_duration = result.get("eval_duration", 0)
-                    total_duration = result.get("total_duration", 0)
-                    
-                    # Format the response with proper code blocks and sections
-                    formatted_response = f"**Response from {name} (ID: {model_id}):**\n"
-                    
-                    # Check if response contains a <think> block
-                    if "<think>" in response_text and "</think>" in response_text:
-                        # Split into think and response parts
-                        think_parts = response_text.split("</think>")
-                        think_text = think_parts[0].replace("<think>", "").strip()
-                        response_text = think_parts[1].strip() if len(think_parts) > 1 else ""
-                        
-                        # Format think block
-                        formatted_response += "**Thinking Process:**\n```\n" + think_text + "\n```\n\n"
-                        
-                        if response_text:
-                            formatted_response += "**Response:**\n"
-                    
-                    # Process the main response text
-                    # Look for code blocks in the response
-                    import re
-                    code_pattern = r'```(?:\w+)?\n(.*?)```'
-                    code_blocks = re.finditer(code_pattern, response_text, re.DOTALL)
-                    last_end = 0
-                    final_response = ""
-                    
-                    for match in code_blocks:
-                        # Add text before this code block
-                        text_before = response_text[last_end:match.start()].strip()
-                        if text_before:
-                            final_response += text_before + "\n\n"
-                        
-                        # Add the code block with its original language specifier if any
-                        code_block = match.group(0)
-                        final_response += code_block + "\n\n"
-                        last_end = match.end()
-                    
-                    # Add any remaining text
-                    if last_end < len(response_text):
-                        remaining_text = response_text[last_end:].strip()
-                        if remaining_text:
-                            final_response += remaining_text
-                    
-                    formatted_response += final_response
-                    
-                    # Add stats
-                    stats = "\n\n**Generation Stats:**\n```"
-                    if eval_count > 0:
-                        stats += f"\nTokens: {eval_count}"
-                    if total_duration > 0:
-                        total_time_sec = total_duration / 1000000000
-                        stats += f"\nTotal time: {total_time_sec:.2f}s"
-                    elif eval_duration > 0:
-                        eval_time_sec = eval_duration / 1000000
-                        stats += f"\nGeneration time: {eval_time_sec:.2f}s"
-                    if eval_duration > 0 and eval_count > 0:
-                        tokens_per_second = eval_count / (eval_duration / 1000000000)
-                        stats += f"\nSpeed: {tokens_per_second:.2f} tokens/sec"
-                    stats += "\n```"
-                    
-                    formatted_response += stats
-                    
-                    # If verbose mode is enabled, show the raw API request and response
-                    if verbose:
-                        # Calculate total request time
-                        end_time = datetime.now()
-                        total_time = (end_time - start_time).total_seconds()
-                        
-                        # Build verbose output
-                        verbose_output = f"**API Request/Response Details:**\n\n"
-                        verbose_output += f"**Request URL:** `http://{ip}:{port}/api/generate`\n\n"
-                        verbose_output += f"**Request Body:**\n```json\n{json.dumps(request_data, indent=2)}\n```\n\n"
-                        verbose_output += f"**Response Status:** {response.status} {response.reason}\n\n"
-                        verbose_output += f"**Response Headers:**\n```\n"
-                        for header, value in response.headers.items():
-                            verbose_output += f"{header}: {value}\n"
-                        verbose_output += "```\n\n"
-                        verbose_output += f"**Raw Response:**\n```json\n{json.dumps(json.loads(raw_response_text), indent=2)}\n```\n\n"
-                        verbose_output += f"**Total Time:** {total_time:.2f} seconds\n"
-                        
-                        # Send verbose output first
-                        await safe_followup(interaction, verbose_output)
-                    
-                    await safe_followup(interaction, formatted_response)
-                else:
-                    response_text = await response.text()
-                    
-                    # If verbose mode is enabled, show more details about the error
-                    if verbose:
-                        error_output = f"**API Error Details:**\n\n"
-                        error_output += f"**Request URL:** `http://{ip}:{port}/api/generate`\n\n"
-                        error_output += f"**Request Body:**\n```json\n{json.dumps(request_data, indent=2)}\n```\n\n"
-                        error_output += f"**Response Status:** {response.status} {response.reason}\n\n"
-                        error_output += f"**Response Headers:**\n```\n"
-                        for header, value in response.headers.items():
-                            error_output += f"{header}: {value}\n"
-                        error_output += "```\n\n"
-                        error_output += f"**Error Response:**\n```\n{response_text}\n```\n"
-                        
-                        await safe_followup(interaction, error_output)
-                    else:
-                        await safe_followup(interaction, f"Error: {response.status} - {response_text}")
-            
+            async with session.post(api_url, json=payload, timeout=calculate_dynamic_timeout(model_name, prompt, max_tokens)) as response:
+                # Check for errors
+                if response.status != 200:
+                    error_text = await response.text()
+                    error_embed = await format_embed_message(
+                        title="⚠️ API Error",
+                        description=f"Error from Ollama API: HTTP {response.status}\n```\n{error_text}\n```",
+                        color=discord.Color.red()
+                    )
+                    await thinking_msg.edit(embed=error_embed)
+                    return
+                
+                # Parse JSON response
+                result = await response.json()
         except asyncio.TimeoutError:
-            await safe_followup(interaction, f"Request timed out after {int(dynamic_timeout)} seconds. The model may be taking too long to respond.")
-        except aiohttp.ClientError as e:
-            logger.error(f"Connection error in chat: {str(e)}")
-            await safe_followup(interaction, f"Request failed: {str(e)}")
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parsing JSON response: {str(e)}")
-            await safe_followup(interaction, f"Error parsing response from the model: {str(e)}")
+            error_embed = await format_embed_message(
+                title="⏱️ Request Timeout",
+                description=f"The request to the model timed out. Try a shorter prompt or fewer max_tokens.",
+                color=discord.Color.orange()
+            )
+            await thinking_msg.edit(embed=error_embed)
+            return
+        except Exception as e:
+            error_embed = await format_embed_message(
+                title="❌ Request Error",
+                description=f"Error sending request: {str(e)}",
+                color=discord.Color.red()
+            )
+            await thinking_msg.edit(embed=error_embed)
+            return
         
+        # Calculate response time and processing stats
+        end_time = time.time()
+        response_time = end_time - start_time
+        
+        # Parse response
+        model_response = result.get("response", "No response received")
+        eval_count = result.get("eval_count", 0)
+        total_duration = result.get("total_duration", 0)
+        eval_duration = result.get("eval_duration", 0)
+        
+        # Calculate tokens per second if available
+        tokens_per_second = round(eval_count / (eval_duration / 1000000000)) if eval_duration > 0 else "N/A"
+        
+        # Save chat history if needed
+        # [chat history saving code would go here]
+        
+        # Format response for Discord display
+        # Check if the response has code blocks
+        has_code = "```" in model_response
+        
+        # Create embed for the result
+        if len(model_response) <= 4000 and not has_code:
+            # For shorter responses without code, use a single embed
+            response_embed = await format_embed_message(
+                title=f"💬 Response from {model_name}",
+                description=model_response,
+                color=discord.Color.green()
+            )
+            
+            # Add metrics as fields
+            response_embed.add_field(
+                name="⏱️ Response Time",
+                value=f"{response_time:.2f}s",
+                inline=True
+            )
+            
+            response_embed.add_field(
+                name="🔢 Tokens Generated",
+                value=f"{eval_count:,}",
+                inline=True
+            )
+            
+            response_embed.add_field(
+                name="⚡ Tokens/Second",
+                value=f"{tokens_per_second:,}" if isinstance(tokens_per_second, int) else tokens_per_second,
+                inline=True
+            )
+            
+            # Add system prompt info if present
+            if system_prompt:
+                response_embed.add_field(
+                    name="🧠 System Prompt",
+                    value=f"```\n{system_prompt[:100]}{'...' if len(system_prompt) > 100 else ''}\n```",
+                    inline=False
+                )
+            
+            # Add user prompt field
+            response_embed.add_field(
+                name="🙋 Your Prompt",
+                value=f"```\n{prompt[:100]}{'...' if len(prompt) > 100 else ''}\n```",
+                inline=False
+            )
+            
+            await thinking_msg.edit(embed=response_embed)
+        else:
+            # For longer responses or those with code blocks, split into multiple messages
+            
+            # First, send a header embed with metadata
+            header_embed = await format_embed_message(
+                title=f"💬 Response from {model_name}",
+                description="The response contains code blocks or is too long for a single embed. See below:",
+                color=discord.Color.green()
+            )
+            
+            # Add metrics as fields
+            header_embed.add_field(
+                name="⏱️ Response Time",
+                value=f"{response_time:.2f}s",
+                inline=True
+            )
+            
+            header_embed.add_field(
+                name="🔢 Tokens Generated",
+                value=f"{eval_count:,}",
+                inline=True
+            )
+            
+            header_embed.add_field(
+                name="⚡ Tokens/Second",
+                value=f"{tokens_per_second:,}" if isinstance(tokens_per_second, int) else tokens_per_second,
+                inline=True
+            )
+            
+            # Add prompt info
+            header_embed.add_field(
+                name="🙋 Your Prompt",
+                value=f"```\n{prompt[:100]}{'...' if len(prompt) > 100 else ''}\n```",
+                inline=False
+            )
+            
+            await thinking_msg.edit(embed=header_embed)
+            
+            # Then send the full response as regular messages, preserving code blocks
+            
+            # Process the response to properly format code blocks
+            # First, check if there are already code blocks
+            if has_code:
+                # Split by code blocks to preserve them
+                await safe_followup(interaction, model_response)
+            else:
+                # For plain text, split into chunks
+                chunk_size = 1950  # Leave some room for formatting
+                for i in range(0, len(model_response), chunk_size):
+                    chunk = model_response[i:i+chunk_size]
+                    await interaction.followup.send(f"```\n{chunk}\n```")
+        
+        # If verbose, show API details
+        if verbose:
+            api_details = json.dumps(result, indent=2)
+            # Format it as code for readability
+            for i in range(0, len(api_details), 1950):
+                chunk = api_details[i:i+1950]
+                await interaction.followup.send(f"```json\n{chunk}\n```")
+    
     except Exception as e:
-        logger.error(f"Error in chat: {str(e)}")
-        await safe_followup(interaction, f"Error: {str(e)}")
+        logger.error(f"Error in chat command: {str(e)}")
+        error_embed = await format_embed_message(
+            title="❌ Error",
+            description=f"An error occurred: ```\n{str(e)}\n```",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=error_embed)
 
 @bot.tree.command(name="find_model_endpoints", description="Find endpoints hosting a specific model")
 @app_commands.describe(
@@ -4480,6 +4352,323 @@ async def get_endpoint(endpoint_id):
         logger.error(f"Error retrieving endpoint: {str(e)}")
         security_logger.error(f"Exception during endpoint retrieval: {str(e)}")
         return None
+
+# Add new formatting utilities
+async def format_embed_message(
+    title: str, 
+    description: str = None, 
+    fields: List[Dict[str, Union[str, bool]]] = None, 
+    color: discord.Color = discord.Color.blue(),
+    footer_text: str = None,
+    thumbnail_url: str = None,
+    image_url: str = None,
+    author_name: str = None,
+    author_icon_url: str = None,
+    timestamp: bool = True
+) -> discord.Embed:
+    """
+    Create a consistently formatted embed message
+    
+    Args:
+        title: The title of the embed
+        description: The description of the embed (supports markdown)
+        fields: List of dicts with name, value, and inline keys
+        color: The color of the embed
+        footer_text: Text to display in the footer
+        thumbnail_url: URL for the thumbnail image
+        image_url: URL for the main image
+        author_name: Name to display in the author field
+        author_icon_url: Icon URL for the author field
+        timestamp: Whether to include the current time as a timestamp
+        
+    Returns:
+        discord.Embed: A formatted embed message
+    """
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+    
+    # Add fields if provided
+    if fields:
+        for field in fields:
+            embed.add_field(
+                name=field.get("name", ""),
+                value=field.get("value", ""),
+                inline=field.get("inline", False)
+            )
+    
+    # Add footer
+    if footer_text:
+        embed.set_footer(text=footer_text)
+    
+    # Add timestamp if requested
+    if timestamp:
+        embed.timestamp = datetime.now(timezone.utc)
+    
+    # Add thumbnail if provided
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    
+    # Add image if provided
+    if image_url:
+        embed.set_image(url=image_url)
+    
+    # Add author if provided
+    if author_name:
+        embed.set_author(
+            name=author_name,
+            icon_url=author_icon_url if author_icon_url else discord.Embed.Empty
+        )
+    
+    return embed
+
+async def format_list_as_pages(
+    items: List[Any],
+    title: str,
+    description: str = None,
+    color: discord.Color = discord.Color.blue(),
+    items_per_page: int = 10,
+    format_item = lambda i, item: f"{i+1}. {item}"
+) -> List[discord.Embed]:
+    """
+    Format a list of items as multiple embed pages for pagination
+    
+    Args:
+        items: List of items to format
+        title: The title for each embed page
+        description: A description to include at the top of each page
+        color: The color for the embeds
+        items_per_page: Number of items to display per page
+        format_item: Function to format each item (receives index and item)
+        
+    Returns:
+        List[discord.Embed]: List of embed pages
+    """
+    pages = []
+    
+    # Calculate total pages
+    total_pages = (len(items) + items_per_page - 1) // items_per_page
+    
+    for page_num in range(total_pages):
+        # Get items for this page
+        start_idx = page_num * items_per_page
+        end_idx = min(start_idx + items_per_page, len(items))
+        page_items = items[start_idx:end_idx]
+        
+        # Format items - handling both async and sync functions
+        formatted_items = []
+        for i, item in enumerate(page_items):
+            result = format_item(i + start_idx, item)
+            # Check if result is a coroutine (async function)
+            if asyncio.iscoroutine(result):
+                # Await the coroutine to get the actual result
+                result = await result
+            formatted_items.append(result)
+            
+        content = "\n".join(formatted_items)
+        
+        # Create the embed
+        page_description = f"{description}\n\n{content}" if description else content
+        
+        # Add page number to title if multiple pages
+        page_title = f"{title} (Page {page_num+1}/{total_pages})" if total_pages > 1 else title
+        
+        # Create the embed
+        embed = discord.Embed(
+            title=page_title,
+            description=page_description,
+            color=color
+        )
+        
+        # Add footer with pagination info
+        if total_pages > 1:
+            embed.set_footer(text=f"Page {page_num+1} of {total_pages} · {len(items)} total items")
+        else:
+            embed.set_footer(text=f"{len(items)} total items")
+            
+        embed.timestamp = datetime.now(timezone.utc)
+        
+        pages.append(embed)
+    
+    return pages
+
+async def format_model_details(model, include_server_info=False) -> str:
+    """Format model details in a consistent, readable format"""
+    # Start with model name, bolded
+    formatted = f"**{model['name']}**"
+    
+    # Add parameter size and quantization if available
+    if model.get('parameter_size'):
+        formatted += f" • {model['parameter_size']}"
+    if model.get('quantization_level'):
+        formatted += f" • {model['quantization_level']}"
+    
+    # Add model size if available
+    if model.get('size_mb'):
+        size_mb = float(model['size_mb'])
+        if size_mb > 1000:
+            formatted += f" • {size_mb/1000:.1f} GB"
+        else:
+            formatted += f" • {size_mb:.1f} MB"
+    
+    # Add server info if requested and available
+    if include_server_info and model.get('ip') and model.get('port'):
+        formatted += f"\n└ Server: `{model['ip']}:{model['port']}`"
+    
+    # Add model ID if available
+    if model.get('id'):
+        formatted += f" (ID: `{model['id']}`)"
+    
+    return formatted
+
+def format_code_or_text(text, language=None):
+    """Format content either as code block or regular text based on content"""
+    # If content looks like code (contains specific syntax elements),
+    # format it as a code block with appropriate language
+    has_code_syntax = any(marker in text for marker in ['{', '}', '()', '[]', ';', '===', 'function', 'const ', 'let ', 'var '])
+    is_long = len(text.split('\n')) > 5 
+    
+    if language or has_code_syntax or is_long:
+        lang_spec = language if language else ""
+        return f"```{lang_spec}\n{text}\n```"
+    else:
+        return text
+
+@bot.tree.command(name="model_status", description="Check status of a specific model")
+@app_commands.describe(
+    model_id="ID of the model to check",
+    check_connectivity="Test if the endpoint is currently reachable",
+    verbose="Show detailed information about the model"
+)
+async def model_status(
+    interaction: discord.Interaction,
+    model_id: int,
+    check_connectivity: bool = True,
+    verbose: bool = False
+):
+    """Check the status of a specific model and its endpoint"""
+    if not await safe_defer(interaction):
+        return
+    
+    try:
+        # Get model details
+        query = """
+            SELECT m.id, m.name, m.parameter_size, m.quantization_level, 
+                   e.ip, e.port, m.size_mb, e.is_active, e.verified, 
+                   e.scan_date, e.last_check_date, e.inactive_reason
+            FROM models m
+            JOIN endpoints e ON m.endpoint_id = e.id
+            WHERE m.id = %s
+        """
+        model = Database.fetch_one(query, (model_id,))
+        
+        if not model:
+            await safe_followup(interaction, embed=await format_embed_message(
+                title="❓ Model Not Found",
+                description=f"No model found with ID {model_id}",
+                color=discord.Color.orange()
+            ))
+            return
+            
+        id, name, param_size, quant_level, ip, port, size_mb, is_active, verified, scan_date, last_check, inactive_reason = model
+        
+        # Create embed with model details
+        embed = discord.Embed(
+            title=f"Model Status: {name}",
+            description=f"ID: {id} | {param_size or 'Unknown'} | {quant_level or 'Unknown'}",
+            color=discord.Color.blue()
+        )
+        
+        # Add endpoint info
+        embed.add_field(
+            name="Endpoint",
+            value=f"`{ip}:{port}`",
+            inline=False
+        )
+        
+        # Add model size if available
+        if size_mb:
+            size_display = f"{float(size_mb)/1000:.2f} GB" if float(size_mb) > 1000 else f"{float(size_mb):.2f} MB"
+            embed.add_field(name="Size", value=size_display, inline=True)
+            
+        # Status info
+        status_parts = []
+        if verified:
+            status_parts.append("✅ Verified")
+        else:
+            status_parts.append("❌ Not Verified")
+            
+        if is_active:
+            status_parts.append("🟢 Active")
+        else:
+            status_parts.append(f"🔴 Inactive")
+            if inactive_reason:
+                status_parts.append(f"Reason: {inactive_reason}")
+                
+        embed.add_field(name="Status", value="\n".join(status_parts), inline=True)
+        
+        # Add dates
+        dates = []
+        if scan_date:
+            dates.append(f"First Seen: {scan_date}")
+        if last_check:
+            dates.append(f"Last Checked: {last_check}")
+            
+        if dates:
+            embed.add_field(name="Dates", value="\n".join(dates), inline=True)
+            
+        # Check connectivity if requested
+        if check_connectivity:
+            await safe_followup(interaction, "Checking endpoint connectivity...")
+            
+            is_reachable, error = await check_server_connectivity(ip, port)
+            
+            if is_reachable:
+                embed.add_field(
+                    name="Connectivity",
+                    value="✅ Endpoint is currently reachable",
+                    inline=False
+                )
+            else:
+                embed.add_field(
+                    name="Connectivity",
+                    value=f"❌ Endpoint is not reachable\nError: {error}",
+                    inline=False
+                )
+        
+        # Add more detailed info if verbose is enabled
+        if verbose:
+            # Get additional model info
+            additional_query = """
+                SELECT COUNT(*) FROM models
+                WHERE endpoint_id = (SELECT endpoint_id FROM models WHERE id = %s)
+            """
+            additional_result = Database.fetch_one(additional_query, (model_id,))
+            model_count = additional_result[0] if additional_result else 0
+            
+            # Add it to the embed
+            embed.add_field(
+                name="Additional Info",
+                value=f"This endpoint hosts {model_count} model(s).",
+                inline=False
+            )
+            
+        # Set timestamp
+        embed.timestamp = datetime.now(timezone.utc)
+        
+        # Send the response
+        await safe_followup(interaction, embed=embed)
+        
+    except Exception as e:
+        logger.error(f"Error in model_status: {str(e)}")
+        error_embed = await format_embed_message(
+            title="Error Checking Model Status",
+            description=f"An error occurred: ```{str(e)}```",
+            color=discord.Color.red()
+        )
+        await safe_followup(interaction, embed=error_embed)
 
 # Main function to run the bot
 def main():

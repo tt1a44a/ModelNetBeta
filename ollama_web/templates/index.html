@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Ollama Scanner Web UI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Dashboard</h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="number text-primary">{{ stats.total_endpoints }}</div>
+                <div class="label">Total Endpoints</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="number text-success">{{ stats.verified_endpoints }}</div>
+                <div class="label">Verified Endpoints</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="number text-warning">{{ stats.honeypot_endpoints }}</div>
+                <div class="label">Honeypots</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="number text-info">{{ stats.total_models }}</div>
+                <div class="label">Total Models</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Endpoints -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recently Added Endpoints</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>IP</th>
+                                <th>Port</th>
+                                <th>Verified</th>
+                                <th>Added</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for endpoint in recent_endpoints %}
+                            <tr>
+                                <td><a href="{{ url_for('endpoint_detail', endpoint_id=endpoint.id) }}">{{ endpoint.ip }}</a></td>
+                                <td>{{ endpoint.port }}</td>
+                                <td>
+                                    {% if endpoint.verified == 1 %}
+                                    <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ endpoint.scan_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">No recent endpoints</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{{ url_for('endpoints') }}" class="btn btn-primary btn-sm">View All Endpoints</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Models -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Popular Models</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Parameter Size</th>
+                                <th>Instances</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model in popular_models %}
+                            <tr>
+                                <td><a href="{{ url_for('models', search=model.name) }}">{{ model.name }}</a></td>
+                                <td>{{ model.parameter_size or 'Unknown' }}</td>
+                                <td>{{ model.instances }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center">No models found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{{ url_for('models') }}" class="btn btn-primary btn-sm">View All Models</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('endpoints') }}" class="btn btn-primary btn-lg d-block mb-2">
+                            <i class="fa-solid fa-server me-2"></i> Manage Endpoints
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('models') }}" class="btn btn-success btn-lg d-block mb-2">
+                            <i class="fa-solid fa-brain me-2"></i> Browse Models
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('verify_all') }}" class="btn btn-warning btn-lg d-block mb-2">
+                            <i class="fa-solid fa-check-circle me-2"></i> Verify All Endpoints
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

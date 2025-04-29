@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Model - {{ model.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('models') }}">Models</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('model_detail', model_id=model.id) }}">{{ model.name }}</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Edit Model: {{ model.name }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('update_model', model_id=model.id) }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Model Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ model.name }}" required>
+                                <div class="form-text">The full name of the model (e.g., llama2:7b-chat).</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="family" class="form-label">Model Family</label>
+                                <input type="text" class="form-control" id="family" name="family" value="{{ model.family or '' }}">
+                                <div class="form-text">The model family (e.g., Llama, Mistral, Phi).</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="parameter_size" class="form-label">Parameter Size</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="parameter_size" name="parameter_size" value="{{ model.parameter_size or '' }}" step="0.1">
+                                    <span class="input-group-text">B</span>
+                                </div>
+                                <div class="form-text">Size in billions of parameters (e.g., 7, a13).</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="quantization_level" class="form-label">Quantization</label>
+                                <select class="form-select" id="quantization_level" name="quantization_level">
+                                    <option value="" {% if not model.quantization_level %}selected{% endif %}>None</option>
+                                    <option value="Q4_0" {% if model.quantization_level == 'Q4_0' %}selected{% endif %}>Q4_0</option>
+                                    <option value="Q4_K_M" {% if model.quantization_level == 'Q4_K_M' %}selected{% endif %}>Q4_K_M</option>
+                                    <option value="Q5_0" {% if model.quantization_level == 'Q5_0' %}selected{% endif %}>Q5_0</option>
+                                    <option value="Q5_K_M" {% if model.quantization_level == 'Q5_K_M' %}selected{% endif %}>Q5_K_M</option>
+                                    <option value="Q6_K" {% if model.quantization_level == 'Q6_K' %}selected{% endif %}>Q6_K</option>
+                                    <option value="Q8_0" {% if model.quantization_level == 'Q8_0' %}selected{% endif %}>Q8_0</option>
+                                    <option value="F16" {% if model.quantization_level == 'F16' %}selected{% endif %}>F16</option>
+                                    <option value="F32" {% if model.quantization_level == 'F32' %}selected{% endif %}>F32</option>
+                                    <option value="Other" {% if model.quantization_level and model.quantization_level not in ['Q4_0', 'Q4_K_M', 'Q5_0', 'Q5_K_M', 'Q6_K', 'Q8_0', 'F16', 'F32'] %}selected{% endif %}>Other</option>
+                                </select>
+                                <div class="form-text">The quantization method used for the model.</div>
+                            </div>
+                            
+                            <div id="other_quantization_div" class="mb-3" style="display: {% if model.quantization_level and model.quantization_level not in ['Q4_0', 'Q4_K_M', 'Q5_0', 'Q5_K_M', 'Q6_K', 'Q8_0', 'F16', 'F32'] %}block{% else %}none{% endif %};">
+                                <label for="other_quantization" class="form-label">Other Quantization</label>
+                                <input type="text" class="form-control" id="other_quantization" name="other_quantization" value="{{ model.quantization_level if model.quantization_level and model.quantization_level not in ['Q4_0', 'Q4_K_M', 'Q5_0', 'Q5_K_M', 'Q6_K', 'Q8_0', 'F16', 'F32'] else '' }}">
+                                <div class="form-text">Custom quantization value.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="size_mb" class="form-label">Size (MB)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="size_mb" name="size_mb" value="{{ model.size_mb or '' }}" step="0.01">
+                                    <span class="input-group-text">MB</span>
+                                </div>
+                                <div class="form-text">Size in MB as reported by Ollama.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="tags" class="form-label">Tags</label>
+                                <input type="text" class="form-control" id="tags" name="tags" value="{{ model.tags or '' }}">
+                                <div class="form-text">Comma-separated list of tags (e.g., chat, instruct, coding).</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="10">{{ model.description or '' }}</textarea>
+                                <div class="form-text">Description, usage, and notes about the model. HTML is allowed.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('model_detail', model_id=model.id) }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show/hide the "Other Quantization" field based on selection
+        const quantizationSelect = document.getElementById('quantization_level');
+        const otherQuantizationDiv = document.getElementById('other_quantization_div');
+        
+        quantizationSelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                otherQuantizationDiv.style.display = 'block';
+            } else {
+                otherQuantizationDiv.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %} 

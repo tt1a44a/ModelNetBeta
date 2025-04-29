@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Models - Ollama Scanner Web UI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item active">Models</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Models</h1>
+            <div>
+                <a href="{{ url_for('export_models') }}" class="btn btn-primary">
+                    <i class="fa-solid fa-download"></i> Export CSV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Filters -->
+    <div class="col-md-3">
+        <div class="card sticky-top" style="top: 20px; z-index: 1;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Filters</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('models') }}" method="get">
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" placeholder="Model name..." value="{{ request.args.get('search', '') }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="parameter_size" class="form-label">Parameter Size</label>
+                        <select class="form-select" id="parameter_size" name="parameter_size">
+                            <option value="" {% if not request.args.get('parameter_size') %}selected{% endif %}>All Sizes</option>
+                            <option value="7B" {% if request.args.get('parameter_size') == '7B' %}selected{% endif %}>7B</option>
+                            <option value="13B" {% if request.args.get('parameter_size') == '13B' %}selected{% endif %}>13B</option>
+                            <option value="34B" {% if request.args.get('parameter_size') == '34B' %}selected{% endif %}>34B</option>
+                            <option value="70B" {% if request.args.get('parameter_size') == '70B' %}selected{% endif %}>70B</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quantization" class="form-label">Quantization</label>
+                        <select class="form-select" id="quantization" name="quantization">
+                            <option value="" {% if not request.args.get('quantization') %}selected{% endif %}>Any Quantization</option>
+                            <option value="Q4_0" {% if request.args.get('quantization') == 'Q4_0' %}selected{% endif %}>Q4_0</option>
+                            <option value="Q4_K_M" {% if request.args.get('quantization') == 'Q4_K_M' %}selected{% endif %}>Q4_K_M</option>
+                            <option value="Q5_K_M" {% if request.args.get('quantization') == 'Q5_K_M' %}selected{% endif %}>Q5_K_M</option>
+                            <option value="Q6_K" {% if request.args.get('quantization') == 'Q6_K' %}selected{% endif %}>Q6_K</option>
+                            <option value="Q8_0" {% if request.args.get('quantization') == 'Q8_0' %}selected{% endif %}>Q8_0</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="endpoint_status" class="form-label">Endpoint Status</label>
+                        <select class="form-select" id="endpoint_status" name="endpoint_status">
+                            <option value="" {% if not request.args.get('endpoint_status') %}selected{% endif %}>All Endpoints</option>
+                            <option value="active" {% if request.args.get('endpoint_status') == 'active' %}selected{% endif %}>Active Only</option>
+                            <option value="verified" {% if request.args.get('endpoint_status') == 'verified' %}selected{% endif %}>Verified Only</option>
+                            <option value="non_honeypot" {% if request.args.get('endpoint_status') == 'non_honeypot' %}selected{% endif %}>Non-Honeypot Only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sort" class="form-label">Sort By</label>
+                        <select class="form-select" id="sort" name="sort">
+                            <option value="name" {% if request.args.get('sort') == 'name' or not request.args.get('sort') %}selected{% endif %}>Name</option>
+                            <option value="parameter_size" {% if request.args.get('sort') == 'parameter_size' %}selected{% endif %}>Parameter Size</option>
+                            <option value="size_mb" {% if request.args.get('sort') == 'size_mb' %}selected{% endif %}>File Size</option>
+                            <option value="instances" {% if request.args.get('sort') == 'instances' %}selected{% endif %}>Instance Count</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="order" class="form-label">Order</label>
+                        <select class="form-select" id="order" name="order">
+                            <option value="asc" {% if request.args.get('order') == 'asc' %}selected{% endif %}>Ascending</option>
+                            <option value="desc" {% if request.args.get('order') == 'desc' or not request.args.get('order') %}selected{% endif %}>Descending</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="{{ url_for('models') }}" class="btn btn-outline-secondary">Clear Filters</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Models Table -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Models ({{ models|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if models %}
+                <div class="table-responsive">
+                    <table class="table table-striped datatable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Parameter Size</th>
+                                <th>Quantization</th>
+                                <th>Size (MB)</th>
+                                <th>Endpoints</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model in models %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('model_detail', model_id=model.id) }}">{{ model.name }}</a>
+                                </td>
+                                <td>{{ model.parameter_size or 'Unknown' }}</td>
+                                <td>{{ model.quantization_level or 'None' }}</td>
+                                <td>{{ '%.2f'|format(model.size_mb) if model.size_mb else 'Unknown' }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ model.endpoints|length }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('model_detail', model_id=model.id) }}" class="btn btn-outline-primary">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_model', model_id=model.id) }}" class="btn btn-outline-secondary">
+                                            <i class="fa-solid fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if pagination %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mt-4">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('models', page=pagination.prev_num, **request.args) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page in pagination.iter_pages() %}
+                            {% if page %}
+                                {% if page == pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('models', page=page, **request.args) }}">{{ page }}</a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('models', page=pagination.next_num, **request.args) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="alert alert-info">
+                    No models found with the current filters.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
