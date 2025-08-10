@@ -159,9 +159,15 @@ python gabagoolfiend.py
 - **Ghetto Union Bank**: Adjust `length=8` in `generate_reference_code()` function
 - **Ghetto Union Bank**: Modify character set in `string.ascii_uppercase + string.digits`
 
-### Ticket Categories
+### Ticket CategoriesModelNetBeta
 - **Jeeves but with Drugs**: Add/remove buttons in `TicketButtonView` class
 - **Jeeves but with Drugs**: Customize button labels and styles
 
+## Planned Updates/Roadmap:
+- Unify bots into one single bot with multiple features;
+- Automated suspicious word/phrase flagging for manual review;
+- Create another bot to calculate split revenue.
+
+⭐Suggestions welcome!⭐
 ## 📝 License
 Licensed under the GNU General Public License v2.0.
