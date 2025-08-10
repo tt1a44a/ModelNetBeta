@@ -1,0 +1,132 @@
+-- Create user first (outside transaction to avoid issues)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ollama') THEN
+        CREATE USER ollama WITH PASSWORD 'your_secure_password_here';
+    END IF;
+END
+$$;
+
+-- Now wrap the schema creation in a transaction
+BEGIN;
+
+-- PostgreSQL schema for Ollama Scanner
+-- This file defines the new database schema for the Scanner-Pruner-Bot Integration
+
+-- Create extensions
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+
+-- Create servers table
+CREATE TABLE IF NOT EXISTS servers (
+    id SERIAL PRIMARY KEY,
+    ip VARCHAR(255) NOT NULL,
+    port INTEGER NOT NULL DEFAULT 11434,
+    status VARCHAR(50) DEFAULT 'scanned',
+    scan_date TIMESTAMP DEFAULT NOW(),
+    verified_date TIMESTAMP,
+    is_honeypot BOOLEAN DEFAULT FALSE,
+    honeypot_reason TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    inactive_reason TEXT,
+    last_check_date TIMESTAMP,
+    UNIQUE(ip, port),
+    CONSTRAINT check_port_range CHECK (port > 0 AND port <= 65535),
+    CONSTRAINT check_status_values CHECK (status IN ('scanned', 'verified', 'failed', 'inactive'))
+);
+
+-- Create models table
+CREATE TABLE IF NOT EXISTS models (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    server_id INTEGER REFERENCES servers(id) ON DELETE CASCADE,
+    params VARCHAR(50),
+    quant VARCHAR(50),
+    size BIGINT,
+    count INTEGER DEFAULT 0,
+    UNIQUE(name, server_id)
+);
+
+-- Create schema version tracking
+CREATE TABLE IF NOT EXISTS schema_version (
+    id SERIAL PRIMARY KEY,
+    version TEXT NOT NULL UNIQUE,
+    applied_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create metadata table
+CREATE TABLE IF NOT EXISTS metadata (
+    key VARCHAR(255) PRIMARY KEY,
+    value TEXT,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Add indexes for better query performance
+DO $$
+BEGIN
+    -- Create indexes only if they don't exist
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_servers_status') THEN
+        CREATE INDEX idx_servers_status ON servers(status);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_servers_scan_date') THEN
+        CREATE INDEX idx_servers_scan_date ON servers(scan_date);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_models_name') THEN
+        CREATE INDEX idx_models_name ON models(name);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_models_server_id') THEN
+        CREATE INDEX idx_models_server_id ON models(server_id);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_servers_honeypot') THEN
+        CREATE INDEX idx_servers_honeypot ON servers(is_honeypot);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_servers_active') THEN
+        CREATE INDEX idx_servers_active ON servers(is_active);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_servers_status_honeypot') THEN
+        CREATE INDEX idx_servers_status_honeypot ON servers(status, is_honeypot);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_servers_status_active') THEN
+        CREATE INDEX idx_servers_status_active ON servers(status, is_active);
+    END IF;
+END
+$$;
+
+-- Initialize default metadata values
+INSERT INTO metadata (key, value, updated_at) 
+VALUES 
+('last_scan_start', NULL, NOW()),
+('last_scan_end', NULL, NOW()),
+('last_prune_start', NULL, NOW()),
+('last_prune_end', NULL, NOW()),
+('scanned_count', '0', NOW()),
+('verified_count', '0', NOW()),
+('failed_count', '0', NOW())
+ON CONFLICT (key) DO NOTHING;
+
+-- Insert initial schema version (now with proper conflict handling)
+INSERT INTO schema_version (version) VALUES ('1.0.0')
+ON CONFLICT (version) DO NOTHING;
+
+-- Grant permissions to the database user
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ollama;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ollama;
+
+COMMIT;
+
+
+
+
+
+
+"Key Changes Made:
+1Moved user creation outside transaction
+2Added UNIQUE constraint to schema_version.version for proper conflict handling
+3Added data validation constraints for port and status
+4Fixed the ON CONFLICT clause to specify the conflict target
