@@ -14,20 +14,13 @@ from database import Database, init_database
 # TODO: Replace SQLite-specific code: dbFile = 'ollama_instances.db'  # the database file
 
 def checkDB():
-    # see if the database exists
-    if os.path.exists(dbFile) == False:
-        print("ERROR: Database file " + dbFile + " not found!")
-        print("Run ollama_scanner.py first to collect data.")
-        return False
-    
-    conn = Database()
-    cursor = # Using Database methods instead of cursor
+    # Initialize database connection
+    db = Database()
     
     # how many servers do we have?
-    Database.execute("SELECT COUNT(*) FROM servers")
-    count = Database.fetch_one(query, params)[0]
+    count = db.fetch_one("SELECT COUNT(*) FROM servers")[0]
     
-    conn.close()
+    db.close()
     
     if count == 0:
         print("No data found in the database.")

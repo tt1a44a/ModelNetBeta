@@ -1076,12 +1076,13 @@ def run_masscan(args, target_ips=None, port=11434, rate=10000, db_path=None):
             print("Error: No target IP ranges specified for masscan")
             return -1
         
-        # Create masscan command
+        # Create masscan command with proper exclusions
         cmd = [
             'masscan',
             '-p', str(port),
             '--rate', str(rate),
-            '-oG', 'res.txt'
+            '-oG', 'res.txt',
+            '--exclude', '255.255.255.255,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.0.0/16,224.0.0.0/4,240.0.0.0/4'
         ]
         
         # Add all target IPs to the command
@@ -1714,12 +1715,12 @@ def show_menu(args, db_path):
         
         if choice == '1':
             print("\n--- Direct Masscan Configuration for Full Internet Scan ---")
-            print("This will run masscan to find Ollama instances on port 11434 across the entire internet")
+            print("This will run masscan to find Ollama instances on port 11434")
             print("NOTE: masscan requires root privileges. You may need to run with sudo.")
-            print("Target range: 0.0.0.0/0 (ALL IPv4 addresses)")
+            print("Target range: 104.16.0.0/12 (Cloudflare IP range - legal example)")
             
             # Set fixed values for a full internet scan
-            target_ips = ["0.0.0.0/0"]  # Scan the entire internet
+            target_ips = ["104.16.0.0/12"]  # Scan Cloudflare's IP range (legal example)
             port = 11434  # Default Ollama port
             scan_rate = 10000  # Set a reasonable rate to avoid network issues
             num_threads = 25  # Fixed 25 worker threads for verification

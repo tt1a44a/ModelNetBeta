@@ -1,0 +1,89 @@
+ACTIVE FILES IN MODELNETBETA PROJECT
+=====================================
+
+SHELL SCRIPTS (.sh files) - ACTIVE:
+===================================
+
+Main Directory:
+- run_scanner.sh - ACTIVE - Main scanner startup script
+- run_pruner.sh - ACTIVE - Endpoint verification script  
+- run_both.sh - ACTIVE - Runs scanner + pruner in parallel
+- setup_database.sh - ACTIVE - Database initialization
+
+DiscordBot Directory:
+- DiscordBot/run_bot.sh - ACTIVE - Discord bot startup
+- DiscordBot/run_scanner.sh - ACTIVE - Scanner from DiscordBot dir
+- DiscordBot/run_pruner.sh - ACTIVE - Pruner from DiscordBot dir
+- DiscordBot/run_both.sh - ACTIVE - Combined scanner+pruner from DiscordBot
+- DiscordBot/setup_database.sh - ACTIVE - Database setup from DiscordBot
+
+PYTHON FILES (.py files) - ACTIVE:
+==================================
+
+Core System:
+- ollama_scanner.py - ACTIVE - Main scanner (1989 lines)
+- prune_bad_endpoints.py - ACTIVE - Endpoint verification (1012 lines)
+- database.py - ACTIVE - Database abstraction layer (554 lines)
+- query_models_fixed.py - ACTIVE - Database querying (fixed version)
+
+DiscordBot System:
+- DiscordBot/discord_bot.py - ACTIVE - Main Discord bot (4579 lines)
+- DiscordBot/ollama_models.py - ACTIVE - Model management
+- DiscordBot/database.py - ACTIVE - Database layer (duplicate)
+- DiscordBot/unified_commands.py - ACTIVE - Discord commands
+- DiscordBot/commands_for_syncing.py - ACTIVE - Command sync
+
+Additional Tools:
+- ollama_benchmark.py - ACTIVE - Performance benchmarking
+- ollama_benchmark_db.py - ACTIVE - Database benchmarking
+- update_schema.py - ACTIVE - Schema updates
+
+CONFIGURATION FILES - ACTIVE:
+=============================
+- .env - ACTIVE - Environment configuration
+- requirements.txt - ACTIVE - Python dependencies
+- DiscordBot/requirements.txt - ACTIVE - DiscordBot dependencies
+- docker-compose.yml - ACTIVE - PostgreSQL setup
+- schema/postgres_schema.sql - ACTIVE - Database schema
+
+CURRENT SYSTEM STATUS:
+=====================
+✅ Virtual Environment: Created and working
+✅ PostgreSQL Database: Running on port 5433
+✅ Database Schema: Initialized with all tables
+✅ Scanner: Working, connects to PostgreSQL
+✅ Pruner: Working, ready to verify endpoints
+✅ Query Tool: Working, can query database
+✅ Database Layer: Working, unified SQLite/PostgreSQL interface
+
+ISSUES TO FIX:
+=============
+- Missing psql command (PostgreSQL client) - but Python code works fine
+- No API keys configured (SHODAN_API_KEY, CENSYS_API_ID, CENSYS_API_SECRET)
+- Need to add API keys to .env file to get actual scanning results
+
+FILES TO CLEANUP (OLD/BROKEN):
+==============================
+- All *.db.bak.* files (36 database backups)
+- All migrate_*.py files (old migration scripts)
+- All *_test*.py files
+- All *_backup*.sql files
+- Multiple README files
+- Old status reports and documentation
+- query_models.py (has syntax errors, use query_models_fixed.py instead)
+
+HOW TO START THE SYSTEM:
+=======================
+1. Scanner Only:
+   ./run_scanner.sh --method shodan --limit 100
+
+2. Scanner + Pruner:
+   ./run_both.sh --scanner-method shodan --scanner-threads 5 --pruner-workers 5
+
+3. Discord Bot:
+   cd DiscordBot && ./run_bot.sh
+
+4. Query Database:
+   python query_models_fixed.py servers
+   python query_models_fixed.py models
+   python query_models_fixed.py search llama
