@@ -1703,7 +1703,7 @@ def show_menu(args, db_path):
         print("\n=========================================")
         print("       OLLAMA SCANNER MENU               ")
         print("=========================================")
-        print("1. Run masscan on ALL IPs (0.0.0.0/0)")
+        print("1. Run masscan on target IP range")
         print("2. Scan using masscan results file")
         print("3. Scan using Shodan API")
         print("4. Scan using Censys API")
@@ -1714,27 +1714,28 @@ def show_menu(args, db_path):
         choice = input("Enter your choice (1-6): ")
         
         if choice == '1':
-            print("\n--- Direct Masscan Configuration for Full Internet Scan ---")
+            print("\n--- Direct Masscan Configuration ---")
             print("This will run masscan to find Ollama instances on port 11434")
             print("NOTE: masscan requires root privileges. You may need to run with sudo.")
             print("Target range: 104.16.0.0/12 (Cloudflare IP range - legal example)")
             
-            # Set fixed values for a full internet scan
-            target_ips = ["104.16.0.0/12"]  # Scan Cloudflare's IP range (legal example)
+            # Set default target IP range - modify as needed for your authorized targets
+            target_ips = ["104.16.0.0/12"]  # Default: Cloudflare's IP range (change as needed)
             port = 11434  # Default Ollama port
             scan_rate = 10000  # Set a reasonable rate to avoid network issues
             num_threads = 25  # Fixed 25 worker threads for verification
             
             print(f"\nSCAN CONFIGURATION:")
-            print(f"- Target range: 0.0.0.0/0 (ENTIRE INTERNET)")
+            print(f"- Target range: {target_ips[0]} (Cloudflare IP range)")
             print(f"- Port: {port}")
             print(f"- Scan rate: {scan_rate} pps")
             print(f"- Verification threads: {num_threads}")
             print(f"- Database: {db_path}")
+            print(f"- Exclusions: Private networks and reserved IPs")
             print("\nWARNING: Scanning without proper authorization may be illegal.")
             print("Only scan networks you own or have explicit permission to scan.")
-            print("Scanning the entire internet may violate laws in many countries.")
-            print("This can result in legal consequences including criminal charges.")
+            print("This example uses Cloudflare's public IP range for demonstration.")
+            print("Replace with your own authorized target ranges.")
             
             confirm = input("\nAre you ABSOLUTELY SURE you want to continue with this scan? (y/n): ")
             
