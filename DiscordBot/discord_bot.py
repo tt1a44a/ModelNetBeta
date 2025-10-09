@@ -15,6 +15,8 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Optional
+from functools import partial
+from concurrent.futures import ThreadPoolExecutor
 from ollama_models import (
     setup_database, 
     get_models, 
@@ -33,6 +35,18 @@ import commands_for_syncing  # Import the new module
 
 # Added by migration script
 from database import Database, init_database, DATABASE_TYPE, get_db_manager
+
+# Thread pool for running sync functions in async context
+_thread_pool = ThreadPoolExecutor(max_workers=10)
+
+async def run_in_thread(func, *args, **kwargs):
+    """
+    Compatibility wrapper for asyncio.to_thread() (Python 3.9+)
+    Works on all Python versions by using ThreadPoolExecutor
+    """
+    loop = asyncio.get_event_loop()
+    pfunc = partial(func, *args, **kwargs)
+    return await loop.run_in_executor(_thread_pool, pfunc)
 
 # Set up logging
 logging.basicConfig(
@@ -3422,7 +3436,7 @@ async def process_model_chat(
             
             # Set a short timeout for this fetch operation
             result = await asyncio.wait_for(
-                asyncio.to_thread(Database.fetch_one, query, (model_name,)),
+                run_in_thread(Database.fetch_one, query, (model_name,)),
                 timeout=5.0  # 5 second timeout
             )
             
@@ -3443,7 +3457,7 @@ async def process_model_chat(
                 """
                 # Set a short timeout for this fetch operation
                 result = await asyncio.wait_for(
-                    asyncio.to_thread(Database.fetch_one, query, (f"%{model_name}%",)),
+                    run_in_thread(Database.fetch_one, query, (f"%{model_name}%",)),
                     timeout=5.0  # 5 second timeout
                 )
         except asyncio.TimeoutError:
