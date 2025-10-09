@@ -330,19 +330,20 @@ class PostgreSQLManager:
             query = query.replace('?', '%s')
             # Set a statement timeout to prevent hanging queries (10 seconds)
             cursor.execute("SET statement_timeout = 10000")  # 10 seconds in milliseconds
+            
+            # Debug logging
+            logger.debug(f"Executing query with params type: {type(params)}, params: {params}")
+            
             cursor.execute(query, params or ())
-            try:
-                results = cursor.fetchall()
-                return results
-            except Exception as fetch_err:
-                logger.error(f"Error fetching results: {fetch_err}")
-                logger.error(f"Query: {query}")
-                logger.error(f"Params: {params}")
-                raise
-        except psycopg2.Error as e:
-            logger.error(f"Error fetching all from PostgreSQL: {e}")
+            results = cursor.fetchall()
+            return results
+        except Exception as e:
+            logger.error(f"Error in fetch_all PostgreSQL: {type(e).__name__}: {e}")
             logger.error(f"Query: {query}")
             logger.error(f"Params: {params}")
+            logger.error(f"Params type: {type(params)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise
         finally:
             self.return_connection(conn)
