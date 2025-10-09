@@ -1619,7 +1619,7 @@ async def search_models(
             FROM models m
             WHERE m.name LIKE ?
             GROUP BY m.name, m.parameter_size, m.quantization_level
-            ORDER BY COALESCE({orderby}, 0)
+            ORDER BY {orderby}
             LIMIT ?
         """
         
@@ -1757,7 +1757,7 @@ async def models_by_param(
             FROM models m
             WHERE m.parameter_size LIKE ?
             GROUP BY m.name, m.parameter_size, m.quantization_level
-            ORDER BY COALESCE({orderby}, 0)
+            ORDER BY {orderby}
             LIMIT ?
         """
         
@@ -1872,7 +1872,7 @@ async def all_models(
                 COUNT(*) as server_count
             FROM models
             GROUP BY name, parameter_size, quantization_level
-            ORDER BY COALESCE({orderby}, 0)
+            ORDER BY {orderby}
             LIMIT %s
         """
         
@@ -3031,7 +3031,7 @@ async def list_models(
         # Complete the query with GROUP BY and ORDER BY
         query = base_query + f"""
             GROUP BY m.id, m.name, m.parameter_size, m.quantization_level
-            ORDER BY COALESCE({orderby}, 0)
+            ORDER BY {orderby}
             LIMIT %s
         """
         parameters.append(limit)
