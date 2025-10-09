@@ -1648,7 +1648,7 @@ async def search_models(
             servers_query = """
                 SELECT m.id, s.ip, s.port
                 FROM models m
-                JOIN servers s ON m.endpoint_id = s.id
+                JOIN endpoints s ON m.endpoint_id = s.id
                 WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
             """
             servers_params = (name, params, quant)
@@ -1784,7 +1784,7 @@ async def models_by_param(
             servers_query = """
                 SELECT m.id, s.ip, s.port
                 FROM models m
-                JOIN servers s ON m.endpoint_id = s.id
+                JOIN endpoints s ON m.endpoint_id = s.id
                 WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
                 LIMIT 3
             """
@@ -2754,7 +2754,7 @@ async def manage_models(
             model_query = """
                 SELECT m.name, s.ip, s.port, s.id
                 FROM models m
-                JOIN servers s ON m.endpoint_id = s.id
+                JOIN endpoints s ON m.endpoint_id = s.id
                 WHERE m.id = ?
             """
             model_params = (model_id,)
@@ -2832,13 +2832,13 @@ async def manage_models(
                 Database.execute("""
                     SELECT COUNT(*) 
                     FROM models m 
-                    JOIN servers s ON m.endpoint_id = s.id 
+                    JOIN endpoints s ON m.endpoint_id = s.id 
                     WHERE s.ip = ? AND s.port = ?
                 """, (server_ip, server_port))
                 model_count = Database.fetch_one("""
                     SELECT COUNT(*) 
                     FROM models m 
-                    JOIN servers s ON m.endpoint_id = s.id 
+                    JOIN endpoints s ON m.endpoint_id = s.id 
                     WHERE s.ip = ? AND s.port = ?
                 """, (server_ip, server_port))[0]
                 
@@ -2846,7 +2846,7 @@ async def manage_models(
                 Database.execute("""
                     SELECT m.id, m.name, m.parameter_size, m.quantization_level
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     WHERE s.ip = ? AND s.port = ?
                     ORDER BY m.name
                 """, (server_ip, server_port))
@@ -2854,7 +2854,7 @@ async def manage_models(
                 models = Database.fetch_all("""
                     SELECT m.id, m.name, m.parameter_size, m.quantization_level
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     WHERE s.ip = ? AND s.port = ?
                     ORDER BY m.name
                 """, (server_ip, server_port))
@@ -3008,7 +3008,7 @@ async def list_models(
                 m.quantization_level, 
                 COUNT(DISTINCT (s.ip || ':' || s.port)) as server_count
             FROM models m
-            JOIN servers s ON m.endpoint_id = s.id
+            JOIN endpoints s ON m.endpoint_id = s.id
             WHERE 1=1
         """
         

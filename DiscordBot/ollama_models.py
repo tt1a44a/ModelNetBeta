@@ -60,7 +60,7 @@ def get_models():
     query = '''
         SELECT m.id, s.ip, s.port, m.name, m.parameter_size, m.quantization_level, m.size_mb
         FROM models m
-        JOIN servers s ON m.endpoint_id = s.id
+        JOIN endpoints s ON m.endpoint_id = s.id
     '''
     models = Database.fetch_all(query)
     conn.close()
@@ -75,7 +75,7 @@ def get_model_by_id(model_id):
     query = '''
         SELECT m.id, s.ip, s.port, m.name, m.parameter_size, m.quantization_level, m.size_mb
         FROM models m
-        JOIN servers s ON m.endpoint_id = s.id
+        JOIN endpoints s ON m.endpoint_id = s.id
         WHERE m.id = ?
     '''
     model = Database.fetch_one(query, (model_id,))

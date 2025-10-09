@@ -101,7 +101,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                 SELECT m.id, m.name, m.parameter_size, m.quantization_level, s.ip, s.port
                 FROM user_selected_models usm
                 JOIN models m ON usm.model_id = m.id
-                JOIN servers s ON m.endpoint_id = s.id
+                JOIN endpoints s ON m.endpoint_id = s.id
                 WHERE usm.user_id = ?
             '''
             
@@ -313,7 +313,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                         m.quantization_level, 
                         COUNT(DISTINCT m.endpoint_id) as server_count
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     GROUP BY m.name, m.parameter_size, m.quantization_level
                     ORDER BY {orderby}
                     LIMIT ?
@@ -350,21 +350,21 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                         Database.execute("""
                             SELECT m.id, s.ip, s.port
                             FROM models m
-                            JOIN servers s ON m.endpoint_id = s.id
+                            JOIN endpoints s ON m.endpoint_id = s.id
                             WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
                         """, (name, params, quant))
                     elif search_type == "params" and query:
                         Database.execute("""
                             SELECT m.id, s.ip, s.port
                             FROM models m
-                            JOIN servers s ON m.endpoint_id = s.id
+                            JOIN endpoints s ON m.endpoint_id = s.id
                             WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
                         """, (name, params, quant))
                     elif search_type == "all" or search_type == "with_servers":
                         Database.execute("""
                             SELECT m.id, s.ip, s.port
                             FROM models m
-                            JOIN servers s ON m.endpoint_id = s.id
+                            JOIN endpoints s ON m.endpoint_id = s.id
                             WHERE m.name = ? AND m.parameter_size = ? AND m.quantization_level = ?
                         """, (name, params, quant))
                     
@@ -939,7 +939,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                         m.quantization_level, 
                         COUNT(DISTINCT m.endpoint_id) as server_count
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     GROUP BY m.name, m.parameter_size, m.quantization_level
                     ORDER BY server_count DESC, m.name ASC
                     LIMIT 25
@@ -974,7 +974,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                 Database.execute("""
                     SELECT m.id, m.name, m.parameter_size, m.quantization_level, s.ip, s.port
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     WHERE m.id = ?
                 """, (model_id,))
                 
@@ -1081,7 +1081,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                 Database.execute(
                     """SELECT m.id, m.name, s.ip, s.port
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     WHERE m.id = ?""",
                     (model_id,)
                 )
@@ -1174,7 +1174,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                         s.port,
                         s.scan_date
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     WHERE {" AND ".join(query_parts)}
                     ORDER BY s.scan_date DESC
                     LIMIT 25
@@ -1261,7 +1261,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                 Database.execute("""
                     SELECT m.id, m.name, m.parameter_size, m.quantization_level, s.ip, s.port
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     WHERE m.id = ?
                 """, (model_id,))
                 
@@ -1502,7 +1502,7 @@ def register_unified_commands(bot, DB_FILE, safe_defer, safe_followup, session, 
                 query = """
                     SELECT m.id, m.name, m.parameter_size, m.quantization_level, s.ip, s.port
                     FROM models m
-                    JOIN servers s ON m.endpoint_id = s.id
+                    JOIN endpoints s ON m.endpoint_id = s.id
                     WHERE LOWER(m.name) LIKE %s 
                     ORDER BY m.parameter_size DESC
                     LIMIT 1
