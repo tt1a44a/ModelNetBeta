@@ -324,8 +324,8 @@ class PostgreSQLManager:
         """Execute a query and fetch all results with a timeout"""
         conn = self.get_connection()
         try:
-            # Use DictCursor to get results as dictionaries instead of tuples
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            # Use regular cursor to get results as tuples (consistent with fetch_one)
+            cursor = conn.cursor()
             # Replace ? placeholders with %s for PostgreSQL
             query = query.replace('?', '%s')
             # Set a statement timeout to prevent hanging queries (10 seconds)
