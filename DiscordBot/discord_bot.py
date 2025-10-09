@@ -534,10 +534,12 @@ async def safe_defer(interaction):
         # Use a timeout to ensure defer doesn't hang
         try:
             # Give a reasonable timeout for the defer operation
-            async with asyncio.timeout(2.0):  # 2 second timeout for defer
-                await interaction.response.defer(thinking=True, ephemeral=False)
-                logger.debug(f"Successfully deferred interaction {interaction.id}")
-                return True
+            await asyncio.wait_for(
+                interaction.response.defer(thinking=True, ephemeral=False),
+                timeout=2.0
+            )
+            logger.debug(f"Successfully deferred interaction {interaction.id}")
+            return True
         except asyncio.TimeoutError:
             logger.warning(f"Defer operation timed out for interaction {interaction.id}")
             # Try to proceed anyway
