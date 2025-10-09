@@ -3072,7 +3072,11 @@ async def list_models(
         formatted_response += "-------|---------------------------|------------|--------------|--------\n"
         
         for result in results:
-            id, name, params, quant, count = result
+            # Handle both tuple and dict-like results
+            if isinstance(result, dict):
+                id, name, params, quant, count = result['id'], result['name'], result['parameter_size'], result['quantization_level'], result['server_count']
+            else:
+                id, name, params, quant, count = result[0], result[1], result[2], result[3], result[4]
             
             # Format each field with proper padding
             id_str = str(id).ljust(6)
